@@ -72,11 +72,11 @@ impl VimCommit {
         Default::default()
     }
 
-    /// Not sure if this is still needed as it's now in the Default
+    /// Prepares input to write to vimwiki
     fn prepare_input(&mut self) -> String {
         format!(
-            "{:} {:} on {:} - {:} {:}\n",
-            self.commit_msg, self.repository_url, self.branch_name, self.commit_hash, self.datetime,
+            "{:} - {:} || {:} on {:} {:}\n",
+            self.datetime, self.commit_msg, self.repository_url, self.branch_name, self.commit_hash
         )
     }
 
