@@ -26,12 +26,12 @@ impl Default for VimCommit {
             repository_url: {
                 let git_repo = Repository::discover("./").unwrap();
                 let bind = git_repo.find_remote("origin").unwrap();
-                bind.url().unwrap().replace("\"", "")
+                bind.url().unwrap().replace('\"', "")
             },
             branch_name: {
                 let git_repo = Repository::discover("./").unwrap();
                 let head = git_repo.head().unwrap();
-                head.shorthand().unwrap().replace("\"", "")
+                head.shorthand().unwrap().replace('\"', "")
             },
             commit_hash: {
                 let git_repo = Repository::discover("./").unwrap();
@@ -43,7 +43,7 @@ impl Default for VimCommit {
                 let git_repo = Repository::discover("./").unwrap();
                 let head = git_repo.head().unwrap();
                 let cbind = head.peel_to_commit().unwrap();
-                cbind.message().unwrap().replace("\n", "").replace("\"", "")
+                cbind.message().unwrap().replace(['\n', '\"'], "")
             },
             datetime: {
                 let git_repo = Repository::discover("./").unwrap();
@@ -123,7 +123,7 @@ impl VimCommit {
             )
         };
 
-        fs::write(&wikidir, &md_title).expect("Something went wront creating file and writing");
+        fs::write(wikidir, md_title).expect("Something went wront creating file and writing");
     }
 
     /// Append git stuff to diary
