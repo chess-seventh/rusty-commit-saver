@@ -1,3 +1,6 @@
+///!
+///! Git commit save to VimWiki
+///!
 use chrono::DateTime;
 use chrono::NaiveDateTime;
 use chrono::Utc;
