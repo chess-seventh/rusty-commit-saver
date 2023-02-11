@@ -75,8 +75,8 @@ impl VimCommit {
     /// Prepares input to write to vimwiki
     fn prepare_input(&mut self) -> String {
         format!(
-            "{:} - \"{:}\" || {:} on {:} {:}\n",
-            self.datetime, self.commit_msg, self.repository_url, self.branch_name, self.commit_hash
+            "{:} - \"{:}\" | {:} > {:} on {:}\n",
+            self.datetime, self.commit_msg, self.commit_hash, self.repository_url, self.branch_name,
         )
     }
 
