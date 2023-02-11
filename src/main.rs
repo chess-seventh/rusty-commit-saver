@@ -58,7 +58,7 @@ impl Default for VimCommit {
                     NaiveDateTime::from_timestamp_opt(commit_date, 0).unwrap(),
                     Utc,
                 );
-                dt.format("%Y-%m-%d %H:%M:%S").to_string()
+                dt.format("%H:%M:%S").to_string()
             },
         }
     }
@@ -72,8 +72,8 @@ impl VimCommit {
     /// Not sure if this is still needed as it's now in the Default
     fn prepare_input(&mut self) -> String {
         format!(
-            "{:} [{:}] on {:} - [{:}] {:}\n",
-            self.datetime, self.repository_url, self.branch_name, self.commit_hash, self.commit_msg
+            "{:} {:} on {:} - {:} {:}\n",
+            self.commit_msg, self.repository_url, self.branch_name, self.commit_hash, self.datetime,
         )
     }
 
