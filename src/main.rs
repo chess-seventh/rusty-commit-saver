@@ -69,7 +69,7 @@ impl VimCommit {
     /// Not sure if this is still needed as it's now in the Default
     fn prepare_input(&mut self) -> String {
         format!(
-            "{:} [{:}] on {:} - [{:}] : {:}",
+            "{:} [{:}] on {:} - [{:}] {:}\n",
             self.datetime, self.repository_url, self.branch_name, self.commit_hash, self.commit_msg
         )
     }
@@ -88,7 +88,6 @@ impl VimCommit {
             );
             self.mkfile(&wikidir);
         }
-        println!("Nothing to do all is there!");
         wikidir
     }
 
@@ -134,9 +133,12 @@ impl VimCommit {
             .append(true)
             .open(wiki)
             .expect("Unable to open wiki");
+
         file_ref
             .write_all(new_commit_str.as_bytes())
             .expect("Failed to write the new commit string");
+
+        println!("Wrote new commit to your logbook!");
     }
 
     /// check if remote is for transics or else.
@@ -154,6 +156,4 @@ fn main() {
     let wikifile = vimc.select_proper_diary();
     let wiki = vimc.check_diary_day_exists(&wikifile);
     vimc.append_commit_stuff_to_diary(&wiki);
-
-    println!("{vimc:#?}");
 }
