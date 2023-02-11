@@ -80,7 +80,8 @@ impl VimCommit {
         )
     }
 
-    /// when running hook
+    /// Method to veritfy that the file exists
+    /// will trigger the creation of it with a template if it doesn't
     fn check_diary_day_exists(&mut self, vimwiki: &str) -> PathBuf {
         let today: DateTime<Utc> = Utc::now();
         let md_file = format!("{}.md", today.format("%Y-%m-%d"));
@@ -108,23 +109,24 @@ impl VimCommit {
         {
             format!(
                 "# {}\n\n
-                ## Todays' commits:\n\n 
-                ",
-                today.format("%Y-%m-%d")
+## Todays' commits:\n
+| TIME     | COMMIT MESSAGE                                                            | REPOSITORY URL                             | BRANCH | COMMIT HASH                              |\n
+|----------|---------------------------------------------------------------------------|--------------------------------------------|--------|------------------------------------------|\n
+", today.format("%Y-%m-%d")
             )
         } else {
             format!(
                 "# {}\n\n
-                ## Food:\n\n
-                - breakfast:\n
-                - lunch:\n
-                - dinner:\n\n
-                ## Personal notes:\n\n
-                ## Personal projects notes:\n\n 
-                ## Todays' commits:\n\n 
-                ",
-                today.format("%Y-%m-%d")
-            )
+## Food:\n\n
+- breakfast:\n
+- lunch:\n
+- dinner:\n\n
+## Personal notes:\n\n
+## Personal projects notes:\n\n 
+## Todays' commits:\n
+| TIME     | COMMIT MESSAGE                                                            | REPOSITORY URL                             | BRANCH | COMMIT HASH                              |\n
+|----------|---------------------------------------------------------------------------|--------------------------------------------|--------|------------------------------------------|\n", 
+today.format("%Y-%m-%d"))
         };
 
         fs::write(wikidir, md_title)
