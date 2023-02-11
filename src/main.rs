@@ -1,8 +1,8 @@
 use chrono::DateTime;
 use chrono::Utc;
 use dirs::home_dir;
+use std::fmt;
 use std::fmt::Debug;
-use std::fmt::Formatter;
 use std::fs;
 use std::path::Path;
 use std::path::PathBuf;
