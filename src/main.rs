@@ -89,8 +89,8 @@ impl VimCommit {
         wikidir.push(&[vimwiki, "diary/", &md_file].iter().collect::<PathBuf>());
         if !Path::new(&wikidir).exists() {
             println!(
-                "Diary entry doesn't exist, we're now creasting: {:?}",
-                wikidir.as_os_str().to_str()
+                "Diary entry doesn't exist, we're now creating it: {:?}",
+                wikidir.as_os_str().to_str().unwrap()
             );
             self.mkfile(&wikidir);
         }
