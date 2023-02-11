@@ -1,16 +1,19 @@
 ///!
 ///! Git commit save to VimWiki
 ///!
-use chrono::DateTime;
-use chrono::NaiveDateTime;
-use chrono::Utc;
-use dirs::home_dir;
+
+/// Standard Lib
 use std::fs;
 use std::fs::OpenOptions;
 use std::io::Write;
 use std::path::Path;
 use std::path::PathBuf;
 
+/// External crates
+use chrono::DateTime;
+use chrono::NaiveDateTime;
+use chrono::Utc;
+use dirs::home_dir;
 use git2::Repository;
 
 #[derive(Debug, Clone)]
