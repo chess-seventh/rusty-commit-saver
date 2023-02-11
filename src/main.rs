@@ -18,11 +18,11 @@ struct VimCommit {
     pub date: DateTime<Utc>,
 }
 
-impl Debug for VimCommit {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!("[{self.repository_url:?}] on {self.branch_name:?} - [{self.commit_id:?}] : {self.commit_msg:?}");
-    }
-}
+// impl Debug for VimCommit {
+//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+//         write!("[{self.repository_url:?}] on {self.branch_name:?} - [{self.commit_id:?}] : {self.commit_msg:?}");
+//     }
+// }
 
 fn prepare_input() -> String {
     let git_repo = Repository::discover("./").unwrap();
@@ -79,6 +79,7 @@ fn select_proper_diary() -> String {
 }
 
 fn main() {
-    prepare_input();
+    let vim_input = prepare_input();
+    println!("{vim_input:}");
     // let cmd = Command::new("vim")
 }
