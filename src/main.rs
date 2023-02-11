@@ -1,85 +1,159 @@
 use chrono::DateTime;
+use chrono::NaiveDateTime;
 use chrono::Utc;
 use dirs::home_dir;
-use std::fmt;
-use std::fmt::Debug;
 use std::fs;
+use std::fs::OpenOptions;
+use std::io::Write;
 use std::path::Path;
 use std::path::PathBuf;
-// use std::process::Command;
 
 use git2::Repository;
 
+#[derive(Debug, Clone)]
 struct VimCommit {
     pub repository_url: String,
     pub branch_name: String,
     pub commit_hash: String,
     pub commit_msg: String,
-    pub date: DateTime<Utc>,
+    pub datetime: String,
 }
 
-// impl Debug for VimCommit {
-//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-//         write!("[{self.repository_url:?}] on {self.branch_name:?} - [{self.commit_id:?}] : {self.commit_msg:?}");
-//     }
-// }
+/// Defaults for VimCommit
+impl Default for VimCommit {
+    fn default() -> VimCommit {
+        VimCommit {
+            repository_url: {
+                let git_repo = Repository::discover("./").unwrap();
+                let bind = git_repo.find_remote("origin").unwrap();
+                bind.url().unwrap().replace("\"", "")
+            },
+            branch_name: {
+                let git_repo = Repository::discover("./").unwrap();
+                let head = git_repo.head().unwrap();
+                head.shorthand().unwrap().replace("\"", "")
+            },
+            commit_hash: {
+                let git_repo = Repository::discover("./").unwrap();
+                let head = git_repo.head().unwrap();
+                let cbind = head.peel_to_commit().unwrap();
+                cbind.id().to_string()
+            },
+            commit_msg: {
+                let git_repo = Repository::discover("./").unwrap();
+                let head = git_repo.head().unwrap();
+                let cbind = head.peel_to_commit().unwrap();
+                cbind.message().unwrap().replace("\n", "").replace("\"", "")
+            },
+            datetime: {
+                let git_repo = Repository::discover("./").unwrap();
+                let head = git_repo.head().unwrap();
 
-fn prepare_input() -> String {
-    let git_repo = Repository::discover("./").unwrap();
-    let head = git_repo.head().unwrap();
-
-    let cbind = head.peel_to_commit().unwrap();
-    let commit_id = cbind.id();
-    let commit_msg = cbind.message().unwrap();
-
-    let branch_name = head.shorthand().unwrap().replace("\"", "");
-
-    let bind = git_repo.find_remote("origin").unwrap();
-    let remote = bind.url().unwrap().replace("\"", "");
-
-    let vim_input = format!("[{remote:?}] on {branch_name:?} - [{commit_id:?}] : {commit_msg:?}");
-
-    vim_input
-}
-
-/// when running hook
-fn check_diary_day_exists(vimwiki: &str) -> Option<PathBuf> {
-    let today: DateTime<Utc> = Utc::now();
-    let md_file = format!("{}.md", today.format("%Y-%m-%d"));
-    let mut wikidir = home_dir().unwrap();
-    wikidir.push(&[vimwiki, "diary/", &md_file].iter().collect::<PathBuf>());
-    if !Path::new(&wikidir).exists() {
-        mkfile(&wikidir);
+                let cbind = head.peel_to_commit().unwrap();
+                let commit_date: i64 = cbind.time().seconds();
+                let dt: DateTime<Utc> = DateTime::from_utc(
+                    NaiveDateTime::from_timestamp_opt(commit_date, 0).unwrap(),
+                    Utc,
+                );
+                dt.format("%Y-%m-%d %H:%M:%S").to_string()
+            },
+        }
     }
-    None
 }
 
-/// Create file
-fn mkfile(wikidir: &PathBuf) {
-    let today: DateTime<Utc> = Utc::now();
-    let md_title = format!("# {}", today.format("%Y-%m-%d"));
-
-    fs::write(&wikidir, &md_title).expect("Something went wront creating file and writing");
-}
-
-/// Append git stuff to diary
-fn append_commit_stuff_to_diary() {
-    todo!()
-}
-
-/// check if remote is for transics or else.
-fn select_proper_diary() -> String {
-    let git_repo = Repository::discover("./").unwrap();
-    let bind = git_repo.find_remote("origin").unwrap();
-    let remote = bind.url().unwrap().replace("\"", "");
-    if remote.contains("transics") {
-        return ".vimwikiwork/".to_string();
+impl VimCommit {
+    pub fn new() -> Self {
+        Default::default()
     }
-    ".vimwiki/".to_string()
+
+    /// Not sure if this is still needed as it's now in the Default
+    fn prepare_input(&mut self) -> String {
+        format!(
+            "{:} [{:}] on {:} - [{:}] : {:}",
+            self.datetime, self.repository_url, self.branch_name, self.commit_hash, self.commit_msg
+        )
+    }
+
+    /// when running hook
+    fn check_diary_day_exists(&mut self, vimwiki: &str) -> PathBuf {
+        // let vimwiki = ".vimwikicommits/";
+        let today: DateTime<Utc> = Utc::now();
+        let md_file = format!("{}.md", today.format("%Y-%m-%d"));
+        let mut wikidir = home_dir().unwrap();
+        wikidir.push(&[vimwiki, "diary/", &md_file].iter().collect::<PathBuf>());
+        if !Path::new(&wikidir).exists() {
+            println!(
+                "file doesn't exist! creating: {:?}",
+                wikidir.as_os_str().to_str()
+            );
+            self.mkfile(&wikidir);
+        }
+        println!("Nothing to do all is there!");
+        wikidir
+    }
+
+    /// Create file
+    fn mkfile(&mut self, wikidir: &PathBuf) {
+        let today: DateTime<Utc> = Utc::now();
+        let md_title = if wikidir
+            .as_os_str()
+            .to_str()
+            .unwrap()
+            .to_string()
+            .contains("transics")
+        {
+            format!(
+                "# {}\n\n
+                ## Todays' commits:\n\n 
+                ",
+                today.format("%Y-%m-%d")
+            )
+        } else {
+            format!(
+                "# {}\n\n
+                ## Food:\n\n
+                - breakfast:\n
+                - lunch:\n
+                - dinner:\n\n
+                ## Personal notes:\n\n
+                ## Personal projects notes:\n\n 
+                ## Todays' commits:\n\n 
+                ",
+                today.format("%Y-%m-%d")
+            )
+        };
+
+        fs::write(&wikidir, &md_title).expect("Something went wront creating file and writing");
+    }
+
+    /// Append git stuff to diary
+    fn append_commit_stuff_to_diary(&mut self, wiki: &PathBuf) {
+        let new_commit_str = self.prepare_input();
+
+        let mut file_ref = OpenOptions::new()
+            .append(true)
+            .open(wiki)
+            .expect("Unable to open wiki");
+        file_ref
+            .write_all(new_commit_str.as_bytes())
+            .expect("Failed to write the new commit string");
+    }
+
+    /// check if remote is for transics or else.
+    fn select_proper_diary(&mut self) -> String {
+        if self.repository_url.contains("transics") {
+            return ".vimwikiwork/".to_string();
+        }
+        ".vimwiki/".to_string()
+    }
 }
 
 fn main() {
-    let vim_input = prepare_input();
-    println!("{vim_input:}");
-    // let cmd = Command::new("vim")
+    let mut vimc = VimCommit::new();
+
+    let wikifile = vimc.select_proper_diary();
+    let wiki = vimc.check_diary_day_exists(&wikifile);
+    vimc.append_commit_stuff_to_diary(&wiki);
+
+    println!("{vimc:#?}");
 }
