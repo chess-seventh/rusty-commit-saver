@@ -82,14 +82,13 @@ impl VimCommit {
 
     /// when running hook
     fn check_diary_day_exists(&mut self, vimwiki: &str) -> PathBuf {
-        // let vimwiki = ".vimwikicommits/";
         let today: DateTime<Utc> = Utc::now();
         let md_file = format!("{}.md", today.format("%Y-%m-%d"));
         let mut wikidir = home_dir().unwrap();
         wikidir.push(&[vimwiki, "diary/", &md_file].iter().collect::<PathBuf>());
         if !Path::new(&wikidir).exists() {
             println!(
-                "file doesn't exist! creating: {:?}",
+                "Diary entry doesn't exist, we're now creasting: {:?}",
                 wikidir.as_os_str().to_str()
             );
             self.mkfile(&wikidir);
@@ -128,7 +127,8 @@ impl VimCommit {
             )
         };
 
-        fs::write(wikidir, md_title).expect("Something went wront creating file and writing");
+        fs::write(wikidir, md_title)
+            .expect("Something went wront creating diary file and writing things in it");
     }
 
     /// Append git stuff to diary
