@@ -110,9 +110,10 @@ impl VimCommit {
             format!(
                 "# {}\n\n
 ## Todays' commits:\n
-| TIME     | COMMIT MESSAGE                                                            | REPOSITORY URL                             | BRANCH | COMMIT HASH                              |\n
-|----------|---------------------------------------------------------------------------|--------------------------------------------|--------|------------------------------------------|\n
-", today.format("%Y-%m-%d")
+| TIME | COMMIT MESSAGE | REPOSITORY URL | BRANCH | COMMIT HASH |
+|------|----------------|----------------|--------|-------------|
+",
+                today.format("%Y-%m-%d")
             )
         } else {
             format!(
@@ -124,9 +125,11 @@ impl VimCommit {
 ## Personal notes:\n\n
 ## Personal projects notes:\n\n 
 ## Todays' commits:\n
-| TIME     | COMMIT MESSAGE                                                            | REPOSITORY URL                             | BRANCH | COMMIT HASH                              |\n
-|----------|---------------------------------------------------------------------------|--------------------------------------------|--------|------------------------------------------|\n", 
-today.format("%Y-%m-%d"))
+| TIME | COMMIT MESSAGE | REPOSITORY URL | BRANCH | COMMIT HASH |
+|------|----------------|----------------|--------|-------------|
+",
+                today.format("%Y-%m-%d")
+            )
         };
 
         fs::write(wikidir, md_title)
