@@ -155,9 +155,9 @@ impl VimCommit {
     /// check if remote is for transics or else.
     fn select_proper_diary(&mut self) -> String {
         if self.repository_url.contains("transics") {
-            return ".vimwikiwork/".to_string();
+            return ".vimwiki/work/".to_string();
         }
-        ".vimwiki/".to_string()
+        ".vimwiki/home/".to_string()
     }
 }
 
