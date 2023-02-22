@@ -109,6 +109,8 @@ impl VimCommit {
         {
             format!(
                 "# {}\n\n
+## AM\n\n
+## PM\n\n
 ## Todays' commits:\n
 | TIME | COMMIT MESSAGE | REPOSITORY URL | BRANCH | COMMIT HASH |
 |------|----------------|----------------|--------|-------------|
