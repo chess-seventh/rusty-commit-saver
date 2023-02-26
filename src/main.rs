@@ -1,3 +1,4 @@
+use std::env;
 ///!
 ///! Save all you commits to your VimWiki
 ///!
@@ -170,6 +171,14 @@ impl VimCommit {
 
 fn main() {
     let mut vimc = VimCommit::new();
+
+    let cur_dir = env::current_dir().unwrap();
+    let mut wikidir = home_dir().unwrap();
+    wikidir.push(".vimwiki");
+    if cur_dir == wikidir {
+        println!("No need to save the wikidir commits, exiting...");
+        return;
+    }
 
     let wikifile = vimc.select_proper_diary();
     let wiki = vimc.check_diary_day_exists(&wikifile);
