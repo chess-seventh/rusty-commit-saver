@@ -1,5 +1,5 @@
 ///!
-///! Git commit save to VimWiki
+///! Save all you commits to your VimWiki
 ///!
 
 /// Standard Lib
