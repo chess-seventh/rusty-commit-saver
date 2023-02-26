@@ -49,7 +49,12 @@ impl Default for VimCommit {
                 let git_repo = Repository::discover("./").unwrap();
                 let head = git_repo.head().unwrap();
                 let cbind = head.peel_to_commit().unwrap();
-                cbind.message().unwrap().replace(['\n', '\"'], "")
+                let commit = cbind.message().unwrap().replace(['\n', '\"'], "");
+
+                match commit.char_indices().nth(120) {
+                    None => commit.to_string(),
+                    Some((idx, _)) => commit[..idx].to_string(),
+                }
             },
             datetime: {
                 let git_repo = Repository::discover("./").unwrap();
