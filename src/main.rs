@@ -1,9 +1,9 @@
-use std::env;
 ///!
 ///! Save all you commits to your VimWiki
 ///!
 
 /// Standard Lib
+use std::env;
 use std::fs;
 use std::fs::OpenOptions;
 use std::io::Write;
