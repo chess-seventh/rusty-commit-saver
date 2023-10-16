@@ -141,7 +141,7 @@ impl VimCommit {
         };
 
         fs::write(wikidir, md_title)
-            .expect("Something went wront creating diary file and writing things in it");
+            .expect("Something went wrong creating diary file and writing things in it");
     }
 
     /// Append git stuff to diary
