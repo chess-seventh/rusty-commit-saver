@@ -92,7 +92,7 @@ impl VimCommit {
         let today: DateTime<Utc> = Utc::now();
         let md_file = format!("{}.md", today.format("%Y-%m-%d"));
         let mut wikidir = home_dir().unwrap();
-        wikidir.push(&[vimwiki, "diary/", &md_file].iter().collect::<PathBuf>());
+        wikidir.push(&[vimwiki, &md_file].iter().collect::<PathBuf>());
         if !Path::new(&wikidir).exists() {
             println!(
                 "Diary entry doesn't exist, we're now creating it: {:?}",
@@ -163,9 +163,9 @@ impl VimCommit {
     /// check if remote is for transics or else.
     fn select_proper_diary(&mut self) -> String {
         if self.repository_url.contains("transics") {
-            return ".vimwiki/work/".to_string();
+            return ".vimwiki/🗓️ Diaries/3. Field Work".to_string();
         }
-        ".vimwiki/home/".to_string()
+        ".vimwiki/🗓️ Diaries/0. Daily".to_string()
     }
 }
 
