@@ -162,11 +162,18 @@ impl VimCommit {
 
     /// check if remote is for transics or else.
     fn select_proper_diary(&mut self) -> String {
+        let diary_path = prepare_path_with_emojis();
         if self.repository_url.contains("transics") {
-            return "🗓️ Diaries/3. Field Work".to_string();
+            return format!("{:}/3. Field Work", diary_path).to_string();
         }
-        "🗓️ Diaries/0. Daily".to_string()
+        format!("{:}/0. Daily", diary_path).to_string()
     }
+}
+
+fn prepare_path_with_emojis() -> String {
+    let calendar = emojis::get("🗓️").unwrap();
+    let diary = format!("{:} Diaries", calendar);
+    diary
 }
 
 fn main() {
