@@ -171,7 +171,7 @@ impl VimCommit {
 }
 
 fn prepare_path_with_emojis() -> String {
-    let calendar = emojis::get("🗓️").unwrap();
+    let calendar = emojis::get("🗓").unwrap();
     let diary = format!("{:} Diaries", calendar);
     diary
 }
