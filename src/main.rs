@@ -164,8 +164,12 @@ impl VimCommit {
     fn select_proper_diary(&mut self) -> String {
         let diary_path = prepare_path_with_emojis();
         if self.repository_url.contains("transics") {
+            let wiki_path = format!("{:}/3. Field Work", diary_path).to_string();
+            println!("Transics repo detected, writing to: {:}", wiki_path);
             return format!("{:}/3. Field Work", diary_path).to_string();
         }
+        let diary_path = format!("{:}/0. Daily", diary_path).to_string();
+        println!("Writing to: {:}", diary_path);
         format!("{:}/0. Daily", diary_path).to_string()
     }
 }
