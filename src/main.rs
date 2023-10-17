@@ -177,7 +177,7 @@ impl VimCommit {
         }
         let diary_path = format!("{:}/0. Daily", diary_path).to_string();
         println!("Writing to: {:}", diary_path);
-        format!("{:}/0. Daily", diary_path).to_string()
+        diary_path
     }
 }
 
