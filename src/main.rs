@@ -95,7 +95,8 @@ impl VimCommit {
 
         // Recursively create a directory and all of its parent components if they are missing.
         // https://stackoverflow.com/a/48053959
-        fs::create_dir_all(wikidir.clone().into_os_string().to_str().unwrap()).unwrap();
+        fs::create_dir_all(wikidir.clone().into_os_string().to_str().unwrap())
+            .expect("Couldn't create the directory");
 
         wikidir.push(&[&vimwiki, &md_file.as_str()].iter().collect::<PathBuf>());
 
@@ -147,7 +148,7 @@ impl VimCommit {
         };
 
         fs::write(wikidir, md_title)
-            .expect("Something went wrong creating diary file and writing things in it");
+            .expect("Something went wrong creating in writing things in the wikifile");
     }
 
     /// Append git stuff to diary
