@@ -92,7 +92,13 @@ impl VimCommit {
         let today: DateTime<Utc> = Utc::now();
         let md_file = format!("{}.md", today.format("%Y-%m-%d"));
         let mut wikidir = home_dir().unwrap();
-        wikidir.push(&[vimwiki, &md_file].iter().collect::<PathBuf>());
+
+        // Recursively create a directory and all of its parent components if they are missing.
+        // https://stackoverflow.com/a/48053959
+        fs::create_dir_all(wikidir.clone().into_os_string().to_str().unwrap()).unwrap();
+
+        wikidir.push(&[&vimwiki, &md_file.as_str()].iter().collect::<PathBuf>());
+
         if !Path::new(&wikidir).exists() {
             println!(
                 "Diary entry doesn't exist, we're now creating it: {:?}",
