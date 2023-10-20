@@ -1,6 +1,6 @@
-///!
-///! Save all you commits to your VimWiki
-///!
+//!
+//! Save all you commits to your VimWiki
+//!
 
 /// Standard Lib
 use std::env;
@@ -75,7 +75,7 @@ impl Default for VimCommit {
 
 impl VimCommit {
     pub fn new() -> Self {
-        Default::default()
+        VimCommit::default()
     }
 
     /// Prepares input to write to vimwiki
@@ -118,7 +118,7 @@ impl VimCommit {
             .to_str()
             .unwrap()
             .to_string()
-            .contains("transics")
+            .contains("Work")
         {
             format!(
                 "# {}\n\n
@@ -138,7 +138,6 @@ impl VimCommit {
 - lunch:\n
 - dinner:\n\n
 ## Personal notes:\n\n
-## Personal projects notes:\n\n 
 ## Todays' commits:\n
 | TIME | COMMIT MESSAGE | REPOSITORY URL | BRANCH | COMMIT HASH |
 |------|----------------|----------------|--------|-------------|
@@ -164,26 +163,23 @@ impl VimCommit {
             .write_all(new_commit_str.as_bytes())
             .expect("Failed to write the new commit string");
 
-        println!("Wrote new commit to your logbook!");
+        println!("Commit logged in: {:}", wiki.to_str().unwrap());
     }
 
     /// check if remote is for transics or else.
     fn select_proper_diary(&mut self) -> String {
         let diary_path = prepare_path_with_emojis();
         if self.repository_url.contains("transics") {
-            let wiki_path = format!("{:}/3. Field Work", diary_path).to_string();
-            println!("Transics repo detected, writing to: {:}", wiki_path);
-            return format!("{:}/3. Field Work", diary_path).to_string();
+            return format!(".vimwiki/{diary_path:}/3. Field Work");
         }
-        let diary_path = format!("{:}/0. Daily", diary_path).to_string();
-        println!("Writing to: {:}", diary_path);
-        format!(".vimwiki/{:}/", diary_path).to_string()
+        let diary_path = format!("{diary_path:}/0. Daily");
+        format!(".vimwiki/{diary_path:}/")
     }
 }
 
 fn prepare_path_with_emojis() -> String {
     let calendar = emojis::get("📅").unwrap();
-    let diary = format!("{:} Diaries", calendar);
+    let diary = format!("{calendar:} Diaries");
     diary
 }
 
