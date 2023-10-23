@@ -5,6 +5,7 @@
 pub mod vim_commit;
 use vim_commit::CommitSaver;
 
+use log::info;
 /// Standard Lib
 use std::env;
 use std::fs;
@@ -53,7 +54,7 @@ fn mkfile(wikidir: &PathBuf) {
     };
 
     fs::write(wikidir, md_title)
-        .expect("Something went wrong creating in writing things in the wikifile");
+        .expect("[ERROR] Something went wrong creating in writing things in the wikifile");
 }
 
 /// Method to veritfy that the file exists
@@ -66,13 +67,14 @@ fn check_diary_day_exists(vimwiki: &str) -> PathBuf {
     // Recursively create a directory and all of its parent components if they are missing.
     // https://stackoverflow.com/a/48053959
     fs::create_dir_all(wikidir.clone().into_os_string().to_str().unwrap())
-        .expect("Couldn't create the directory");
+        .expect("[ERROR] Couldn't create the directory");
 
     wikidir.push(&[&vimwiki, &md_file.as_str()].iter().collect::<PathBuf>());
 
     if !Path::new(&wikidir).exists() {
-        println!(
-            "Diary entry doesn't exist, we're now creating it: {:?}",
+        info!("[INFO] Diary file does not exist ............................");
+        info!(
+            "[INFO] Creating Diary file {:?} .............................",
             wikidir.as_os_str().to_str().unwrap()
         );
         mkfile(&wikidir);
@@ -87,7 +89,7 @@ fn main() {
     let mut wikidir = home_dir().unwrap();
     wikidir.push(".vimwiki");
     if cur_dir == wikidir {
-        println!("No need to save the wikidir commits, exiting...");
+        info!("[INFO] No need to save the wikidir commits  ............");
         return;
     }
 

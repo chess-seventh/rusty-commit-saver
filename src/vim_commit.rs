@@ -2,6 +2,7 @@ use chrono::DateTime;
 use chrono::NaiveDateTime;
 use chrono::Utc;
 use git2::Repository;
+use log::info;
 use std::fs::OpenOptions;
 use std::io::Write;
 use std::path::PathBuf;
@@ -82,16 +83,16 @@ impl CommitSaver {
         let mut file_ref = OpenOptions::new()
             .append(true)
             .open(wiki)
-            .expect("Unable to open wiki");
+            .expect("[ERROR] Unable to open wiki");
 
         file_ref
             .write_all(new_commit_str.as_bytes())
-            .expect("Failed to write the new commit string");
+            .expect("[ERROR] Failed to write the new commit string");
 
-        println!(
-            "Commit logged in ...................................................... {:}",
+        info!(
+            "[INFO] Commit logged in ...................................................... {:}",
             wiki.file_name()
-                .expect("No filename found while printing the log output")
+                .expect("[ERROR] No filename found while writing commit to the file")
                 .to_str()
                 .unwrap()
         );
