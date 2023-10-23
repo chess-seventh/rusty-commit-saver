@@ -7,7 +7,7 @@ use std::io::Write;
 use std::path::PathBuf;
 
 #[derive(Debug, Clone)]
-pub struct VimCommit {
+pub struct CommitSaver {
     pub repository_url: String,
     pub branch_name: String,
     pub commit_hash: String,
@@ -15,10 +15,10 @@ pub struct VimCommit {
     pub datetime: String,
 }
 
-/// Defaults for VimCommit
-impl Default for VimCommit {
-    fn default() -> VimCommit {
-        VimCommit {
+/// Defaults for CommitSaver
+impl Default for CommitSaver {
+    fn default() -> CommitSaver {
+        CommitSaver {
             repository_url: {
                 let git_repo = Repository::discover("./").unwrap();
                 let bind = git_repo.find_remote("origin").unwrap();
@@ -62,9 +62,9 @@ impl Default for VimCommit {
     }
 }
 
-impl VimCommit {
+impl CommitSaver {
     pub fn new() -> Self {
-        VimCommit::default()
+        CommitSaver::default()
     }
 
     /// Prepares input to write to vimwiki

@@ -3,7 +3,7 @@
 //!
 
 pub mod vim_commit;
-use vim_commit::VimCommit;
+use vim_commit::CommitSaver;
 
 /// Standard Lib
 use std::env;
@@ -81,7 +81,7 @@ fn check_diary_day_exists(vimwiki: &str) -> PathBuf {
 }
 
 fn main() {
-    let mut vimc = VimCommit::new();
+    let mut vimc = CommitSaver::new();
 
     let cur_dir = env::current_dir().unwrap();
     let mut wikidir = home_dir().unwrap();
