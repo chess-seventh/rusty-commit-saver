@@ -27,7 +27,6 @@ tags:\n"
 "\n
 ---
 \n
-\n
 # " @diary_date
 "\n
 | FOLDER | TIME | COMMIT MESSAGE | REPOSITORY URL | BRANCH | COMMIT HASH |
