@@ -21,22 +21,22 @@ use markup;
 
 markup::define! {
     DiaryFileEntry(frontmatter: Vec<String>, _diary_date: String, _journal_path: String) {
-    "---
-        \n
-        category: diary\n
-        section: home\n
-        tags:\n"
-    @for tag in frontmatter.iter() {
-      "-" @tag
-    }
-    "\ndate: \"" _diary_date "\""
-        "\n
-        ---
-        \n
-        \n
-        # ["_diary_date"]("_journal_path")\n\n
-        | FOLDER | TIME | COMMIT MESSAGE | REPOSITORY URL | BRANCH | COMMIT HASH |
-        |--------|------|----------------|----------------|--------|-------------|\n"
+"---
+\n
+category: diary\n
+section: home\n
+tags:\n"
+@for tag in frontmatter.iter() {
+"-" @tag
+}
+"\ndate: \"" _diary_date "\""
+"\n
+---
+\n
+\n
+# ["_diary_date"]("_journal_path")\n\n
+| FOLDER | TIME | COMMIT MESSAGE | REPOSITORY URL | BRANCH | COMMIT HASH |
+|--------|------|----------------|----------------|--------|-------------|\n"
     }
 }
 

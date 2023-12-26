@@ -2,6 +2,7 @@ use chrono::DateTime;
 use chrono::NaiveDateTime;
 use chrono::Utc;
 use git2::Repository;
+use std::env;
 use std::error::Error;
 use std::fs::OpenOptions;
 use std::io::Write;
@@ -54,9 +55,16 @@ impl CommitSaver {
     }
 
     /// Prepares input to write to vimwiki
-    fn prepare_commit_entry_as_string(&mut self) -> String {
-        let _dt = self.commit_datetime.format("%H:%M:%S");
-        "| {_dt:} | {self.commit_msg:} | {self.repository_url:} | {self.commit_branch_name:} | {self.commit_hash:} |\n".to_string()
+    fn prepare_commit_entry_as_string(&mut self, path: &PathBuf) -> String {
+        format!(
+            "| {:} | {:} | {:} | {:} | {:} | {:} |\n",
+            path.display(),
+            self.commit_datetime.format("%H:%M:%S"),
+            self.commit_msg,
+            self.repository_url,
+            self.commit_branch_name,
+            self.commit_hash
+        )
     }
 
     pub fn prepare_frontmatter_tags(&mut self) -> Vec<String> {
@@ -80,7 +88,8 @@ impl CommitSaver {
 
     /// Append commit to existing diary
     pub fn append_entry_to_diary(&mut self, wiki: &PathBuf) -> Result<(), Box<dyn Error>> {
-        let new_commit_str = self.prepare_commit_entry_as_string();
+        let path = env::current_dir()?;
+        let new_commit_str = self.prepare_commit_entry_as_string(&path);
 
         let mut file_ref = OpenOptions::new().append(true).open(wiki)?;
 
