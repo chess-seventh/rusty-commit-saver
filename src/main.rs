@@ -59,6 +59,9 @@ fn create_diary_file(
     commit_saver_struct: &mut CommitSaver,
 ) -> Result<(), Box<dyn Error>> {
     let frontmatter = commit_saver_struct.prepare_frontmatter_tags();
+    for tag in frontmatter.iter() {
+        println!("frontmatter: {tag:}")
+    }
     let diary_date = commit_saver_struct
         .commit_datetime
         .format("%Y-%m-%d")
