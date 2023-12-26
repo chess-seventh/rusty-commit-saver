@@ -67,7 +67,11 @@ fn create_diary_file(
         .format("%Y-%m-%d")
         .to_string();
 
-    let journal_path = full_diary_file_path.replace("0. Commits", "0. Journal");
+    let journal_path = full_diary_file_path
+        .replace("0. Commits", "0. Journal")
+        .replace("/home/seventh/.vimwiki/", "")
+        .replace(".md", "");
+
     println!("Journal Path: {journal_path:}");
     println!("diary_date: {diary_date:}");
     let template = DiaryFileEntry {
