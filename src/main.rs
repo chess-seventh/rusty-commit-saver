@@ -1,5 +1,5 @@
 //!
-//! Save all you commits to your VimWiki
+//! Save all my commits to Obisidian
 //!
 
 pub mod vim_commit;
