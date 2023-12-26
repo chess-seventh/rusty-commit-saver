@@ -26,15 +26,15 @@ category: diary\n
 section: home\n
 tags:\n"
 @for tag in frontmatter.iter() {
-"-" @tag "\n"
+"- " @tag "\n"
 }
 "date: " _diary_date
 "\n
 ---
 \n
 \n
-# ["_diary_date"]("_journal_path")\n\n
-
+# [" _diary_date "](" _journal_path ")
+\n
 | FOLDER | TIME | COMMIT MESSAGE | REPOSITORY URL | BRANCH | COMMIT HASH |
 |--------|------|----------------|----------------|--------|-------------|\n"
     }
