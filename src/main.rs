@@ -21,10 +21,10 @@ markup::define! {
     DiaryFileEntry(frontmatter: Vec<String>, diary_date: String, journal_path: String) {
 "---
 category: diary\n
-section: home\n
+section: commits\n
 tags:\n"
 @for tag in frontmatter.iter() {
-"- " @tag "\n"
+"- \"" @tag "\"\n"
 }
 "date: " @diary_date
 "\n
