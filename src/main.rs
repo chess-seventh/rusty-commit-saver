@@ -26,12 +26,12 @@ tags:\n"
 @for tag in frontmatter.iter() {
 "- " @tag "\n"
 }
-"date: " diary_date
+"date: " @diary_date
 "\n
 ---
 \n
 \n
-# [" diary_date "](" journal_path ")
+# [" @diary_date "](" @journal_path ")
 \n
 | FOLDER | TIME | COMMIT MESSAGE | REPOSITORY URL | BRANCH | COMMIT HASH |
 |--------|------|----------------|----------------|--------|-------------|\n"
