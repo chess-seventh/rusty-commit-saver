@@ -5,8 +5,7 @@
 pub mod vim_commit;
 use vim_commit::CommitSaver;
 
-pub mod git_repository;
-
+use dirs::home_dir;
 use log::error;
 use log::info;
 use std::env;
@@ -15,10 +14,8 @@ use std::fs;
 use std::path::Path;
 use std::path::PathBuf;
 
-use dirs::home_dir;
-
 markup::define! {
-    DiaryFileEntry(frontmatter: Vec<String>, diary_date: String, journal_path: String) {
+    DiaryFileEntry(frontmatter: Vec<String>, diary_date: String) {
 "---
 category: diary\n
 section: commits\n
@@ -31,8 +28,8 @@ tags:\n"
 ---
 \n
 \n
-# [" @diary_date "](" @journal_path ")
-\n
+# " @diary_date
+"\n
 | FOLDER | TIME | COMMIT MESSAGE | REPOSITORY URL | BRANCH | COMMIT HASH |
 |--------|------|----------------|----------------|--------|-------------|\n"
     }
@@ -59,25 +56,14 @@ fn create_diary_file(
     commit_saver_struct: &mut CommitSaver,
 ) -> Result<(), Box<dyn Error>> {
     let frontmatter = commit_saver_struct.prepare_frontmatter_tags();
-    for tag in frontmatter.iter() {
-        println!("frontmatter: {tag:}")
-    }
     let diary_date = commit_saver_struct
         .commit_datetime
         .format("%Y-%m-%d")
         .to_string();
 
-    let journal_path = full_diary_file_path
-        .replace("0. Commits", "0. Journal")
-        .replace("/home/seventh/.vimwiki/", "")
-        .replace(".md", "");
-
-    println!("Journal Path: {journal_path:}");
-    println!("diary_date: {diary_date:}");
     let template = DiaryFileEntry {
         frontmatter,
         diary_date,
-        journal_path,
     }
     .to_string();
     fs::write(full_diary_file_path, template)?;
