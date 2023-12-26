@@ -2,10 +2,9 @@ use chrono::DateTime;
 use chrono::NaiveDateTime;
 use chrono::Utc;
 use git2::Repository;
-use log::info;
+use std::error::Error;
 use std::fs::OpenOptions;
 use std::io::Write;
-// use std::iter::Zip;
 use std::path::PathBuf;
 
 #[derive(Debug, Clone)]
@@ -55,32 +54,16 @@ impl CommitSaver {
     }
 
     /// Prepares input to write to vimwiki
-    /// TODO datetime fix
     fn prepare_commit_entry_as_string(&mut self) -> String {
         let _dt = self.commit_datetime.format("%H:%M:%S");
         "| {_dt:} | {self.commit_msg:} | {self.repository_url:} | {self.commit_branch_name:} | {self.commit_hash:} |\n".to_string()
     }
 
-    /// Append git stuff to diary
-    pub fn append_entry_to_diary(&mut self, wiki: &PathBuf) {
-        let new_commit_str = self.prepare_commit_entry_as_string();
+    pub fn prepare_frontmatter_tags(&mut self) -> Vec<String> {
+        let week_number = format!("#datetime/week/{:}", self.commit_datetime.format("%W"));
+        let week_day = format!("#datetime/days/{:}", self.commit_datetime.format("%A"));
 
-        let mut file_ref = OpenOptions::new()
-            .append(true)
-            .open(wiki)
-            .expect("[ERROR] Unable to open wiki");
-
-        file_ref
-            .write_all(new_commit_str.as_bytes())
-            .expect("[ERROR] Failed to write the new commit string");
-
-        info!(
-            "[INFO] Commit logged in ...................................................... {:}",
-            wiki.file_name()
-                .expect("[ERROR] No filename found while writing commit to the file")
-                .to_str()
-                .unwrap()
-        );
+        vec![week_number, week_day, "#diary/commits".to_string()]
     }
 
     pub fn prepare_path_for_commit(&mut self) -> String {
@@ -89,10 +72,21 @@ impl CommitSaver {
         format!(".vimwiki/{diary_path:}/0. Commits/{paths_with_dates_and_file:}")
     }
 
-    pub fn prepare_date_for_commit_file(&mut self) -> String {
+    fn prepare_date_for_commit_file(&mut self) -> String {
         // %B	July	Full month name. Also accepts corresponding abbreviation in parsing.
         // %F	2001-07-08	Year-month-day format (ISO 8601). Same as %Y-%m-%d.
         self.commit_datetime.format("%Y/%m-%B/%F.md").to_string()
+    }
+
+    /// Append commit to existing diary
+    pub fn append_entry_to_diary(&mut self, wiki: &PathBuf) -> Result<(), Box<dyn Error>> {
+        let new_commit_str = self.prepare_commit_entry_as_string();
+
+        let mut file_ref = OpenOptions::new().append(true).open(wiki)?;
+
+        file_ref.write_all(new_commit_str.as_bytes())?;
+
+        Ok(())
     }
 }
 

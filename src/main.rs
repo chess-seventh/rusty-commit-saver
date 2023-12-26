@@ -7,11 +7,11 @@ use vim_commit::CommitSaver;
 
 pub mod git_repository;
 
+use log::error;
 use log::info;
 use std::env;
 use std::error::Error;
 use std::fs;
-use std::iter::Zip;
 use std::path::Path;
 use std::path::PathBuf;
 
@@ -19,32 +19,24 @@ use dirs::home_dir;
 
 use markup;
 
-fn prepare_template_for_new_diary_file(
-    frontmatter: Vec<String>,
-    diary_date: String,
-    diary_path: String,
-    commit_entry: String,
-) {
-    markup::define! {
-        DiaryFileEntry(frontmatter: Vec<String>, diary_date: String, diary_path: String, commit_entry: String) {
-        "---
-            \n
-            category: diary\n
-            section: home\n
-            tags:\n"
-        @for tag in frontmatter.iter() {
-          "-" @tag
-        }
-        "\ndate: \"" diary_date "\""
-            "\n
-            ---
-            \n
-            \n
-            # ["diary_date"]("diary_path")\n\n
-            | FOLDER | TIME | COMMIT MESSAGE | REPOSITORY URL | BRANCH | COMMIT HASH |
-            |--------|------|----------------|----------------|--------|-------------|\n"
-            commit_entry;
-        }
+markup::define! {
+    DiaryFileEntry(frontmatter: Vec<String>, _diary_date: String, _journal_path: String) {
+    "---
+        \n
+        category: diary\n
+        section: home\n
+        tags:\n"
+    @for tag in frontmatter.iter() {
+      "-" @tag
+    }
+    "\ndate: \"" _diary_date "\""
+        "\n
+        ---
+        \n
+        \n
+        # ["_diary_date"]("_journal_path")\n\n
+        | FOLDER | TIME | COMMIT MESSAGE | REPOSITORY URL | BRANCH | COMMIT HASH |
+        |--------|------|----------------|----------------|--------|-------------|\n"
     }
 }
 
@@ -58,69 +50,81 @@ fn get_parent_from_full_path(full_diary_path: &PathBuf) -> Result<&Path, Box<dyn
 /// Method to veritfy that the file exists
 /// Will trigger the creation of it with a template if it doesn't
 fn check_diary_path_exists(full_diary_path: &PathBuf) -> Result<(), Box<dyn Error>> {
-    let parent_dirs = get_parent_from_full_path(full_diary_path)?;
-
-    // Recursively create a directory and all of its parent components if they are missing.
-    // https://stackoverflow.com/a/48053959
-    if !Path::new(&parent_dirs).exists() {
-        fs::create_dir_all(parent_dirs)?;
-        info!("[INFO] Diary file does not exist ............................");
-        info!(
-            "[INFO] Creating Diary file {:?} .............................",
-            full_diary_path.as_os_str().to_str().unwrap()
-        );
-
-        let frontmatter = vec!["hello".to_string(), "world".to_string()];
-
-        let template =
-            prepare_template_for_new_diary_file(frontmatter, diary_date, diary_path, commit_entry);
-
-        // let _template = markup::new! {
-        //     "---
-        //     \n
-        //     category: diary\n
-        //     section: home\n
-        //     tags:\n"
-        //     @for tag in frontmatter.iter() {
-        //       "-" @tag
-        //     }
-        //     "\n
-        //     date: \"@diary_date\"
-        //     \n
-        //     ---
-        //     \n
-        //     \n
-        //     # [@diary_date](@diary_path)
-        //     \n
-        //     \n
-        //     | FOLDER | TIME | COMMIT MESSAGE | REPOSITORY URL | BRANCH | COMMIT HASH |
-        //     |--------|------|----------------|----------------|--------|-------------|\n"
-        // };
+    if Path::new(&full_diary_path).exists() {
+        return Ok(());
     }
+    Err("Path does not exist!".into())
+}
+
+fn create_diary_file(
+    full_diary_file_path: &str,
+    commit_saver_struct: &mut CommitSaver,
+) -> Result<(), Box<dyn Error>> {
+    let frontmatter = commit_saver_struct.prepare_frontmatter_tags();
+    let diary_date = commit_saver_struct
+        .commit_datetime
+        .format("%Y-%m-%d")
+        .to_string();
+
+    let journal_path = full_diary_file_path.replace("0. Commits", "0. Journal");
+    let template = DiaryFileEntry {
+        frontmatter: frontmatter,
+        _diary_date: diary_date,
+        _journal_path: journal_path,
+    }
+    .to_string();
+    fs::write(full_diary_file_path, template)?;
+
     Ok(())
 }
 
-fn create_diary_file(full_diary_file_path: &str) -> Result<(), Box<dyn Error>> {}
+fn create_directories_for_new_entry(
+    entry_directory_and_path: &PathBuf,
+) -> Result<(), Box<dyn Error>> {
+    let parent_dirs = get_parent_from_full_path(entry_directory_and_path)?;
+    fs::create_dir_all(parent_dirs)?;
+    info!("[INFO] Creating diary file & path ...........................");
 
-fn main() {
-    let mut vimc = CommitSaver::new();
+    Ok(())
+}
+
+fn main() -> Result<(), Box<dyn Error>> {
+    let mut commit_saver_struct = CommitSaver::new();
 
     let current_directory = env::current_dir().unwrap();
     let mut entry_directory_and_path = home_dir().unwrap();
     entry_directory_and_path.push(".vimwiki");
 
     if current_directory == entry_directory_and_path {
-        info!("[INFO] No need to save the wikidir commits ................");
-        return;
+        info!("[INFO] No need to save the commit here ......................");
+        return Ok(());
     }
 
-    let diary_entry_path = vimc.prepare_path_for_commit();
+    let diary_entry_path = commit_saver_struct.prepare_path_for_commit();
     entry_directory_and_path.push(diary_entry_path);
 
     match check_diary_path_exists(&entry_directory_and_path) {
-        Ok(()) => info!("Diary path created or existed"),
-        Err(e) => panic!("Something went wrong with the creation of diary path: {e:}"),
+        Ok(()) => {
+            info!("[INFO] Diary file/path exists ...............................");
+        }
+        Err(_) => {
+            info!("[INFO] Diary file/path DOES NOT exist .......................");
+            create_directories_for_new_entry(&entry_directory_and_path)?;
+            create_diary_file(
+                &entry_directory_and_path.as_os_str().to_str().unwrap(),
+                &mut commit_saver_struct,
+            )?;
+        } // write commit
     };
 
-    vimc.append_entry_to_diary(&wiki);
+    match commit_saver_struct.append_entry_to_diary(&entry_directory_and_path) {
+        Ok(_) => {
+            info!("[INFO] Commit logged in .....................................");
+            return Ok(());
+        }
+        Err(e) => {
+            error!("[ERROR] {e:}");
+            panic!("Something went wrong when writing the commit to the file");
+        }
+    }
 }

@@ -1,6 +1,6 @@
 # Notes
 
-## All commits will go in:
+## All commits will go in
 
 - `📅 Diaries/0. Commits/[YYYY]/[MM-MMMM]/YYYY-MM-DD`
 
