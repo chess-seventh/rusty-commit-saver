@@ -105,10 +105,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     let diary_entry_path = commit_saver_struct.prepare_path_for_commit();
     entry_directory_and_path.push(diary_entry_path);
 
+    let tmp = &entry_directory_and_path.as_os_str().to_str().unwrap();
     match check_diary_path_exists(&entry_directory_and_path) {
         Ok(()) => {
             info!("[INFO] Diary file/path exists ...............................");
             println!("[INFO] Diary file/path exists ...............................");
+            println!("[INFO] {tmp:} ...............................");
         }
         Err(_) => {
             info!("[INFO] Diary file/path DOES NOT exist .......................");
