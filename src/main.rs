@@ -24,7 +24,7 @@ category: diary\n
 section: commits\n
 tags:\n"
 @for tag in frontmatter.iter() {
-"- \"" @tag "\"\n"
+"- '" @tag "'\n"
 }
 "date: " @diary_date
 "\n
