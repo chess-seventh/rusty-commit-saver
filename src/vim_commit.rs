@@ -69,7 +69,7 @@ impl CommitSaver {
     pub fn prepare_path_for_commit(&mut self) -> String {
         let diary_path = prepare_path_with_emojis();
         let paths_with_dates_and_file = self.prepare_date_for_commit_file();
-        format!(".vimwiki/{diary_path:}/0. Commits/{paths_with_dates_and_file:}")
+        format!("{diary_path:}/0. Commits/{paths_with_dates_and_file:}")
     }
 
     fn prepare_date_for_commit_file(&mut self) -> String {
