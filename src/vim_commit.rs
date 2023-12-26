@@ -6,6 +6,7 @@ use std::env;
 use std::error::Error;
 use std::fs::OpenOptions;
 use std::io::Write;
+use std::path::Path;
 use std::path::PathBuf;
 
 #[derive(Debug, Clone)]
@@ -55,7 +56,7 @@ impl CommitSaver {
     }
 
     /// Prepares input to write to vimwiki
-    fn prepare_commit_entry_as_string(&mut self, path: &PathBuf) -> String {
+    fn prepare_commit_entry_as_string(&mut self, path: &Path) -> String {
         format!(
             "| {:} | {:} | {:} | {:} | {:} | {:} |\n",
             path.display(),
