@@ -92,6 +92,7 @@ impl CommitSaver {
         let path = env::current_dir()?;
         let new_commit_str = self.prepare_commit_entry_as_string(&path);
 
+        println!("{new_commit_str:}");
         let mut file_ref = OpenOptions::new().append(true).open(wiki)?;
 
         file_ref.write_all(new_commit_str.as_bytes())?;
