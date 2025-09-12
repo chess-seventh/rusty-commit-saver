@@ -10,6 +10,6 @@ authors = ["chess7th"]
 chrono = { version = "0.4.23", features = ["serde"] }
 dirs = "4.0.0"
 emojis = "0.6.1"
-git2 = "0.16.1"
+git2 = "0.20.2"
 log = "0.4.20"
 markup = "0.15.0"
