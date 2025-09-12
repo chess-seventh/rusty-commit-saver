@@ -1,3 +1,15 @@
+# [2.0.0](https://github.com/chess-seventh/rusty-commit-saver/compare/v1.0.0...v2.0.0) (2025-09-12)
+
+
+* feat!: Integrate Rusty Commit Saver in devenv ([e28def7](https://github.com/chess-seventh/rusty-commit-saver/commit/e28def7bad46af8db27b70e4912eb72717718517))
+
+
+### BREAKING CHANGES
+
+* Add my own flake (this one) to my devenv git-hooks
+
+
+
 # [1.0.0](https://github.com/chess-seventh/rusty-commit-saver/compare/v0.2.4...v1.0.0) (2025-09-12)
 
 
