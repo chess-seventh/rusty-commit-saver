@@ -1,3 +1,12 @@
+# [2.2.0](https://github.com/chess-seventh/rusty-commit-saver/compare/v2.1.0...v2.2.0) (2025-09-12)
+
+
+### Features
+
+* Update Rusty Commit Saver config and deps ([decdf6a](https://github.com/chess-seventh/rusty-commit-saver/commit/decdf6a826e63c88dd5d3ca68cdc8fd123db7ee1))
+
+
+
 # [2.1.0](https://github.com/chess-seventh/rusty-commit-saver/compare/v2.0.2...v2.1.0) (2025-09-12)
 
 
