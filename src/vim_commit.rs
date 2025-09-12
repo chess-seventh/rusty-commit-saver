@@ -30,7 +30,15 @@ impl Default for CommitSaver {
             },
             commit_branch_name: { head.shorthand().unwrap().replace('\"', "") },
             commit_hash: { commit.id().to_string() },
-            commit_msg: commit.message().unwrap().to_string(),
+            commit_msg: {
+                // Preserve original lines, escape pipes, then join with <br/>
+                let raw = commit.message().unwrap_or("");
+                raw.lines()
+                    .map(|line| line.trim().replace('|', "\\|"))
+                    .filter(|line| !line.is_empty())
+                    .collect::<Vec<_>>()
+                    .join("<br/>")
+            },
             commit_datetime: {
                 let commit_date: i64 = commit.time().seconds();
                 DateTime::from_timestamp(commit_date, 0).unwrap()

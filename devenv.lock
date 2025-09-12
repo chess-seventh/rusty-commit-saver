@@ -189,15 +189,15 @@
         "rust-overlay": "rust-overlay_2"
       },
       "locked": {
-        "lastModified": 1757687066,
+        "lastModified": 1757696397,
         "owner": "chess-seventh",
         "repo": "rusty-commit-saver",
-        "rev": "0fc66caa722a141659d46b7b7527f2746f0b316e",
+        "rev": "13e845ec6f779153079b82cc22acfeaf2d445216",
         "type": "github"
       },
       "original": {
         "owner": "chess-seventh",
-        "ref": "master",
+        "ref": "v2.1.0",
         "repo": "rusty-commit-saver",
         "type": "github"
       }

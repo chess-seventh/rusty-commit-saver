@@ -61,8 +61,9 @@
   git-hooks.hooks = {
     rusty-commit-saver = {
       enable = true;
-      name = "Rusty Commit Saver";
+      name = "🦀 Rusty Commit Saver";
       stages = [ "post-commit" ];
+      after = [ "commitizen" "gitlint" "gptcommit" ];
       entry = "${
           inputs.rusty-commit-saver.packages.${pkgs.system}.default
         }/bin/rusty-commit-saver";
@@ -70,55 +71,97 @@
       language = "system";
       always_run = true;
     };
-    check-merge-conflicts.enable = true;
 
-    detect-aws-credentials.enable = true;
+    check-merge-conflicts = {
+      name = "🔒 Check Merge Conflicts";
+      enable = true;
+      stages = [ "pre-commit" ];
+    };
 
-    detect-private-keys.enable = true;
+    detect-aws-credentials = {
+      name = "💭 Detect AWS Credentials";
+      enable = true;
+      stages = [ "pre-commit" ];
+    };
 
-    end-of-file-fixer.enable = true;
+    detect-private-keys = {
+      name = "🔑 Detect Private Keys";
+      enable = true;
+      stages = [ "pre-commit" ];
+    };
 
-    mixed-line-endings.enable = true;
+    end-of-file-fixer = {
+      name = "🔚 End of File Fixer";
+      enable = true;
+      stages = [ "pre-commit" ];
+    };
 
-    no-commit-to-branch.enable = true;
+    mixed-line-endings = {
+      name = "🔀 Mixed Line Endings";
+      enable = true;
+      stages = [ "pre-commit" ];
+    };
+
+    trim-trailing-whitespace = {
+      name = "✨ Trim Trailing Whitespace";
+      enable = true;
+      stages = [ "pre-commit" ];
+    };
+
+    shellcheck = {
+      name = "✨ Shell Check";
+      enable = true;
+      stages = [ "pre-commit" ];
+    };
+
+    mdsh = {
+      enable = true;
+      name = "✨ MDSH";
+      stages = [ "pre-commit" ];
+    };
 
     treefmt = {
+      name = "🌲 TreeFMT";
       enable = true;
       settings.formatters = [
         pkgs.nixfmt-classic
         pkgs.deadnix
         pkgs.yamlfmt
-        pkgs.toml-sort
         pkgs.rustfmt
+        pkgs.toml-sort
       ];
-      always_run = true;
       stages = [ "pre-commit" ];
     };
 
-    trim-trailing-whitespace.enable = true;
-
-    mdsh = {
-      enable = true;
-      always_run = true;
-    };
-
     clippy = {
+      name = "✂️ Clippy";
       enable = true;
       settings.allFeatures = true;
       extraPackages = [ pkgs.openssl ];
+      stages = [ "pre-commit" ];
     };
 
-    commitizen.enable = true;
+    commitizen = {
+      name = "✨ Commitizen";
+      enable = true;
+      stages = [ "post-commit" ];
+    };
 
-    gptcommit = { enable = true; };
+    gptcommit = {
+      name = "🤖 GPT Commit";
+      enable = true;
+    };
 
     gitlint = {
+      name = "✨ GitLint";
       enable = true;
       after = [ "gptcommit" ];
     };
 
     markdownlint = {
+      name = "✨ MarkdownLint";
       enable = true;
+      stages = [ "pre-commit" ];
       settings.configuration = {
         MD033 = false;
         MD013 = {
