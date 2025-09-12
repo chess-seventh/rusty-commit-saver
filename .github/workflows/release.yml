@@ -2,10 +2,8 @@ name: Release
 on:
   push:
     branches: [master]
-
 env:
   CARGO_TERM_COLOR: always
-
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -13,13 +11,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
-
       - name: Install cargo-edit
         run: cargo install cargo-edit
-
       - name: Conventional Changelog Action
         id: changelog
         uses: TriPSs/conventional-changelog-action@v5
@@ -34,13 +29,11 @@ jobs:
           version-file: "Cargo.toml"
           version-path: "package.version"
           create-summary: "true"
-
       - name: Update Cargo.toml version
         if: ${{ steps.changelog.outputs.skipped == 'false' }}
         run: |
           cargo set-version ${{ steps.changelog.outputs.version }}
           cargo build --verbose
-
       # - name: Build and Publish to crates.io
       #   if: ${{ steps.changelog.outputs.skipped == 'false' }}
       #   env:
@@ -48,7 +41,6 @@ jobs:
       #   run: |
       #     cargo build --release
       #     cargo publish
-
       - name: Create Release
         if: ${{ steps.changelog.outputs.skipped == 'false' }}
         uses: ncipollo/release-action@v1
