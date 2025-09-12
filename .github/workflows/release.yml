@@ -1,4 +1,4 @@
-name: Release
+name: 🎯 Release
 on:
   push:
     branches: [master]
@@ -33,6 +33,7 @@ jobs:
         if: ${{ steps.changelog.outputs.skipped == 'false' }}
         run: |
           cargo set-version ${{ steps.changelog.outputs.version }}
+          cargo update
           cargo build --verbose
       - name: Create Release
         if: ${{ steps.changelog.outputs.skipped == 'false' }}
