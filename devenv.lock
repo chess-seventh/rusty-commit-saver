@@ -31,6 +31,23 @@
         "type": "github"
       }
     },
+    "flake-utils": {
+      "inputs": {
+        "systems": "systems"
+      },
+      "locked": {
+        "lastModified": 1731533236,
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "rev": "11707dc2f618dd54ca8739b309ec4fc024de578b",
+        "type": "github"
+      },
+      "original": {
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "type": "github"
+      }
+    },
     "git-hooks": {
       "inputs": {
         "flake-compat": "flake-compat",
@@ -87,6 +104,36 @@
         "type": "github"
       }
     },
+    "nixpkgs_2": {
+      "locked": {
+        "lastModified": 1757487488,
+        "owner": "nixos",
+        "repo": "nixpkgs",
+        "rev": "ab0f3607a6c7486ea22229b92ed2d355f1482ee0",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nixos",
+        "ref": "nixos-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "nixpkgs_3": {
+      "locked": {
+        "lastModified": 1757651841,
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "ad4e6dd68c30bc8bd1860a27bc6f0c485bd7f3b6",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixpkgs-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
     "root": {
       "inputs": {
         "devenv": "devenv",
@@ -95,7 +142,8 @@
         "pre-commit-hooks": [
           "git-hooks"
         ],
-        "rust-overlay": "rust-overlay"
+        "rust-overlay": "rust-overlay",
+        "rusty-commit-saver": "rusty-commit-saver"
       }
     },
     "rust-overlay": {
@@ -114,6 +162,57 @@
       "original": {
         "owner": "oxalica",
         "repo": "rust-overlay",
+        "type": "github"
+      }
+    },
+    "rust-overlay_2": {
+      "inputs": {
+        "nixpkgs": "nixpkgs_3"
+      },
+      "locked": {
+        "lastModified": 1757644300,
+        "owner": "oxalica",
+        "repo": "rust-overlay",
+        "rev": "591c5ae84f066bdfc9797b217df392d58eafd088",
+        "type": "github"
+      },
+      "original": {
+        "owner": "oxalica",
+        "repo": "rust-overlay",
+        "type": "github"
+      }
+    },
+    "rusty-commit-saver": {
+      "inputs": {
+        "flake-utils": "flake-utils",
+        "nixpkgs": "nixpkgs_2",
+        "rust-overlay": "rust-overlay_2"
+      },
+      "locked": {
+        "lastModified": 1757687066,
+        "owner": "chess-seventh",
+        "repo": "rusty-commit-saver",
+        "rev": "0fc66caa722a141659d46b7b7527f2746f0b316e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "chess-seventh",
+        "ref": "master",
+        "repo": "rusty-commit-saver",
+        "type": "github"
+      }
+    },
+    "systems": {
+      "locked": {
+        "lastModified": 1681028828,
+        "owner": "nix-systems",
+        "repo": "default",
+        "rev": "da67096a3b9bf56a91d16901293e51ba5b49a27e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-systems",
+        "repo": "default",
         "type": "github"
       }
     }

@@ -59,6 +59,17 @@
   };
 
   git-hooks.hooks = {
+    rusty-commit-saver = {
+      enable = true;
+      name = "Rusty Commit Saver";
+      stages = [ "post-commit" ];
+      entry = "${
+          inputs.rusty-commit-saver.packages.${pkgs.system}.default
+        }/bin/rusty-commit-saver";
+      pass_filenames = false;
+      language = "system";
+      always_run = true;
+    };
     check-merge-conflicts.enable = true;
 
     detect-aws-credentials.enable = true;
@@ -162,6 +173,11 @@
   };
 
   enterShell = ''
+    echo "Sourcing .env with evaluated command substitution…"
+    if [ -f ".env" ]; then
+      eval "$(<.env)"
+    fi
+
     echo
     echo 💡 Helper scripts to ease development process:
     echo

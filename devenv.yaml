@@ -6,4 +6,6 @@ inputs:
     inputs:
       nixpkgs:
         follows: nixpkgs
+  rusty-commit-saver:
+    url: github:chess-seventh/rusty-commit-saver?ref=master
 backend: nix
