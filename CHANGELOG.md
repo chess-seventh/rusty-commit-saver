@@ -1,3 +1,12 @@
+# [2.1.0](https://github.com/chess-seventh/rusty-commit-saver/compare/v2.0.2...v2.1.0) (2025-09-12)
+
+
+### Features
+
+* Streamline commit message extraction ([83d0783](https://github.com/chess-seventh/rusty-commit-saver/commit/83d0783263d802149e97b1b0665324c0427bb2a8))
+
+
+
 ## [2.0.2](https://github.com/chess-seventh/rusty-commit-saver/compare/v2.0.1...v2.0.2) (2025-09-12)
 
 
