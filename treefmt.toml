@@ -1,7 +1,5 @@
 allow-missing-formatter = true
-
 verbose = 1
-
 walk = "git"
 
 [formatter.nixfmt-classic]
@@ -15,6 +13,12 @@ command = "rustfmt"
 excludes = []
 includes = ["*.rs"]
 options = ["--config", "skip_children=true", "--edition", "2024"]
+
+[formatter.toml-sort]
+command = "toml-sort"
+excludes = []
+includes = ["*.toml"]
+options = ["-i"]
 
 [formatter.yamlfmt]
 command = "yamlfmt"

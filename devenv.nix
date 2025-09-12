@@ -84,7 +84,13 @@
 
     treefmt = {
       enable = true;
-      settings.formatters = [ pkgs.nixfmt-classic pkgs.deadnix pkgs.yamlfmt ];
+      settings.formatters = [
+        pkgs.nixfmt-classic
+        pkgs.deadnix
+        pkgs.yamlfmt
+        pkgs.toml-sort
+        pkgs.rustfmt
+      ];
       always_run = true;
       stages = [ "pre-commit" ];
     };
