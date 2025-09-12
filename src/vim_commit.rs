@@ -1,5 +1,4 @@
 use chrono::DateTime;
-use chrono::NaiveDateTime;
 use chrono::Utc;
 use git2::Repository;
 use std::env;
@@ -41,10 +40,7 @@ impl Default for CommitSaver {
             },
             commit_datetime: {
                 let commit_date: i64 = commit.time().seconds();
-                DateTime::from_utc(
-                    NaiveDateTime::from_timestamp_opt(commit_date, 0).unwrap(),
-                    Utc,
-                )
+                DateTime::from_timestamp(commit_date, 0).unwrap()
             },
         }
     }

@@ -4,8 +4,6 @@
   dotenv.enable = true;
 
   env.GREET = "Welcome to the Rusty CV Commit Saver";
-  # env.OPENSSL_DIR="${pkgs.openssl.dev}";
-  # env.OPENSSL_LIB_DIR="${pkgs.openssl.out}/lib";
 
   starship = {
     enable = true;
@@ -15,15 +13,11 @@
     };
   };
 
-  # https://devenv.sh/packages/
   packages = with pkgs; [
     git
     jq
     curl
     gnused
-    # pkgs.rustup
-    # pkgs.rust-analyzer
-    # ruststable
     zlib
     sqlite
     texlive.combined.scheme-small
@@ -32,12 +26,9 @@
     cargo-nextest
     cargo-shear
     cargo-llvm-cov
-    # cmake
-    # gcc
-    # openssl
+    rustup
   ];
 
-  # https://devenv.sh/languages/
   languages = {
     nix.enable = true;
 
@@ -58,7 +49,6 @@
     shell.enable = true;
   };
 
-  # https://devenv.sh/processes/
   processes = { cargo-watch.exec = "cargo-watch"; };
 
   tasks = {
@@ -81,8 +71,6 @@
 
     no-commit-to-branch.enable = true;
 
-    # typos.enable = true;
-
     treefmt = {
       enable = true;
       settings.formatters = [ pkgs.nixfmt-classic pkgs.deadnix pkgs.yamlfmt ];
@@ -104,8 +92,6 @@
 
     clippy = {
       enable = true;
-      packageOverrides.cargo = pkgs.cargo;
-      packageOverrides.clippy = pkgs.clippy;
       # some hooks provide settings
       settings.allFeatures = true;
       extraPackages = [ pkgs.openssl ];
@@ -185,6 +171,4 @@
     EOF
     echo
   '';
-
-  # See full reference at https://devenv.sh/reference/options/
 }

@@ -84,7 +84,8 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let current_directory = env::current_dir().unwrap();
     let mut entry_directory_and_path = home_dir().unwrap();
-    entry_directory_and_path.push(".vimwiki");
+    entry_directory_and_path.push("Documents");
+    entry_directory_and_path.push("Wiki");
 
     if current_directory == entry_directory_and_path {
         info!("[INFO] No need to save the commit here ......................");
@@ -110,7 +111,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             entry_directory_and_path.as_os_str().to_str().unwrap(),
             &mut commit_saver_struct,
         )?;
-    };
+    }
 
     // write commit
     match commit_saver_struct.append_entry_to_diary(&entry_directory_and_path) {
