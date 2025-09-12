@@ -102,14 +102,8 @@
       always_run = true;
     };
 
-    rustfmt = {
-      enable = true;
-      always_run = true;
-    };
-
     clippy = {
       enable = true;
-      # some hooks provide settings
       settings.allFeatures = true;
       extraPackages = [ pkgs.openssl ];
     };
