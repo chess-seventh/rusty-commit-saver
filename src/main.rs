@@ -73,8 +73,8 @@ fn create_diary_file(
 fn create_directories_for_new_entry(entry_directory_and_path: &Path) -> Result<(), Box<dyn Error>> {
     let parent_dirs = get_parent_from_full_path(entry_directory_and_path)?;
     fs::create_dir_all(parent_dirs)?;
-    info!("[INFO] Creating diary file & path ...........................");
-    println!("[INFO] Creating diary file & path ...........................");
+    info!("[INFO] Creating diary file & path ");
+    println!("[INFO] Creating diary file & path ");
 
     Ok(())
 }
@@ -88,8 +88,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     entry_directory_and_path.push("Wiki");
 
     if current_directory == entry_directory_and_path {
-        info!("[INFO] No need to save the commit here ......................");
-        println!("[INFO] No need to save the commit here ......................");
+        info!("[INFO] No need to save the commit here ");
+        println!("[INFO] No need to save the commit here ");
         return Ok(());
     }
 
@@ -99,13 +99,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     let tmp = &entry_directory_and_path.as_os_str().to_str().unwrap();
 
     if let Ok(()) = check_diary_path_exists(&entry_directory_and_path) {
-        info!("[INFO] Diary file/path exists ...............................");
-        info!("[INFO] {tmp:} ...............................");
-        println!("[INFO] Diary file/path exists ...............................");
-        println!("[INFO] {tmp:} ...............................");
+        info!("[INFO] Diary file/path exists ");
+        info!("[INFO] {tmp:} ");
+        println!("[INFO] Diary file/path exists ");
+        println!("[INFO] {tmp:} ");
     } else {
-        info!("[INFO] Diary file/path DOES NOT exist .......................");
-        println!("[INFO] Diary file/path DOES NOT exist .......................");
+        info!("[INFO] Diary file/path DOES NOT exist ");
+        println!("[INFO] Diary file/path DOES NOT exist ");
         create_directories_for_new_entry(&entry_directory_and_path)?;
         create_diary_file(
             entry_directory_and_path.as_os_str().to_str().unwrap(),
@@ -116,8 +116,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     // write commit
     match commit_saver_struct.append_entry_to_diary(&entry_directory_and_path) {
         Ok(()) => {
-            info!("[INFO] Commit logged in .....................................");
-            println!("[INFO] Commit logged in .....................................");
+            info!("[INFO] Commit logged in ");
+            println!("[INFO] Commit logged in ");
             Ok(())
         }
         Err(e) => {
