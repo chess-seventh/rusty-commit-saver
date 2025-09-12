@@ -86,6 +86,8 @@
     treefmt = {
       enable = true;
       settings.formatters = [ pkgs.nixfmt-classic pkgs.deadnix ];
+      always_run = true;
+      stages = ["pre-commit"];
     };
 
     trim-trailing-whitespace.enable = true;
