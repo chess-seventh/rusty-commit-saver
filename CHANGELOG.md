@@ -1,3 +1,15 @@
+# [1.0.0](https://github.com/chess-seventh/rusty-commit-saver/compare/v0.2.4...v1.0.0) (2025-09-12)
+
+
+* feat!: Rename package to 'rusty-commit-saver' ([cde93cd](https://github.com/chess-seventh/rusty-commit-saver/commit/cde93cd0c6ac6d00fc5345d951a07c88fa33f1f2))
+
+
+### BREAKING CHANGES
+
+* Rename the crate to rusty-commit-saver.
+
+
+
 ## [0.2.4](https://github.com/chess-seventh/rusty-commit-saver/compare/v0.2.3...v0.2.4) (2025-09-12)
 
 
