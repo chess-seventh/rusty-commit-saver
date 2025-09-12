@@ -28,7 +28,7 @@ and appends it to a dated diary entry in your Wiki directory.
 1. Clone the repository
 
    ```bash
-   git clone https://github.com/your-username/rusty-commit-saver.git
+   git clone https://github.com/chess-seventh/rusty-commit-saver.git
    cd rusty-commit-saver
    ```
 
@@ -65,7 +65,7 @@ If you prefer manual invocation:
 rusty-commit-saver
 ```
 
-Your commit will be appended to:
+Your commit will be appended to, where Obsidian should be:
 
 ```text
 ~/Documents/Wiki/📅 Diaries/0. Commits/YYYY/MM-MMMM/YYYY-MM-DD.md
@@ -86,10 +86,9 @@ Your commit will be appended to:
 
 There are **many enhancements** planned:
 
-- Support for configurable output formats (CSV, JSON)
-- Parallel commit logging across multiple repos
+- Configurable Obsidian path
+- Configurable year/day/month on where to save the commit
 - Interactive CLI flags and richer metadata (author, files changed)
-- Integration with other note-taking systems (Logseq, Joplin)
 - Improved error handling and user feedback
 - Unit tests and CI pipeline for automated releases
 

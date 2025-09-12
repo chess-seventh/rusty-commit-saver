@@ -1,5 +1,5 @@
 [package]
-name = "git-saver"
+name = "rusty-commit-saver"
 version = "0.2.4"
 edition = "2024"
 authors = ["chess7th"]

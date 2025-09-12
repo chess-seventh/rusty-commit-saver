@@ -180,18 +180,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "git-saver"
-version = "0.2.3"
-dependencies = [
- "chrono",
- "dirs",
- "emojis",
- "git2",
- "log",
- "markup",
-]
-
-[[package]]
 name = "git2"
 version = "0.20.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -558,6 +546,18 @@ dependencies = [
  "getrandom",
  "libredox",
  "thiserror",
+]
+
+[[package]]
+name = "rusty-commit-saver"
+version = "0.2.4"
+dependencies = [
+ "chrono",
+ "dirs",
+ "emojis",
+ "git2",
+ "log",
+ "markup",
 ]
 
 [[package]]
