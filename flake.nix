@@ -23,7 +23,7 @@
       in {
         packages.default = rustPlatform.buildRustPackage {
           pname = "rusty-commit-saver";
-          version = "0.1.0";
+          version = "0.2.4";
           src = ./.;
           cargoLock.lockFile = ./Cargo.lock;
 

@@ -34,13 +34,6 @@ jobs:
         run: |
           cargo set-version ${{ steps.changelog.outputs.version }}
           cargo build --verbose
-      # - name: Build and Publish to crates.io
-      #   if: ${{ steps.changelog.outputs.skipped == 'false' }}
-      #   env:
-      #     CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
-      #   run: |
-      #     cargo build --release
-      #     cargo publish
       - name: Create Release
         if: ${{ steps.changelog.outputs.skipped == 'false' }}
         uses: ncipollo/release-action@v1
