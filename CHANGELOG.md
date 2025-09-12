@@ -1,4 +1,8 @@
-# 0.2.0 (2025-09-12)
+## [0.2.1](https://github.com/chess-seventh/rusty-commit-saver/compare/v0.2.0...v0.2.1) (2025-09-12)
+
+
+
+# [0.2.0](https://github.com/chess-seventh/rusty-commit-saver/compare/f44957ce49a7978a846b04b170bddef9c96f75ed...v0.2.0) (2025-09-12)
 
 
 ### Bug Fixes
