@@ -11,5 +11,5 @@ chrono = { version = "0.4.23", features = ["serde"] }
 dirs = "4.0.0"
 emojis = "0.6.1"
 git2 = "0.16.1"
-log = "0.4.20"
+log = "0.4.28"
 markup = "0.15.0"
