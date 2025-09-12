@@ -85,18 +85,22 @@
 
     treefmt = {
       enable = true;
-      settings.formatters = [ pkgs.nixfmt-classic pkgs.deadnix ];
+      settings.formatters = [ pkgs.nixfmt-classic pkgs.deadnix pkgs.yamlfmt ];
       always_run = true;
-      stages = ["pre-commit"];
+      stages = [ "pre-commit" ];
     };
 
     trim-trailing-whitespace.enable = true;
 
-    shellcheck.enable = true;
+    mdsh = {
+      enable = true;
+      always_run = true;
+    };
 
-    mdsh.enable = true;
-
-    rustfmt.enable = true;
+    rustfmt = {
+      enable = true;
+      always_run = true;
+    };
 
     clippy = {
       enable = true;
@@ -166,7 +170,7 @@
         cargo fmt --all --check
         cargo clippy --all-targets -- -D warnings
         cargo shear --fix
-        cargo llvm-cov --html nextest --no-fail-fast 
+        cargo llvm-cov --html nextest --no-fail-fast
       '';
     };
   };
