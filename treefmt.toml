@@ -15,3 +15,9 @@ command = "rustfmt"
 excludes = []
 includes = ["*.rs"]
 options = ["--config", "skip_children=true", "--edition", "2024"]
+
+[formatter.yamlfmt]
+command = "yamlfmt"
+excludes = []
+includes = ["*.yaml", "*.yml"]
+options = []
