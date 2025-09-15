@@ -7,10 +7,10 @@ use vim_commit::CommitSaver;
 pub mod config;
 // use config::GlobalVars;
 // use config::UserInput;
+use crate::config::retrieve_config_file_path;
 use crate::vim_commit::check_diary_path_exists;
 use crate::vim_commit::create_diary_file;
 use crate::vim_commit::create_directories_for_new_entry;
-use crate::vim_commit::retrieve_config_file_path;
 
 // use clap::Parser;
 use dirs::home_dir;
@@ -30,6 +30,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut commit_saver_struct = CommitSaver::new();
 
     let current_directory = env::current_dir().unwrap();
+
     let mut entry_directory_and_path = home_dir().unwrap();
     entry_directory_and_path.push("Documents");
     entry_directory_and_path.push("Wiki");

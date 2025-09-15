@@ -1,7 +1,5 @@
-use crate::config::UserInput;
 use chrono::DateTime;
 use chrono::Utc;
-use clap::Parser;
 use git2::Repository;
 use log::info;
 use std::env;
@@ -174,26 +172,6 @@ pub fn create_diary_file(
     fs::write(full_diary_file_path, template)?;
 
     Ok(())
-}
-
-/// Function to retrieve the config file, should be either:
-/// defined in CLI  (TODO)
-/// defaults to $HOME/.config/rusty-commit-saver/rusty-commit-saver.ini
-pub fn retrieve_config_file_path() -> String {
-    get_or_default_config_ini_path()
-}
-
-pub fn get_or_default_config_ini_path() -> String {
-    let args = UserInput::parse();
-
-    match args.config_ini {
-        Some(cfg_str) => cfg_str,
-        None => get_default_ini_path(),
-    }
-}
-
-pub fn get_default_ini_path() -> String {
-    "~/.config/rusty-commit-saver/rusty-commit-saver.ini".to_string()
 }
 
 // CommitSaver tests
