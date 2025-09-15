@@ -207,7 +207,7 @@
             source .env.testing
         fi
 
-        cargo fmt --all --check
+        treefmt
         cargo clippy --all-targets -- -D warnings
         cargo shear --fix
         cargo llvm-cov --html nextest --no-fail-fast
