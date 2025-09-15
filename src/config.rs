@@ -1,6 +1,5 @@
 use std::path::PathBuf;
 
-use chrono::{DateTime, Local};
 use clap::Parser;
 use configparser::ini::Ini;
 use once_cell::sync::OnceCell;
@@ -8,8 +7,6 @@ use once_cell::sync::OnceCell;
 #[derive(Debug, Default)]
 pub struct GlobalVars {
     pub config: OnceCell<Ini>,
-    pub today: OnceCell<DateTime<Local>>,
-
     pub obsidian_root_path_dir: OnceCell<PathBuf>,
     pub obisidian_commit_path: OnceCell<PathBuf>,
 
@@ -21,7 +18,6 @@ impl GlobalVars {
     pub fn new() -> Self {
         GlobalVars {
             config: OnceCell::new(),
-            today: OnceCell::new(),
             obsidian_root_path_dir: OnceCell::new(),
             obisidian_commit_path: OnceCell::new(),
             template_commit_date_path: OnceCell::new(),
@@ -29,15 +25,12 @@ impl GlobalVars {
         }
     }
 
-    pub fn set_all(&self, today: DateTime<Local>) -> &Self {
+    pub fn set_all(&self) -> &Self {
         let config = get_ini_file();
 
         self.config
             .set(config)
             .expect("Coulnd't set config in GlobalVars");
-        self.today
-            .set(today)
-            .expect("Couldn't set today in GlobalVars");
 
         self.set_obsidian_vars();
 
@@ -192,7 +185,6 @@ mod global_vars_tests {
         let global_vars = GlobalVars::new();
 
         assert!(global_vars.config.get().is_none());
-        assert!(global_vars.today.get().is_none());
     }
 
     #[test]
@@ -200,7 +192,6 @@ mod global_vars_tests {
         let global_vars = GlobalVars::default();
 
         assert!(global_vars.config.get().is_none());
-        assert!(global_vars.today.get().is_none());
     }
 
     // #[test]

@@ -5,12 +5,11 @@
 pub mod vim_commit;
 use vim_commit::CommitSaver;
 pub mod config;
-// use config::GlobalVars;
-// use config::UserInput;
 use crate::config::retrieve_config_file_path;
 use crate::vim_commit::check_diary_path_exists;
 use crate::vim_commit::create_diary_file;
 use crate::vim_commit::create_directories_for_new_entry;
+use config::GlobalVars;
 
 // use clap::Parser;
 use dirs::home_dir;
@@ -25,7 +24,9 @@ use std::error::Error;
 fn main() -> Result<(), Box<dyn Error>> {
     let config_ini = retrieve_config_file_path();
     println!("{config_ini:}");
-    // return Ok(());
+
+    let global_vars = GlobalVars::new();
+    global_vars.set_all();
 
     let mut commit_saver_struct = CommitSaver::new();
 
