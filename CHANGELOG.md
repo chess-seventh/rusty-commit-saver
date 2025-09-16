@@ -1,3 +1,12 @@
+# [3.1.0](https://github.com/chess-seventh/rusty-commit-saver/compare/v3.0.0...v3.1.0) (2025-09-16)
+
+
+### Features
+
+* Enhance diary path handling and logging ([b2565d3](https://github.com/chess-seventh/rusty-commit-saver/commit/b2565d382d85613c852373e8e84a4e2948db5d32))
+
+
+
 # [3.0.0](https://github.com/chess-seventh/rusty-commit-saver/compare/v2.2.1...v3.0.0) (2025-09-16)
 
 
