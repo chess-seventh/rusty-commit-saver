@@ -5,74 +5,63 @@
 pub mod vim_commit;
 use vim_commit::CommitSaver;
 pub mod config;
-use crate::config::retrieve_config_file_path;
 use crate::vim_commit::check_diary_path_exists;
 use crate::vim_commit::create_diary_file;
 use crate::vim_commit::create_directories_for_new_entry;
 use config::GlobalVars;
 
-// use clap::Parser;
-use dirs::home_dir;
 use log::error;
 use log::info;
-use std::env;
 use std::error::Error;
-// use std::fs;
-// use std::path::Path;
-// use std::path::PathBuf;
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let config_ini = retrieve_config_file_path();
-    println!("{config_ini:}");
-
+    env_logger::init();
+    info!("[main()]: Instanciating GlobalVars Struct.");
     let global_vars = GlobalVars::new();
     global_vars.set_all();
 
+    info!("[main()]: Retrieving values from GlobalVars Struct.");
+    let mut obsidian_root_path_dir = global_vars.get_obsidian_root_path_dir();
+    let obsidian_commit_path = global_vars.get_obsidian_commit_path();
+    let template_commit_date_path = global_vars.get_template_commit_date_path();
+    let _template_commit_datetime = global_vars.get_template_commit_datetime();
+
+    info!("[main()]: Instanciating CommitSsaver Struct");
     let mut commit_saver_struct = CommitSaver::new();
 
-    let current_directory = env::current_dir().unwrap();
+    info!("[main()]: Preparing the diary entry path to the new commit.");
+    let diary_entry_path = commit_saver_struct
+        .prepare_path_for_commit(&obsidian_commit_path, &template_commit_date_path);
 
-    let mut entry_directory_and_path = home_dir().unwrap();
-    entry_directory_and_path.push("Documents");
-    entry_directory_and_path.push("Wiki");
+    obsidian_root_path_dir.push(diary_entry_path);
 
-    if current_directory == entry_directory_and_path {
-        info!("[INFO] No need to save the commit here ");
-        println!("[INFO] No need to save the commit here ");
-        return Ok(());
-    }
+    let tmp = &obsidian_root_path_dir.as_os_str().to_str().unwrap();
 
-    let diary_entry_path = commit_saver_struct.prepare_path_for_commit();
-    entry_directory_and_path.push(diary_entry_path);
-
-    let tmp = &entry_directory_and_path.as_os_str().to_str().unwrap();
-
-    if let Ok(()) = check_diary_path_exists(&entry_directory_and_path) {
-        info!("[INFO] Diary file/path exists ");
-        info!("[INFO] {tmp:} ");
-        println!("[INFO] Diary file/path exists ");
-        println!("[INFO] {tmp:} ");
+    info!("[main()] Checking if Diary file and/or path exists.");
+    if let Ok(()) = check_diary_path_exists(&obsidian_root_path_dir) {
+        info!("[main()] Diary file and path exists: {tmp:}");
     } else {
-        info!("[INFO] Diary file/path DOES NOT exist ");
-        println!("[INFO] Diary file/path DOES NOT exist ");
-        create_directories_for_new_entry(&entry_directory_and_path)?;
+        info!("[main()] Diary file and or path DO NOT exist.");
+        info!("[main()] Creating the directories for the new entry.");
+        create_directories_for_new_entry(&obsidian_root_path_dir)?;
+
+        info!("[main()] Creating the files for the new entry.");
         create_diary_file(
-            entry_directory_and_path.as_os_str().to_str().unwrap(),
+            obsidian_root_path_dir.as_os_str().to_str().unwrap(),
             &mut commit_saver_struct,
         )?;
     }
 
     // write commit
-    match commit_saver_struct.append_entry_to_diary(&entry_directory_and_path) {
+    info!("[main()] Logging the commit in the file.");
+    match commit_saver_struct.append_entry_to_diary(&obsidian_root_path_dir) {
         Ok(()) => {
-            info!("[INFO] Commit logged in ");
-            println!("[INFO] Commit logged in ");
+            info!("[main] Commit logged in ");
             Ok(())
         }
         Err(e) => {
-            error!("[ERROR] {e:}");
-            println!("[ERROR] {e:}");
-            panic!("Something went wrong when writing the commit to the file");
+            error!("[main] {e:}");
+            panic!("[main]: Something went wrong when writing the commit to the file");
         }
     }
 }
