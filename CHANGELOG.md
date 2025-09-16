@@ -1,3 +1,34 @@
+# [3.0.0](https://github.com/chess-seventh/rusty-commit-saver/compare/v2.2.1...v3.0.0) (2025-09-16)
+
+
+* Clap Improvement and Logging (#9) ([7d00fad](https://github.com/chess-seventh/rusty-commit-saver/commit/7d00fad9a0be2a76babdfef92a11506a8ba2bba8)), closes [#9](https://github.com/chess-seventh/rusty-commit-saver/issues/9)
+
+
+### BREAKING CHANGES
+
+* Adds Clap support to define configuration values
+
+* refactor: Streamline date handling in config
+
+- Remove `chrono` dependency and related `today` field from `GlobalVars`
+- Update `set_all` function and test cases accordingly
+- Clean up unused code and comments from `main.rs`
+
+* feat: Enhance logging and error handling across app
+
+- Remove `emojis` dependency and integrate `env_logger` to enhance
+  logging capabilities across various modules.
+- Standardize error and debug logging in key components such as
+  `vim_commit.rs` and `src/config.rs`.
+- Enhance configuration management and dynamic path resolution using
+  structured path construction from `GlobalVars`.
+- Refactor integration tests by disabling certain tests and commenting
+  out code sections related to diary file manipulations.
+- Improve error handling and logging details during configuration
+  retrieval and path checks.
+
+
+
 ## [2.2.1](https://github.com/chess-seventh/rusty-commit-saver/compare/v2.2.0...v2.2.1) (2025-09-12)
 
 
