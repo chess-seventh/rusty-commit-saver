@@ -170,10 +170,10 @@
         "nixpkgs": "nixpkgs_3"
       },
       "locked": {
-        "lastModified": 1757644300,
+        "lastModified": 1757989933,
         "owner": "oxalica",
         "repo": "rust-overlay",
-        "rev": "591c5ae84f066bdfc9797b217df392d58eafd088",
+        "rev": "8249aa3442fb9b45e615a35f39eca2fe5510d7c3",
         "type": "github"
       },
       "original": {
@@ -189,10 +189,10 @@
         "rust-overlay": "rust-overlay_2"
       },
       "locked": {
-        "lastModified": 1758009450,
+        "lastModified": 1758011383,
         "owner": "chess-seventh",
         "repo": "rusty-commit-saver",
-        "rev": "065d36445cd4de188eb33ec22e3e353a9bc2efac",
+        "rev": "47e376f277bd0288cc355e3200e99be19424068b",
         "type": "github"
       },
       "original": {
