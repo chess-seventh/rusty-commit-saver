@@ -1,4 +1,5 @@
 use log::{error, info};
+
 use std::{
     fs,
     path::{Path, PathBuf},
@@ -12,6 +13,7 @@ use once_cell::sync::OnceCell;
 #[derive(Debug, Default)]
 pub struct GlobalVars {
     config: OnceCell<Ini>,
+
     obsidian_root_path_dir: OnceCell<PathBuf>,
     obsidian_commit_path: OnceCell<PathBuf>,
 
@@ -24,8 +26,10 @@ impl GlobalVars {
         info!("[GlobalVars::new()] Creating new GlobalVars with OnceCell default values.");
         GlobalVars {
             config: OnceCell::new(),
+
             obsidian_root_path_dir: OnceCell::new(),
             obsidian_commit_path: OnceCell::new(),
+
             template_commit_date_path: OnceCell::new(),
             template_commit_datetime: OnceCell::new(),
         }

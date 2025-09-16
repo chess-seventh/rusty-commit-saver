@@ -4,10 +4,11 @@
 
 pub mod vim_commit;
 use vim_commit::CommitSaver;
+use vim_commit::check_diary_path_exists;
+use vim_commit::create_diary_file;
+use vim_commit::create_directories_for_new_entry;
+
 pub mod config;
-use crate::vim_commit::check_diary_path_exists;
-use crate::vim_commit::create_diary_file;
-use crate::vim_commit::create_directories_for_new_entry;
 use config::GlobalVars;
 
 use log::error;
@@ -33,34 +34,37 @@ fn main() -> Result<(), Box<dyn Error>> {
     let diary_entry_path = commit_saver_struct
         .prepare_path_for_commit(&obsidian_commit_path, &template_commit_date_path);
 
-    obsidian_root_path_dir.push(diary_entry_path);
+    // let splitted_diary_path = diary_entry_path.split('/');
 
-    let tmp = &obsidian_root_path_dir.as_os_str().to_str().unwrap();
-
-    info!("[main()] Checking if Diary file and/or path exists.");
-    if let Ok(()) = check_diary_path_exists(&obsidian_root_path_dir) {
-        info!("[main()] Diary file and path exists: {tmp:}");
-    } else {
-        info!("[main()] Diary file and or path DO NOT exist.");
-        info!("[main()] Creating the directories for the new entry.");
-        create_directories_for_new_entry(&obsidian_root_path_dir)?;
-
-        info!("[main()] Creating the files for the new entry.");
-        create_diary_file(
-            obsidian_root_path_dir.as_os_str().to_str().unwrap(),
-            &mut commit_saver_struct,
-        )?;
+    for directory in diary_entry_path.split('/') {
+        obsidian_root_path_dir.push(directory);
     }
 
-    // write commit
-    info!("[main()] Logging the commit in the file.");
+    let stringed_root_path_dir = &obsidian_root_path_dir
+        .as_os_str()
+        .to_str()
+        .expect("[main()]: Should have been able to transform obsidian_root_path_dir into str.");
+
+    info!("[main()]: Checking if Diary file and/or path exists.");
+    if let Ok(()) = check_diary_path_exists(&obsidian_root_path_dir) {
+        info!("[main()]: Diary file and path exists: {stringed_root_path_dir:}");
+    } else {
+        info!("[main()]: Diary file and or path DO NOT exist.");
+        info!("[main()]: Creating the directories for the new entry.");
+        create_directories_for_new_entry(&obsidian_root_path_dir)?;
+
+        info!("[main()]: Creating the files for the new entry.");
+        create_diary_file(stringed_root_path_dir, &mut commit_saver_struct)?;
+    }
+
+    info!("[main()]: Writing the commit in the file.");
     match commit_saver_struct.append_entry_to_diary(&obsidian_root_path_dir) {
         Ok(()) => {
-            info!("[main] Commit logged in ");
+            info!("[main]: Commit logged in ");
             Ok(())
         }
         Err(e) => {
-            error!("[main] {e:}");
+            error!("[main]: {e:}");
             panic!("[main]: Something went wrong when writing the commit to the file");
         }
     }

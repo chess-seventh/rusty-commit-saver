@@ -3,10 +3,10 @@
     "devenv": {
       "locked": {
         "dir": "src/modules",
-        "lastModified": 1757570236,
+        "lastModified": 1757928168,
         "owner": "cachix",
         "repo": "devenv",
-        "rev": "c57bded76fa6a885ab1dee2c75216cc23d58b311",
+        "rev": "d9019631e0e965b78f94a63246863fa7d8315d17",
         "type": "github"
       },
       "original": {
@@ -57,10 +57,10 @@
         ]
       },
       "locked": {
-        "lastModified": 1757588530,
+        "lastModified": 1757974173,
         "owner": "cachix",
         "repo": "git-hooks.nix",
-        "rev": "b084b2c2b6bc23e83bbfe583b03664eb0b18c411",
+        "rev": "302af509428169db34f268324162712d10559f74",
         "type": "github"
       },
       "original": {
@@ -106,10 +106,10 @@
     },
     "nixpkgs_2": {
       "locked": {
-        "lastModified": 1757487488,
+        "lastModified": 1757745802,
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "ab0f3607a6c7486ea22229b92ed2d355f1482ee0",
+        "rev": "c23193b943c6c689d70ee98ce3128239ed9e32d1",
         "type": "github"
       },
       "original": {
@@ -121,10 +121,10 @@
     },
     "nixpkgs_3": {
       "locked": {
-        "lastModified": 1757651841,
+        "lastModified": 1757935978,
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "ad4e6dd68c30bc8bd1860a27bc6f0c485bd7f3b6",
+        "rev": "0b96957fb614f693d0cee1bd65fbfc0e610df47f",
         "type": "github"
       },
       "original": {
@@ -153,10 +153,10 @@
         ]
       },
       "locked": {
-        "lastModified": 1757644300,
+        "lastModified": 1757989933,
         "owner": "oxalica",
         "repo": "rust-overlay",
-        "rev": "591c5ae84f066bdfc9797b217df392d58eafd088",
+        "rev": "8249aa3442fb9b45e615a35f39eca2fe5510d7c3",
         "type": "github"
       },
       "original": {
@@ -189,10 +189,10 @@
         "rust-overlay": "rust-overlay_2"
       },
       "locked": {
-        "lastModified": 1757700060,
+        "lastModified": 1758009450,
         "owner": "chess-seventh",
         "repo": "rusty-commit-saver",
-        "rev": "1fc7260f0f9353f87ca053892a81a74f0b6726ba",
+        "rev": "065d36445cd4de188eb33ec22e3e353a9bc2efac",
         "type": "github"
       },
       "original": {

@@ -1,9 +1,7 @@
 use chrono::DateTime;
 use chrono::Utc;
 use git2::Repository;
-use log::debug;
-use log::error;
-use log::info;
+
 use std::env;
 use std::error::Error;
 use std::fs;
@@ -11,6 +9,11 @@ use std::fs::OpenOptions;
 use std::io::Write;
 use std::path::Path;
 use std::path::PathBuf;
+
+use log::debug;
+use log::error;
+use log::info;
+use log::warn;
 
 #[derive(Debug, Clone)]
 pub struct CommitSaver {
@@ -155,11 +158,15 @@ tags:\n"
 }
 
 pub fn get_parent_from_full_path(full_diary_path: &Path) -> Result<&Path, Box<dyn Error>> {
+    info!(
+        "[get_parent_from_full_path()] Checking if there is parents for: {:}.",
+        full_diary_path.display()
+    );
     if let Some(dir) = full_diary_path.parent() {
         Ok(dir)
     } else {
         error!(
-            "[get_parent_from_full_path]: Something went wrong when getting the parent directory"
+            "[get_parent_from_full_path()]: Something went wrong when getting the parent directory"
         );
         Err("Something went wrong when getting the parent directory".into())
     }
@@ -168,17 +175,21 @@ pub fn get_parent_from_full_path(full_diary_path: &Path) -> Result<&Path, Box<dy
 /// Method to veritfy that the file exists
 /// Will trigger the creation of it with a template if it doesn't
 pub fn check_diary_path_exists(full_diary_path: &PathBuf) -> Result<(), Box<dyn Error>> {
-    info!("[check_diary_path_exists()]: Checking that full_diary_path exists.");
+    info!(
+        "[check_diary_path_exists()]: Checking that full_diary_path exists: {:}",
+        full_diary_path.display()
+    );
     if Path::new(&full_diary_path).exists() {
         return Ok(());
     }
-    error!("[check_diary_path_exists()]: Path does not exist!");
+    warn!("[check_diary_path_exists()]: Path does not exist!");
     Err("Path does not exist!".into())
 }
 
 pub fn create_directories_for_new_entry(
     obsidian_root_path_dir: &Path,
 ) -> Result<(), Box<dyn Error>> {
+    info!("[create_directories_for_new_entry()] Getting parent_dirs.");
     let parent_dirs = get_parent_from_full_path(obsidian_root_path_dir)?;
     fs::create_dir_all(parent_dirs)?;
     info!("[create_directories_for_new_entry()] Creating diary file & path");
