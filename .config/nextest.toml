@@ -1,0 +1,17 @@
+[profile.ci]
+retries = 3
+slow-timeout = {period = "30s", terminate-after = 1}
+
+[profile.default]
+retries = 2
+slow-timeout = {period = "60s", terminate-after = 2}
+leak-timeout = "100ms"
+
+# Test groups for parallel execution
+[[profile.default.overrides]]
+filter = "test(serial)"
+threads-required = 1
+
+[[profile.default.overrides]]
+filter = "test(slow)"
+slow-timeout = {period = "120s"}
