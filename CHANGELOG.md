@@ -1,3 +1,12 @@
+# [3.2.0](https://github.com/chess-seventh/rusty-commit-saver/compare/v3.1.1...v3.2.0) (2025-11-21)
+
+
+### Features
+
+* Update rust-overlay dependency in flake.lock ([c5c1d6c](https://github.com/chess-seventh/rusty-commit-saver/commit/c5c1d6c04b37688f0e40760e1f14298f457ab657))
+
+
+
 ## [3.1.1](https://github.com/chess-seventh/rusty-commit-saver/compare/v3.1.0...v3.1.1) (2025-10-03)
 
 
