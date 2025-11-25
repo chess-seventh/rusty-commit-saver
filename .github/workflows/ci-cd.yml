@@ -36,6 +36,8 @@ jobs:
           tool: nextest,cargo2junit
       - uses: Swatinem/rust-cache@v2
       - name: 🧪 Run tests with JUnit output
+        env:
+          NEXTEST_EXPERIMENTAL_LIBTEST_JSON: 1
         run: |
           cargo nextest run --no-fail-fast --profile ci --message-format libtest-json-plus > test-results.json
           cat test-results.json | cargo2junit > junit.xml
