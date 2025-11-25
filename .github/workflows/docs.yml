@@ -23,11 +23,11 @@ jobs:
           # Generate docs for all items (public + private)
           cargo doc --no-deps --document-private-items
 
-          # Create index.html that redirects to main crate docs
-          echo '<meta http-equiv="refresh" content="0; url=rusty_commit_saver">' > target/doc/index.html
+          # Create .nojekyll to disable Jekyll processing
+          touch target/doc/.nojekyll
 
-          # Optional: Add a custom landing page
-          cat > target/doc/index_temp.html << 'EOF'
+          # Create index.html that redirects to main crate docs
+          cat > target/doc/index.html << 'EOF'
           <!DOCTYPE html>
           <html>
           <head>
@@ -58,17 +58,13 @@ jobs:
           </body>
           </html>
           EOF
-
-          # Use custom landing page
-          mv target/doc/index_temp.html target/doc/index.html
       - name: 📤 Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./target/doc
-          # Deploy to root, not a subdirectory
-          cname: false
-  # Sync README to Wiki (optional - can be removed if you only want rustdoc)
+          force_orphan: true
+  # Sync README to Wiki
   wiki:
     name: 📖 Sync Wiki
     runs-on: ubuntu-latest
@@ -77,7 +73,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: 📖 Clone and update Wiki
         run: |
-          # Clone wiki repository
+          # Clone wiki repository (exit gracefully if wiki doesn't exist yet)
           git clone https://github.com/${{ github.repository }}.wiki.git wiki || exit 0
 
           # Copy README to Wiki home
