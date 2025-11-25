@@ -4,7 +4,7 @@
 
 [![Rust](https://img.shields.io/badge/🦀%20rust-blue)](https://rustlang.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Build Status](https://img.shields.io/github/actions/workflow/status/chess-seventh/rusty-commit-saver/.github/workflows/release.yml?branch=master)](https://github.com/chess-seventh/rusty-commit-saver/actions)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/chess-seventh/rusty-commit-saver/.github/workflows/ci-cd.yml?branch=master)](https://github.com/chess-seventh/rusty-commit-saver/actions)
 [![codecov](https://codecov.io/github/chess-seventh/rusty-commit-saver/graph/badge.svg?token=4ZK40EALQ8)](https://codecov.io/github/chess-seventh/rusty-commit-saver)
 
 </div>

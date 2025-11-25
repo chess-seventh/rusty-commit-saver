@@ -1,0 +1,137 @@
+name: 🚀 CI/CD Pipeline
+on:
+  push:
+    branches: ["master"]
+  pull_request:
+    branches: ["master"]
+env:
+  CARGO_TERM_COLOR: always
+jobs:
+  # ============================================================================
+  # STAGE 1: Quality Checks (run in parallel)
+  # ============================================================================
+  build:
+    name: 🛠️ Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: Swatinem/rust-cache@v2
+      - name: 🛠️ Build
+        run: cargo build --verbose
+  unittest:
+    name: 🧪 Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: 🛠️ Install nextest
+        uses: taiki-e/install-action@v2
+        with:
+          tool: nextest
+      - uses: Swatinem/rust-cache@v2
+      - name: 🧪 Run tests
+        run: cargo nextest run --no-fail-fast
+  clippy:
+    name: ✂️ Clippy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+      - name: ✂️ Clippy
+        run: cargo clippy --all-targets -- -D warnings -W clippy::pedantic
+  cleanup-deps:
+    name: 🧹 Dependency Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: 🛠️ Install cargo-shear
+        run: cargo install cargo-shear
+      - name: 🧹 Check unused dependencies
+        run: cargo shear
+  # ============================================================================
+  # STAGE 2: Coverage (optional, allowed to fail)
+  # ============================================================================
+  coverage:
+    name: 📚 Coverage
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: llvm-tools-preview
+      - uses: Swatinem/rust-cache@v2
+      - name: 🛠️ Install tools
+        uses: taiki-e/install-action@v2
+        with:
+          tool: nextest,cargo-llvm-cov
+      - name: 📚 Collect coverage
+        run: |
+          cargo llvm-cov --no-report nextest --no-fail-fast
+          cargo llvm-cov report --lcov --output-path lcov.info
+      - name: 💭 Upload to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          files: lcov.info
+          token: ${{ secrets.CODECOV_TOKEN }}
+          slug: chess-seventh/rusty-commit-saver
+  # ============================================================================
+  # STAGE 3: Release (only on push to master after ALL checks pass)
+  # ============================================================================
+  release:
+    name: 🎯 Release
+    runs-on: ubuntu-latest
+    # CRITICAL: Only run on push (not PRs) and only after all checks pass
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    needs: [build, unittest, clippy, cleanup-deps]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@stable
+      - name: 🛠️ Install cargo-edit
+        run: cargo install cargo-edit
+      - name: 🎨 Conventional Changelog
+        id: changelog
+        uses: TriPSs/conventional-changelog-action@v5
+        with:
+          git-user-name: "chess-seventh"
+          git-user-email: "chess7th@pm.me"
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          git-message: "ci: version bump"
+          output-file: "CHANGELOG.md"
+          release-count: "0"
+          skip-version-file: "false"
+          skip-commit: "false"
+          skip-on-empty: "true"
+          version-file: "Cargo.toml"
+          version-path: "package.version"
+          create-summary: "true"
+      - name: 🛠️ Update Cargo.toml version
+        if: steps.changelog.outputs.skipped == 'false'
+        run: |
+          cargo set-version ${{ steps.changelog.outputs.version }}
+          cargo build --verbose
+      - name: 🛠️ Update lockfile
+        if: steps.changelog.outputs.skipped == 'false'
+        run: cargo update
+      - name: 🛠️ Commit Cargo.lock
+        if: steps.changelog.outputs.skipped == 'false'
+        run: |
+          git config user.name "chess-seventh"
+          git config user.email "chess7th@pm.me"
+          git add Cargo.lock Cargo.toml
+          git commit -m "chore: update Cargo.lock and Cargo.toml [skip ci]"
+          git push
+      - name: ✨ Create Release
+        if: steps.changelog.outputs.skipped == 'false'
+        uses: ncipollo/release-action@v1
+        with:
+          tag: ${{ steps.changelog.outputs.tag }}
+          name: ${{ steps.changelog.outputs.tag }}
+          body: ${{ steps.changelog.outputs.clean_changelog }}
+          token: ${{ secrets.GITHUB_TOKEN }}
