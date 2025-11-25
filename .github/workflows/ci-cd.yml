@@ -33,14 +33,20 @@ jobs:
       - name: 🛠️ Install nextest
         uses: taiki-e/install-action@v2
         with:
-          tool: nextest,cargo2junit
+          tool: nextest
       - uses: Swatinem/rust-cache@v2
-      - name: 🧪 Run tests with JUnit output
-        env:
-          NEXTEST_EXPERIMENTAL_LIBTEST_JSON: 1
+      - name: 🧪 Run tests with nextest
+        run: cargo nextest run --no-fail-fast --profile ci
+      - name: 🛠️ Install cargo2junit
+        if: always()
+        run: cargo install cargo2junit
+      - name: 📊 Generate JUnit XML
+        if: always()
         run: |
-          cargo nextest run --no-fail-fast --profile ci --message-format libtest-json-plus > test-results.json
-          cat test-results.json | cargo2junit > junit.xml
+          cargo test --no-fail-fast -- --format json -Z unstable-options --report-time 2>&1 | cargo2junit > junit.xml
+        env:
+          RUSTC_BOOTSTRAP: 1
+        continue-on-error: true
       - name: 📊 Upload test results to Codecov
         if: always()
         uses: codecov/test-results-action@v1
