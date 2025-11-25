@@ -28,6 +28,7 @@
     cargo-shear
     cargo-llvm-cov
     rustup
+    bacon
   ];
 
   languages = {
