@@ -1,3 +1,15 @@
+# [4.0.0](https://github.com/chess-seventh/rusty-commit-saver/compare/v3.2.0...v4.0.0) (2025-11-25)
+
+
+* feat!: Update dev environment and dependencies ([c809d9f](https://github.com/chess-seventh/rusty-commit-saver/commit/c809d9f45fc65a21247c5f29dcdf747d96a667a5))
+
+
+### BREAKING CHANGES
+
+* update the rust channel to nightly
+
+
+
 # [3.2.0](https://github.com/chess-seventh/rusty-commit-saver/compare/v3.1.1...v3.2.0) (2025-11-21)
 
 
