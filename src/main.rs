@@ -17,8 +17,82 @@ use std::error::Error;
 use std::path::Path;
 use std::path::PathBuf;
 
-/// Core logic extracted from main() for testing
-/// Returns Ok(()) if commit was successfully saved
+/// Core logic for saving a commit to an Obsidian diary file.
+///
+/// This is the main orchestration function that:
+/// 1. Discovers the current Git commit metadata
+/// 2. Constructs the diary file path based on timestamp
+/// 3. Creates necessary directories and diary template (if needed)
+/// 4. Appends the commit entry to the diary file
+///
+/// This function is extracted for testability and is called by `main()`.
+///
+/// # Arguments
+///
+/// * `obsidian_root_path_dir` - Base directory for Obsidian vault (e.g., `/home/user/Obsidian`)
+/// * `obsidian_commit_path` - Subdirectory for commits (e.g., `Diaries/Commits`)
+/// * `template_commit_date_path` - Chrono format for date hierarchy (e.g., `%Y/%m-%B/%F.md`)
+///
+/// # Returns
+///
+/// - `Ok(())` - Commit was successfully saved to the diary
+/// - `Err(Box<dyn Error>)` - Any step in the process failed
+///
+/// # Errors
+///
+/// Returns an error if:
+/// - Git repository cannot be discovered (not in a git repo)
+/// - Diary path cannot be converted to valid UTF-8
+/// - Parent directories cannot be created (permission denied, invalid path)
+/// - Diary file cannot be created or written to
+/// - Commit entry cannot be appended to the file
+///
+/// # Examples
+///
+/// ```
+/// use rusty_commit_saver::run_commit_saver;
+/// use std::path::PathBuf;
+///
+/// let obsidian_root = PathBuf::from("/home/user/Obsidian");
+/// let commit_path = PathBuf::from("Diaries/Commits");
+/// let date_template = "%Y/%m-%B/%F.md"; // YYYY/MM-MonthName/YYYY-MM-DD.md
+///
+/// match run_commit_saver(obsidian_root, &commit_path, date_template) {
+///     Ok(()) => println!("✓ Commit successfully logged!"),
+///     Err(e) => eprintln!("✗ Failed to log commit: {}", e),
+/// }
+/// ```
+///
+/// # Workflow
+///
+/// ```
+/// ┌─────────────────────────────────┐
+/// │ Discover Git commit metadata    │
+/// └────────────┬────────────────────┘
+///              │
+/// ┌────────────▼──────────────────┐
+/// │ Build diary file path with    │
+/// │ formatted date subdirectories │
+/// └────────────┬──────────────────┘
+///              │
+/// ┌────────────▼──────────────────┐
+/// │ File exists?                  │
+/// └────────┬───────────────┬──────┘
+///          │ No            │ Yes
+///   ┌──────▼────────┐    │
+///   │ Create dirs   │    │
+///   │ Create template  │  │
+///   │ (with table)  │    │
+///   └──────┬────────┘    │
+///          │             │
+///   ┌──────▼─────────────▼──────┐
+///   │ Append commit row to table │
+///   └──────┬─────────────────────┘
+///          │
+///   ┌──────▼──────────────────┐
+///   │ Return Ok(())           │
+///   └─────────────────────────┘
+/// ```
 pub fn run_commit_saver(
     obsidian_root_path_dir: PathBuf,
     obsidian_commit_path: &Path,
