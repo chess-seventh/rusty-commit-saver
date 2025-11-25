@@ -1,35 +1,3 @@
-// // Integration tests
-// #[cfg(test)]
-// mod integration_tests {
-//     use chrono::{TimeZone, Utc};
-//     use rusty_commit_saver::CommitSaver;
-//     use std::fs;
-//     use std::fs::File;
-//     use tempfile::tempdir;
-//
-//     #[test]
-//     fn test_commit_message_with_special_characters() -> Result<(), Box<dyn std::error::Error>> {
-//         let temp_dir = tempdir()?;
-//         let file_path = temp_dir.path().join("test_diary.md");
-//         File::create(&file_path)?;
-//
-//         let mut commit_saver = CommitSaver {
-//             repository_url: "https://github.com/test/repo.git".to_string(),
-//             commit_branch_name: "main".to_string(),
-//             commit_hash: "abc123".to_string(),
-//             commit_msg: "Fix: handle | pipes & ampersands < > brackets".to_string(),
-//             commit_datetime: Utc.with_ymd_and_hms(2023, 12, 25, 10, 30, 0).unwrap(),
-//         };
-//
-//         commit_saver.append_entry_to_diary(&file_path)?;
-//
-//         let content = fs::read_to_string(&file_path)?;
-//         assert!(content.contains("Fix: handle | pipes & ampersands < > brackets"));
-//
-//         Ok(())
-//     }
-// }
-
 use rusty_commit_saver::config::GlobalVars;
 use std::fs;
 use std::io::Write;

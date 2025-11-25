@@ -92,14 +92,155 @@ pub fn parse_ini_content(content: &str) -> Result<Ini, String> {
     Ok(config)
 }
 
+/// Thread-safe global configuration container for Rusty Commit Saver.
+///
+/// This struct holds all runtime configuration loaded from the INI file,
+/// using `OnceCell` for lazy initialization and thread safety. Configuration
+/// values are set once during initialization and remain immutable thereafter.
+///
+/// # Usage Pattern
+///
+/// ```
+/// use rusty_commit_saver::config::GlobalVars;
+///
+/// // 1. Create instance
+/// let global_vars = GlobalVars::new();
+///
+/// // 2. Load configuration from INI file
+/// global_vars.set_all();
+///
+/// // 3. Access configuration values
+/// let obsidian_root = global_vars.get_obsidian_root_path_dir();
+/// let commit_path = global_vars.get_obsidian_commit_path();
+/// ```
+///
+/// # See Also
+///
+/// - [`GlobalVars::new()`] - Create new instance
+/// - [`GlobalVars::set_all()`] - Initialize from INI file
+/// - [`parse_ini_content()`] - Parse INI content
 #[derive(Debug, Default)]
 pub struct GlobalVars {
+    /// The parsed INI configuration file.
+    ///
+    /// Stores the complete parsed configuration from the INI file.
+    /// Initialized once by [`set_all()`](Self::set_all).
+    ///
+    /// # Thread Safety
+    ///
+    /// `OnceCell` ensures this is set exactly once and can be safely
+    /// accessed from multiple threads.
     pub config: OnceCell<Ini>,
 
+    /// Root directory of the Obsidian vault.
+    ///
+    /// The base directory where all Obsidian files are stored.
+    /// All diary entries are created under this directory.
+    ///
+    /// # Examples
+    ///
+    /// - `/home/user/Documents/Obsidian`
+    /// - `C:\Users\username\Documents\Obsidian` (Windows)
+    ///
+    /// # Configuration
+    ///
+    /// Loaded from INI file:
+    /// ```
+    /// [obsidian]
+    /// root_path_dir = ~/Documents/Obsidian
+    /// ```
     obsidian_root_path_dir: OnceCell<PathBuf>,
+
+    /// Subdirectory path for commit diary entries.
+    ///
+    /// Relative path under [`obsidian_root_path_dir`](Self::obsidian_root_path_dir)
+    /// where commit entries are organized.
+    ///
+    /// # Examples
+    ///
+    /// - `Diaries/Commits`
+    /// - `Journal/Git`
+    ///
+    /// # Full Path Construction
+    ///
+    /// Combined with root and date template:
+    /// ```
+    /// {root_path_dir}/{commit_path}/{date_template}
+    /// /home/user/Obsidian/Diaries/Commits/2025/01-January/2025-01-14.md
+    /// ```
+    ///
+    /// # Configuration
+    ///
+    /// Loaded from INI file:
+    /// ```
+    /// [obsidian]
+    /// commit_path = Diaries/Commits
+    /// ```
     obsidian_commit_path: OnceCell<PathBuf>,
 
+    /// Chrono format string for date-based file paths.
+    ///
+    /// Controls the directory structure and filename for diary entries.
+    /// Uses Chrono format specifiers to create date-organized paths.
+    ///
+    /// # Format Specifiers
+    ///
+    /// - `%Y` - Year (e.g., `2025`)
+    /// - `%m` - Month number (e.g., `01`)
+    /// - `%B` - Full month name (e.g., `January`)
+    /// - `%F` - ISO 8601 date (e.g., `2025-01-14`)
+    /// - `%d` - Day of month (e.g., `14`)
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// Format: %Y/%m-%B/%F.md
+    /// Result: 2025/01-January/2025-01-14.md
+    ///
+    /// Format: %Y/week-%W/%F.md
+    /// Result: 2025/week-02/2025-01-14.md
+    /// ```
+    ///
+    /// # Configuration
+    ///
+    /// Loaded from INI file:
+    /// ```
+    /// [templates]
+    /// commit_date_path = %Y/%m-%B/%F.md
+    /// ```
     template_commit_date_path: OnceCell<String>,
+
+    /// Chrono format string for datetime display in diary entries.
+    ///
+    /// Controls how commit timestamps appear in the diary table's TIME column.
+    ///
+    /// # Format Specifiers
+    ///
+    /// - `%Y` - Year (e.g., `2025`)
+    /// - `%m` - Month (e.g., `01`)
+    /// - `%d` - Day (e.g., `14`)
+    /// - `%H` - Hour, 24-hour (e.g., `14`)
+    /// - `%M` - Minute (e.g., `30`)
+    /// - `%S` - Second (e.g., `45`)
+    /// - `%T` - Time in HH:MM:SS format
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// Format: %Y-%m-%d %H:%M:%S
+    /// Result: 2025-01-14 14:30:45
+    ///
+    /// Format: %H:%M:%S
+    /// Result: 14:30:45
+    /// ```
+    ///
+    /// # Configuration
+    ///
+    /// Loaded from INI file:
+    /// ```
+    /// [templates]
+    /// commit_datetime = %Y-%m-%d %H:%M:%S
+    /// ```
     template_commit_datetime: OnceCell<String>,
 }
 
@@ -421,6 +562,18 @@ impl GlobalVars {
             .clone()
     }
 
+    /// Retrieves a clone of the parsed INI configuration.
+    ///
+    /// This is a private helper method that returns a copy of the configuration
+    /// object. Used internally by other helper methods to access sections and keys.
+    ///
+    /// # Panics
+    ///
+    /// Panics if called before [`set_all()`](Self::set_all) has initialized the config.
+    ///
+    /// # Returns
+    ///
+    /// A cloned `Ini` configuration object
     fn get_config(&self) -> Ini {
         info!("[GlobalVars::get_config()] Getting config");
         self.config
@@ -481,6 +634,27 @@ impl GlobalVars {
         }
     }
 
+    /// Sets the `template_commit_datetime` field from the `[templates]` section.
+    ///
+    /// Reads the `commit_datetime` key from the INI file and stores it in the
+    /// `template_commit_datetime` `OnceCell`.
+    ///
+    /// # Arguments
+    ///
+    /// * `section` - Should be `"templates"` (validated by caller)
+    ///
+    /// # Panics
+    ///
+    /// Panics if:
+    /// - The `commit_datetime` key is missing from the INI section
+    /// - The `OnceCell` has already been set (called multiple times)
+    ///
+    /// # Expected INI Key
+    ///
+    /// ```
+    /// [templates]
+    /// commit_datetime = %Y-%m-%d %H:%M:%S
+    /// ```
     fn set_templates_datetime(&self, section: &str) {
         info!("[GlobalVars::set_templates_datetime()]: Setting the templates_datetime.");
         let key = self
@@ -492,6 +666,27 @@ impl GlobalVars {
             .expect("Could not set the template_commit_datetime GlobalVars");
     }
 
+    /// Sets the `template_commit_date_path` field from the `[templates]` section.
+    ///
+    /// Reads the `commit_date_path` key from the INI file and stores it in the
+    /// `template_commit_date_path` `OnceCell`.
+    ///
+    /// # Arguments
+    ///
+    /// * `section` - Should be `"templates"` (validated by caller)
+    ///
+    /// # Panics
+    ///
+    /// Panics if:
+    /// - The `commit_date_path` key is missing from the INI section
+    /// - The `OnceCell` has already been set (called multiple times)
+    ///
+    /// # Expected INI Key
+    ///
+    /// ```
+    /// [templates]
+    /// commit_date_path = %Y/%m-%B/%F.md
+    /// ```
     fn set_templates_commit_date_path(&self, section: &str) {
         info!(
             "[GlobalVars::set_templates_commit_date_path()]: Setting the template_commit_date_path."
@@ -505,6 +700,33 @@ impl GlobalVars {
             .expect("Could not set the template_commit_date_path in GlobalVars");
     }
 
+    /// Sets the `obsidian_commit_path` field from the `[obsidian]` section.
+    ///
+    /// Reads the `commit_path` key, expands tilde (`~`) to the home directory
+    /// if present, splits the path by `/`, and constructs a `PathBuf`.
+    ///
+    /// # Arguments
+    ///
+    /// * `section` - Should be `"obsidian"` (validated by caller)
+    ///
+    /// # Tilde Expansion
+    ///
+    /// - `~/Diaries/Commits` → `/home/user/Diaries/Commits`
+    /// - `/absolute/path` → `/absolute/path` (unchanged)
+    ///
+    /// # Panics
+    ///
+    /// Panics if:
+    /// - The `commit_path` key is missing from the INI section
+    /// - Home directory cannot be determined (when `~` is used)
+    /// - The `OnceCell` has already been set
+    ///
+    /// # Expected INI Key
+    ///
+    /// ```
+    /// [obsidian]
+    /// commit_path = ~/Documents/Obsidian/Diaries/Commits
+    /// ```
     fn set_obsidian_commit_path(&self, section: &str) {
         let string_path = self
             .get_key_from_section_from_ini(section, "commit_path")
@@ -533,6 +755,39 @@ impl GlobalVars {
             .expect("Could not set the path for obsidian_root_path_dir");
     }
 
+    /// Sets the `obsidian_root_path_dir` field from the `[obsidian]` section.
+    ///
+    /// Reads the `root_path_dir` key, expands tilde (`~`) to the home directory
+    /// if present, prepends `/` for absolute paths, and constructs a `PathBuf`.
+    ///
+    /// # Arguments
+    ///
+    /// * `section` - Should be `"obsidian"` (validated by caller)
+    ///
+    /// # Path Construction
+    ///
+    /// - Starts with `/` to ensure absolute path
+    /// - Expands `~` to home directory
+    /// - Splits by `/` and constructs `PathBuf`
+    ///
+    /// # Tilde Expansion Examples
+    ///
+    /// - `~/Documents/Obsidian` → `/home/user/Documents/Obsidian`
+    /// - `/absolute/path` → `/absolute/path`
+    ///
+    /// # Panics
+    ///
+    /// Panics if:
+    /// - The `root_path_dir` key is missing from the INI section
+    /// - Home directory cannot be determined (when `~` is used)
+    /// - The `OnceCell` has already been set
+    ///
+    /// # Expected INI Key
+    ///
+    /// ```
+    /// [obsidian]
+    /// root_path_dir = ~/Documents/Obsidian
+    /// ```
     fn set_obsidian_root_path_dir(&self, section: &str) {
         let string_path = self
             .get_key_from_section_from_ini(section, "root_path_dir")
@@ -567,19 +822,95 @@ impl GlobalVars {
     }
 }
 
+/// Command-line argument parser for configuration file path.
+///
+/// This struct uses `clap` to parse CLI arguments and provide configuration
+/// options for the application. Currently supports specifying a custom INI
+/// configuration file path.
+///
+/// # CLI Arguments
+///
+/// - `--config-ini <PATH>` - Optional path to a custom configuration file
+///
+/// # Examples
+///
+/// ```
+/// # Use default config (~/.config/rusty-commit-saver/rusty-commit-saver.ini)
+/// rusty-commit-saver
+///
+/// # Use custom config file
+/// rusty-commit-saver --config-ini /path/to/custom.ini
+/// ```
+///
+/// # See Also
+///
+/// - [`retrieve_config_file_path()`] - Gets the config path from CLI or default
+/// - [`get_ini_file()`] - Loads the INI file from the resolved path
 #[derive(Parser, Debug, Clone)]
 #[command(version, about, long_about = None)]
 #[command(propagate_version = true)]
 #[command(about = "Rusty Commit Saver config", long_about = None)]
 pub struct UserInput {
-    /// Directory of the configuration ini will default to
-    /// "~/.config/rusty-commit-saver/rusty-commit-saver.ini", if nothing is provided
+    /// Path to a custom INI configuration file.
+    ///
+    /// If not provided, the default configuration file is used:
+    /// `~/.config/rusty-commit-saver/rusty-commit-saver.ini`
+    ///
+    /// # CLI Usage
+    ///
+    /// ```
+    /// rusty-commit-saver --config-ini /custom/path/config.ini
+    /// ```
+    ///
+    /// # Examples
+    ///
+    /// Valid paths:
+    /// - `~/my-configs/commit-saver.ini`
+    /// - `/etc/rusty-commit-saver/config.ini`
+    /// - `./local-config.ini`
     #[arg(short, long)]
     pub config_ini: Option<String>,
 }
 
-// Note: This function is integration-tested through actual CLI usage
-// Unit testing requires mocking std::env::args() which is not straightforward
+/// Retrieves the configuration file path from CLI arguments or returns the default.
+///
+/// This function parses command-line arguments and returns the path to the INI
+/// configuration file. If no `--config-ini` argument is provided, returns the
+/// default path.
+///
+/// # Default Path
+///
+/// `~/.config/rusty-commit-saver/rusty-commit-saver.ini`
+///
+/// # Returns
+///
+/// A `String` containing the absolute path to the configuration file
+///
+/// # CLI Usage
+///
+/// ```
+/// # Use default config
+/// rusty-commit-saver
+/// # Returns: /home/user/.config/rusty-commit-saver/rusty-commit-saver.ini
+///
+/// # Use custom config
+/// rusty-commit-saver --config-ini /custom/path/config.ini
+/// # Returns: /custom/path/config.ini
+/// ```
+///
+/// # Examples
+///
+/// ```
+/// use rusty_commit_saver::config::retrieve_config_file_path;
+///
+/// let config_path = retrieve_config_file_path();
+/// println!("Using config: {}", config_path);
+/// ```
+///
+/// # See Also
+///
+/// - [`UserInput`] - CLI argument parser
+/// - [`get_or_default_config_ini_path()`] - Helper that implements the logic
 pub fn retrieve_config_file_path() -> String {
     info!(
         "[UserInput::retrieve_config_file_path()]: retrieving the string path from CLI or default"
@@ -601,6 +932,24 @@ pub fn retrieve_config_file_path() -> String {
         .unwrap_or_else(|_| panic!("Should have been able to read the file: {config_path:}"))
 }
 
+/// Returns the config path from CLI arguments or the default path.
+///
+/// Internal helper function that parses CLI arguments using `UserInput` and
+/// returns either the provided `--config-ini` path or the default configuration
+/// file location.
+///
+/// # Returns
+///
+/// - CLI path if `--config-ini` was provided
+/// - Default path (`~/.config/rusty-commit-saver/rusty-commit-saver.ini`) otherwise
+///
+/// # Called By
+///
+/// This function is called internally by [`retrieve_config_file_path()`].
+///
+/// # See Also
+///
+/// - [`get_default_ini_path()`] - Constructs the default configuration path
 fn get_or_default_config_ini_path() -> String {
     info!("[get_or_default_config_ini_path()]: Parsing CLI inputs.");
     let args = UserInput::parse();
@@ -629,12 +978,89 @@ fn get_or_default_config_ini_path() -> String {
     config_path
 }
 
+/// Constructs the default configuration file path.
+///
+/// Builds the standard XDG configuration path for the application by combining
+/// the user's home directory with the application-specific config directory.
+///
+/// # Returns
+///
+/// A `String` with the default INI file path:
+/// `~/.config/rusty-commit-saver/rusty-commit-saver.ini`
+///
+/// # Directory Structure
+///
+/// ```
+/// ~/.config/
+///   └── rusty-commit-saver/
+///       └── rusty-commit-saver.ini
+/// ```
+///
+/// # Panics
+///
+/// Panics if the user's home directory cannot be determined
+/// (via the `dirs::home_dir()` function).
+///
+/// # Examples
+///
+/// ```
+/// // Internal usage
+/// let default_path = get_default_ini_path();
+/// // Returns: "/home/user/.config/rusty-commit-saver/rusty-commit-saver.ini"
+/// ```
+///
+/// # See Also
+///
+/// - [`retrieve_config_file_path()`] - Public API for getting config path
 fn get_default_ini_path() -> String {
     info!("[get_default_ini_path()]: Getting default ini file.");
     let cfg_str = "~/.config/rusty-commit-saver/rusty-commit-saver.ini".to_string();
     set_proper_home_dir(&cfg_str)
 }
 
+/// Loads and parses the INI configuration file from disk.
+///
+/// Reads the configuration file (from CLI argument or default location),
+/// parses its contents using [`parse_ini_content()`], and returns the
+/// parsed `Ini` object.
+///
+/// # Returns
+///
+/// A parsed `Ini` configuration object
+///
+/// # Panics
+///
+/// Panics if:
+/// - The configuration file doesn't exist at the resolved path
+/// - The file cannot be read (permission denied, I/O error)
+/// - The file content is not valid UTF-8
+/// - The INI syntax is invalid (malformed sections or key-value pairs)
+///
+/// # File Resolution Order
+///
+/// 1. Check for `--config-ini <PATH>` CLI argument
+/// 2. Fall back to `~/.config/rusty-commit-saver/rusty-commit-saver.ini`
+///
+/// # Expected INI Structure
+///
+/// ```
+/// [obsidian]
+/// root_path_dir = ~/Documents/Obsidian
+/// commit_path = Diaries/Commits
+///
+/// [templates]
+/// commit_date_path = %Y/%m-%B/%F.md
+/// commit_datetime = %Y-%m-%d %H:%M:%S
+/// ```
+///
+/// # Called By
+///
+/// This function is called internally by [`GlobalVars::set_all()`].
+///
+/// # See Also
+///
+/// - [`retrieve_config_file_path()`] - Resolves the config file path
+/// - [`parse_ini_content()`] - Parses INI text into `Ini` struct
 fn get_ini_file() -> Ini {
     info!("[get_ini_file()]: Retrieving the INI File");
     let content_ini = retrieve_config_file_path();
@@ -647,6 +1073,46 @@ fn get_ini_file() -> Ini {
     config
 }
 
+/// Expands the tilde (`~`) character to the user's home directory path.
+///
+/// Replaces the leading `~` in a path string with the absolute path to the
+/// user's home directory. If no `~` is present, returns the string unchanged.
+///
+/// # Arguments
+///
+/// * `cfg_str` - A path string that may contain a leading `~`
+///
+/// # Returns
+///
+/// A `String` with `~` expanded to the full home directory path
+///
+/// # Panics
+///
+/// Panics if the user's home directory cannot be determined
+/// (via the `dirs::home_dir()` function).
+///
+/// # Examples
+///
+/// ```
+/// // On Linux/macOS with home at /home/user
+/// let expanded = set_proper_home_dir("~/Documents/Obsidian");
+/// assert_eq!(expanded, "/home/user/Documents/Obsidian");
+///
+/// // Path without tilde is returned unchanged
+/// let unchanged = set_proper_home_dir("/absolute/path");
+/// assert_eq!(unchanged, "/absolute/path");
+/// ```
+///
+/// # Platform Behavior
+///
+/// - **Linux/macOS**: Expands to `/home/username` or `/Users/username`
+/// - **Windows**: Expands to `C:\Users\username`
+///
+/// # Used By
+///
+/// This function is called by:
+/// - [`GlobalVars::set_obsidian_root_path_dir()`]
+/// - [`GlobalVars::set_obsidian_commit_path()`]
 fn set_proper_home_dir(cfg_str: &str) -> String {
     info!("[set_proper_home_dir()]: Changing the '~' to full home directory.");
     let home_dir = home_dir()

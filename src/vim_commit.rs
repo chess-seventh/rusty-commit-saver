@@ -15,16 +15,129 @@ use log::error;
 use log::info;
 use log::warn;
 
+/// Stores Git commit metadata for logging to Obsidian diary entries.
+///
+/// This struct captures all essential information about a single Git commit
+/// that will be written as a row in the daily diary table. It's automatically
+/// populated from the current Git repository's HEAD commit.
+///
+/// # Examples
+///
+/// ```
+/// use rusty_commit_saver::CommitSaver;
+///
+/// // Automatically populated from current Git repository
+/// let saver = CommitSaver::new();
+///
+/// println!("Repository: {}", saver.repository_url);
+/// println!("Branch: {}", saver.commit_branch_name);
+/// println!("Hash: {}", saver.commit_hash);
+/// println!("Message: {}", saver.commit_msg);
+/// ```
+///
+/// # See Also
+///
+/// - [`CommitSaver::new()`] - Create a new instance from current Git repo
+/// - [`CommitSaver::append_entry_to_diary()`] - Write commit to diary file
 #[derive(Debug, Clone)]
 pub struct CommitSaver {
+    /// The Git remote origin URL.
+    ///
+    /// Retrieved from the repository's `origin` remote. Double quotes are stripped.
+    ///
+    /// # Examples
+    ///
+    /// - `https://github.com/user/repo.git`
+    /// - `git@github.com:user/repo.git`
+    /// - `https://git.sr.ht/~user/repo`
     pub repository_url: String,
+
+    /// The current Git branch name.
+    ///
+    /// Retrieved from the repository's HEAD reference. Double quotes are stripped.
+    ///
+    /// # Examples
+    ///
+    /// - `main`
+    /// - `develop`
+    /// - `feature/add-documentation`
     pub commit_branch_name: String,
+
+    /// The full SHA-1 commit hash (40 characters).
+    ///
+    /// Uniquely identifies the commit in the Git repository.
+    ///
+    /// # Format
+    ///
+    /// Always 40 hexadecimal characters (e.g., `abc123def456...`)
     pub commit_hash: String,
+
+    /// The formatted commit message for Obsidian display.
+    ///
+    /// The message is processed for safe rendering in Markdown tables:
+    /// - Pipe characters (`|`) are escaped to `\|`
+    /// - Multiple lines are joined with `<br/>`
+    /// - Empty lines are filtered out
+    /// - Leading/trailing whitespace is trimmed
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// Original: "feat: add feature\n\nWith details"
+    /// Formatted: "feat: add feature<br/>With details"
+    ///
+    /// Original: "fix: issue | problem"
+    /// Formatted: "fix: issue \| problem"
+    /// ```
     pub commit_msg: String,
+
+    /// The UTC timestamp when the commit was created.
+    ///
+    /// Used for:
+    /// - Generating date-based directory paths
+    /// - Displaying commit time in diary entries
+    /// - Creating frontmatter tags (week number, day of week)
+    ///
+    /// # Format
+    ///
+    /// Stored as `DateTime<Utc>` from the `chrono` crate.
     pub commit_datetime: DateTime<Utc>,
 }
 
-/// Defaults for CommitSaver
+/// Creates a `CommitSaver` instance with default values from the current Git repository.
+///
+/// This implementation automatically discovers the Git repository in the current directory
+/// and extracts all commit metadata from the HEAD commit. It's the core logic used by
+/// [`CommitSaver::new()`].
+///
+/// # Panics
+///
+/// Panics if:
+/// - No Git repository is found in the current directory or any parent directory
+/// - The repository has no HEAD (uninitialized or corrupted repository)
+/// - The HEAD reference cannot be resolved to a commit
+/// - The remote "origin" doesn't exist
+///
+/// # Commit Message Processing
+///
+/// The commit message undergoes several transformations:
+/// 1. Split into individual lines
+/// 2. Trim whitespace from each line
+/// 3. Escape pipe characters: `|` → `\|` (for Markdown table compatibility)
+/// 4. Filter out empty lines
+/// 5. Join with `<br/>` separator (for Obsidian rendering)
+///
+/// # Examples
+///
+/// ```
+/// use rusty_commit_saver::CommitSaver;
+///
+/// // Using Default trait directly
+/// let saver = CommitSaver::default();
+///
+/// // Equivalent to:
+/// let saver2 = CommitSaver::new();
+/// ```
 impl Default for CommitSaver {
     fn default() -> CommitSaver {
         let git_repo = Repository::discover("./").unwrap();
@@ -81,7 +194,37 @@ impl CommitSaver {
         CommitSaver::default()
     }
 
-    /// Prepares input to write to vimwiki
+    /// Formats commit metadata as a Markdown table row for diary entry.
+    ///
+    /// Generates a single table row containing all commit information in the format
+    /// expected by the Obsidian diary template. The row includes pipe delimiters
+    /// and ends with a newline.
+    ///
+    /// # Arguments
+    ///
+    /// * `path` - The current working directory where the commit was made
+    ///
+    /// # Returns
+    ///
+    /// A formatted string representing one table row with these columns:
+    /// 1. **FOLDER** - Current working directory path
+    /// 2. **TIME** - Commit timestamp (HH:MM:SS format)
+    /// 3. **COMMIT MESSAGE** - Escaped and formatted commit message
+    /// 4. **REPOSITORY URL** - Git remote origin URL
+    /// 5. **BRANCH** - Current branch name
+    /// 6. **COMMIT HASH** - Full SHA-1 commit hash
+    ///
+    /// # Format
+    ///
+    /// ```
+    /// | /path/to/repo | 14:30:45 | feat: add feature | https://github.com/user/repo.git | main | abc123... |
+    /// ```
+    ///
+    /// # Note
+    ///
+    /// This is a private helper method called by [`append_entry_to_diary()`](Self::append_entry_to_diary).
+    /// The commit message has already been formatted with escaped pipes and `<br/>` separators
+    /// during struct initialization.
     fn prepare_commit_entry_as_string(&mut self, path: &Path) -> String {
         format!(
             "| {:} | {:} | {:} | {:} | {:} | {:} |\n",
@@ -211,6 +354,44 @@ impl CommitSaver {
         format!("/{commit_path:}/{paths_with_dates_and_file:}")
     }
 
+    /// Formats the commit timestamp using a Chrono date format string.
+    ///
+    /// Applies the given format template to the commit's datetime to generate
+    /// a date-based directory path or filename. This enables flexible organization
+    /// of diary entries by year, month, week, or custom hierarchies.
+    ///
+    /// # Arguments
+    ///
+    /// * `path_format` - Chrono format string (e.g., `%Y/%m-%B/%F.md`)
+    ///
+    /// # Returns
+    ///
+    /// A formatted date string suitable for file paths
+    ///
+    /// # Common Format Specifiers
+    ///
+    /// - `%Y` - Year (4 digits, e.g., `2025`)
+    /// - `%m` - Month (2 digits, e.g., `01`)
+    /// - `%B` - Full month name (e.g., `January`)
+    /// - `%b` - Abbreviated month (e.g., `Jan`)
+    /// - `%d` - Day of month (2 digits, e.g., `14`)
+    /// - `%F` - ISO 8601 date format (`%Y-%m-%d`, e.g., `2025-01-14`)
+    /// - `%A` - Full weekday name (e.g., `Monday`)
+    /// - `%W` - Week number (e.g., `02`)
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// // With format "%Y/%m-%B/%F.md" and datetime 2025-01-14:
+    /// // Returns: "2025/01-January/2025-01-14.md"
+    ///
+    /// // With format "%Y/week-%W/%F.md" and datetime in week 2:
+    /// // Returns: "2025/week-02/2025-01-14.md"
+    /// ```
+    ///
+    /// # Note
+    ///
+    /// This is a private helper method called by [`prepare_path_for_commit()`](Self::prepare_path_for_commit).
     fn prepare_date_for_commit_file(&mut self, path_format: &str) -> String {
         info!(
             "[CommitSaver::prepare_date_for_commit_file()]: Formatting commit path with DateTime."
@@ -275,6 +456,14 @@ impl CommitSaver {
     }
 }
 
+// Markup template for generating Obsidian diary file structure.
+//
+// This macro defines the template for new diary entry files, including:
+// - YAML frontmatter with metadata and tags
+// - Main heading with the date
+// - Markdown table header for commit entries
+//
+// Used internally by create_diary_file().
 markup::define! {
     DiaryFileEntry(frontmatter: Vec<String>, diary_date: String) {
 "---
@@ -453,6 +642,30 @@ pub fn create_directories_for_new_entry(
 /// - YAML frontmatter containing metadata and tags for Obsidian organization
 /// - A markdown table header for commit entries (folder, time, message, repo, branch, hash)
 /// - Pre-formatted for use with [`CommitSaver::append_entry_to_diary()`]
+///
+/// # Template Structure
+///
+/// The generated file uses the internal `DiaryFileEntry` markup template:
+///
+/// ```
+/// ---
+/// category: diary
+/// section: commits
+/// tags:
+/// - '#datetime/week/02'
+/// - '#datetime/days/Monday'
+/// - '#diary/commits'
+/// date: 2025-01-14
+/// ---
+///
+/// # 2025-01-14
+///
+/// | FOLDER | TIME | COMMIT MESSAGE | REPOSITORY URL | BRANCH | COMMIT HASH |
+/// |--------|------|----------------|----------------|--------|-------------|
+/// ```
+///
+/// # Arguments
+/// ... (rest of your existing documentation)
 ///
 /// The created file is ready for commit entries to be appended to its table.
 ///
