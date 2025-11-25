@@ -37,7 +37,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: 🧪 Run tests with JUnit output
         run: |
-          cargo nextest run --no-fail-fast --profile ci --message-format json-plus > test-results.json
+          cargo nextest run --no-fail-fast --profile ci --message-format libtest-json-plus > test-results.json
           cat test-results.json | cargo2junit > junit.xml
       - name: 📊 Upload test results to Codecov
         if: always()
@@ -163,6 +163,9 @@ jobs:
     needs: release
     steps:
       - uses: actions/checkout@v4
+        with:
+          # CRITICAL: Pull latest changes after release commit
+          ref: master
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - name: 📚 Generate documentation
@@ -203,7 +206,7 @@ jobs:
           </html>
           EOF
       - name: 📤 Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: upload-pages-artifact@v3
         with:
           path: ./target/doc
   deploy-docs:
@@ -225,6 +228,9 @@ jobs:
     needs: deploy-docs
     steps:
       - uses: actions/checkout@v4
+        with:
+          # CRITICAL: Pull latest changes including release updates
+          ref: master
       - name: 📖 Update Wiki
         run: |
           git clone https://github.com/${{ github.repository }}.wiki.git wiki || exit 0
