@@ -38,4 +38,4 @@ jobs:
       - name: 📖 Sync README to Wiki
         uses: Andrew-Chen-Wang/github-wiki-action@v4
         with:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
