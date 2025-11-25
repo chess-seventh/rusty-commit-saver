@@ -176,6 +176,3 @@
 * split into multiple files to make the code more readable ([b88fdba](https://github.com/chess-seventh/rusty-commit-saver/commit/b88fdba9139384c43dcef2771339c8a5fb8e96c2))
 * trim all commits to 120 chars ([84706bc](https://github.com/chess-seventh/rusty-commit-saver/commit/84706bc3e33e1686c5a0a14810bb3d11d320fdb4))
 * Update YAML formatting in treefmt.toml ([e7241c7](https://github.com/chess-seventh/rusty-commit-saver/commit/e7241c78e9dcce6a8b7c31297cadeefe95a461f9))
-
-
-

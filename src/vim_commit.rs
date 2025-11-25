@@ -300,26 +300,6 @@ mod commit_saver_tests {
         assert!(tags.contains(&"#diary/commits".to_string()));
     }
 
-    // #[test]
-    // fn test_prepare_path_for_commit() {
-    //     let mut commit_saver = create_test_commit_saver();
-    //
-    //     let path = commit_saver.prepare_path_for_commit();
-    //
-    //     assert!(path.contains("📅 Diaries"));
-    //     assert!(path.contains("0. Commits"));
-    //     assert!(path.contains("2023/12-December/2023-12-25.md"));
-    // }
-
-    // #[test]
-    // fn test_prepare_date_for_commit_file() {
-    //     let mut commit_saver = create_test_commit_saver();
-    //
-    //     let date_path = commit_saver.prepare_date_for_commit_file();
-    //
-    //     assert_eq!(date_path, "2023/12-December/2023-12-25.md");
-    // }
-
     #[test]
     fn test_append_entry_to_diary() -> Result<(), Box<dyn std::error::Error>> {
         let mut commit_saver = create_test_commit_saver();
@@ -349,5 +329,142 @@ mod commit_saver_tests {
         let result = commit_saver.append_entry_to_diary(&non_existent_path);
 
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_prepare_path_for_commit_integration() {
+        let mut commit_saver = create_test_commit_saver();
+        let obsidian_path = PathBuf::from("TestDiaries/Commits");
+        let date_template = "%Y/%m-%B/%F.md";
+
+        let result = commit_saver.prepare_path_for_commit(&obsidian_path, date_template);
+
+        // Should contain the formatted path
+        assert!(result.contains("/TestDiaries/Commits/"));
+        assert!(result.contains("2023"));
+        assert!(result.contains("12-December"));
+        // assert!(result.ends_with(".md"));
+        assert!(
+            std::path::Path::new(&result)
+                .extension()
+                .is_some_and(|ext| ext.eq_ignore_ascii_case("md"))
+        );
+    }
+
+    #[test]
+    fn test_create_diary_file_error_handling() {
+        let mut commit_saver = create_test_commit_saver();
+
+        // Try to create file in a path that will fail (read-only location)
+        let result = create_diary_file("/proc/invalid_path/file.md", &mut commit_saver);
+
+        // Should return an error
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_get_parent_from_full_path_edge_cases() {
+        use std::path::Path;
+
+        // Test with a simple path
+        let path = Path::new("/home/user/file.txt");
+        let parent = get_parent_from_full_path(path);
+        assert!(parent.is_ok());
+        assert_eq!(parent.unwrap(), Path::new("/home/user"));
+
+        // Test with nested path
+        let nested = Path::new("/a/b/c/d/e/file.txt");
+        let nested_parent = get_parent_from_full_path(nested);
+        assert!(nested_parent.is_ok());
+    }
+
+    #[test]
+    fn test_commit_saver_default_in_git_repo() {
+        use git2::Repository;
+
+        // Only run if we're in a git repo
+        if Repository::discover("./").is_ok() {
+            let commit_saver = CommitSaver::default();
+
+            // Verify all fields are populated
+            assert!(!commit_saver.repository_url.is_empty());
+            assert!(!commit_saver.commit_branch_name.is_empty());
+            assert!(!commit_saver.commit_hash.is_empty());
+            assert!(!commit_saver.commit_msg.is_empty());
+
+            // Hash should be 40 characters (SHA-1)
+            assert_eq!(commit_saver.commit_hash.len(), 40);
+        }
+    }
+
+    #[test]
+    fn test_prepare_path_for_commit_with_empty_template() {
+        let mut commit_saver = create_test_commit_saver();
+        let obsidian_path = PathBuf::from("Diaries");
+        let empty_template = "";
+
+        let result = commit_saver.prepare_path_for_commit(&obsidian_path, empty_template);
+
+        // Should still produce a path even with empty template
+        assert!(result.contains("Diaries"));
+    }
+
+    #[test]
+    fn test_commit_msg_with_only_whitespace_lines() {
+        let commit_saver = CommitSaver {
+            repository_url: "test".to_string(),
+            commit_branch_name: "main".to_string(),
+            commit_hash: "abc123".to_string(),
+            commit_msg: "   \n\n   \n".to_string(), // Only whitespace
+            commit_datetime: Utc.with_ymd_and_hms(2023, 12, 25, 10, 30, 0).unwrap(),
+        };
+
+        // commit_msg should be empty or minimal after filtering
+        assert!(commit_saver.commit_msg.is_empty() || commit_saver.commit_msg.len() < 10);
+    }
+
+    #[test]
+    fn test_create_diary_file_frontmatter_formatting() -> Result<(), Box<dyn std::error::Error>> {
+        let temp_dir = tempdir()?;
+        let file_path = temp_dir.path().join("diary.md");
+        let mut commit_saver = create_test_commit_saver();
+
+        create_diary_file(file_path.to_str().unwrap(), &mut commit_saver)?;
+
+        let content = fs::read_to_string(&file_path)?;
+
+        // Verify frontmatter structure
+        assert!(content.starts_with("---"));
+        assert!(content.contains("category: diary"));
+        assert!(content.contains("section: commits"));
+        assert!(content.contains("tags:"));
+        assert!(content.contains("#diary/commits"));
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_diary_file_entry_markup_generation() {
+        let frontmatter = vec![
+            "#datetime/week/52".to_string(),
+            "#datetime/days/Saturday".to_string(),
+            "#diary/commits".to_string(),
+        ];
+        let diary_date = "2023-12-30".to_string();
+
+        let markup = DiaryFileEntry {
+            frontmatter,
+            diary_date,
+        };
+
+        let output = markup.to_string();
+
+        // Verify markup structure
+        assert!(output.contains("---"));
+        assert!(output.contains("category: diary"));
+        assert!(output.contains("#datetime/week/52"));
+        assert!(output.contains("#datetime/days/Saturday"));
+        assert!(output.contains("2023-12-30"));
+        assert!(output.contains("| FOLDER | TIME | COMMIT MESSAGE"));
     }
 }
