@@ -2,31 +2,32 @@ name: 📚 Documentation
 on:
   push:
     branches: [master]
-  pull_request:
-    branches: [master]
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
 env:
   CARGO_TERM_COLOR: always
 jobs:
-  # Generate Rustdoc and deploy to GitHub Pages
-  rustdoc:
-    name: 📚 Generate & Deploy Rustdoc
+  # Generate Rustdoc
+  build:
+    name: 📚 Build Documentation
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-    permissions:
-      contents: write
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
-      - name: 📚 Generate comprehensive documentation
+      - name: 📚 Generate documentation
         run: |
-          # Generate docs for all items (public + private)
           cargo doc --no-deps --document-private-items
 
-          # Create .nojekyll to disable Jekyll processing
+          # Disable Jekyll
           touch target/doc/.nojekyll
 
-          # Create index.html that redirects to main crate docs
+          # Create landing page
           cat > target/doc/index.html << 'EOF'
           <!DOCTYPE html>
           <html>
@@ -34,36 +35,29 @@ jobs:
               <meta charset="utf-8">
               <meta http-equiv="refresh" content="0; url=rusty_commit_saver">
               <title>Rusty Commit Saver - Documentation</title>
-              <style>
-                  body {
-                      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-                      display: flex;
-                      flex-direction: column;
-                      align-items: center;
-                      justify-content: center;
-                      height: 100vh;
-                      margin: 0;
-                      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                      color: white;
-                  }
-                  h1 { font-size: 3em; margin: 0; }
-                  p { font-size: 1.2em; opacity: 0.9; }
-                  a { color: #fff; text-decoration: underline; }
-              </style>
           </head>
           <body>
-              <h1>📚 Rusty Commit Saver</h1>
-              <p>Redirecting to documentation...</p>
-              <p>If not redirected, <a href="rusty_commit_saver">click here</a></p>
+              <h1>📚 Rusty Commit Saver Documentation</h1>
+              <p>Redirecting to <a href="rusty_commit_saver">main documentation</a>...</p>
           </body>
           </html>
           EOF
-      - name: 📤 Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
+      - name: 📤 Upload artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./target/doc
-          force_orphan: true
+          path: ./target/doc
+  # Deploy to GitHub Pages
+  deploy:
+    name: 🚀 Deploy to Pages
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: 🚀 Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
   # Sync README to Wiki
   wiki:
     name: 📖 Sync Wiki
@@ -71,15 +65,10 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     steps:
       - uses: actions/checkout@v4
-      - name: 📖 Clone and update Wiki
+      - name: 📖 Update Wiki
         run: |
-          # Clone wiki repository (exit gracefully if wiki doesn't exist yet)
           git clone https://github.com/${{ github.repository }}.wiki.git wiki || exit 0
 
-          # Copy README to Wiki home
-          cp README.md wiki/Home.md
-
-          # Add link to API docs at top of wiki
           cat > wiki/Home.md << 'EOF'
           > 📚 **[View Full API Documentation](https://chess-seventh.github.io/rusty-commit-saver/rusty_commit_saver/)**
 
@@ -88,10 +77,9 @@ jobs:
           EOF
           cat README.md >> wiki/Home.md
 
-          # Commit and push
           cd wiki
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add Home.md
-          git diff --quiet && git diff --staged --quiet || git commit -m "docs: sync README to Wiki with API docs link"
+          git diff --quiet && git diff --staged --quiet || git commit -m "docs: sync README"
           git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.wiki.git || exit 0
