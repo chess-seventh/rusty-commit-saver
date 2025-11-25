@@ -1,14 +1,24 @@
 # 🦀 Rusty Commit Saver
 
+## *✨ A simple Rust tool to automatically log your Git commits into a Markdown filei for Obsidian. ✨*
+
 <div align="center">
 
-[![Rust](https://img.shields.io/badge/Rust-000000?style=for-the-badge&logo=rust&logoColor=white)](https://rustlang.org)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
-[![Build Status](https://img.shields.io/github/actions/workflow/status/chess-seventh/rusty-commit-saver/.github/workflow/build.yml?branch=main&style=for-the-badge)](https://github.com/chess-seventh/rusty-commit-saver/actions)
+[![Rust](https://img.shields.io/badge/🦀%20rust-blue)](https://rustlang.org)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/chess-seventh/rusty-commit-saver/tests.yml?branch=master)](https://github.com/chess-seventh/rusty-commit-saver/actions)
 [![codecov](https://codecov.io/github/chess-seventh/rusty-commit-saver/graph/badge.svg?token=4ZK40EALQ8)](https://codecov.io/github/chess-seventh/rusty-commit-saver)
-*✨ A simple Rust tool to automatically log your Git commits into a Markdown filei for Obsidian. ✨*
 
 </div>
+
+**Table of Contents:**
+
+- [🚀 Features](#features-)
+- [📦 Installation](#installation-)
+- [⚙️ Usage](#usage-)
+- [🛠️ Configuration](#configuration-)
+- [📈 Roadmap & Improvements](#roadmap--improvements-)
+- [💖 Contributing](#contributing-)
 
 Rusty Commit Saver captures each commit’s:
 
@@ -22,7 +32,7 @@ and appends it to a dated diary entry in your Wiki directory.
 
 ---
 
-## 🚀 Features
+## Features 🚀
 
 - Automatic diary entry creation with YAML frontmatter and table header
 - Timestamped commit rows formatted for Obsidian
@@ -31,7 +41,7 @@ and appends it to a dated diary entry in your Wiki directory.
 
 ---
 
-## 📦 Installation
+## Installation 📦
 
 1. Clone the repository
 
@@ -60,7 +70,7 @@ and appends it to a dated diary entry in your Wiki directory.
 
 ---
 
-## ⚙️ Usage
+## Usage ⚙️
 
 Simply commit as usual. The pre-commit hook will:
 
@@ -81,7 +91,7 @@ Your commit will be appended to, where Obsidian should be:
 
 ---
 
-## 🛠 Configuration
+## Configuration 🛠
 
 - **`rust-toolchain.toml`** pins Rust 1.89.0
 - **`devenv.nix`** provisions Rust, Clippy, rustfmt, and Git hooks
@@ -90,7 +100,7 @@ Your commit will be appended to, where Obsidian should be:
 
 ---
 
-## 📈 Roadmap & Improvements
+## Roadmap & Improvements 📈
 
 There are **many enhancements** planned:
 
@@ -104,7 +114,7 @@ Contributions welcome! Feel free to open issues or submit PRs.
 
 ---
 
-## 💖 Contributing
+## Contributing 💖
 
 1. Fork the repo
 2. Create a feature branch
@@ -113,6 +123,6 @@ Contributions welcome! Feel free to open issues or submit PRs.
 
 ---
 
-## 📄 License
+## License 📄
 
 MIT © 2025 Chess7th
