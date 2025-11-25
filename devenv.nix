@@ -27,6 +27,7 @@
     cargo-nextest
     cargo-shear
     cargo-llvm-cov
+    cargo-watch
     rustup
     bacon
   ];
@@ -114,7 +115,7 @@
       name = "✨ Shell Check";
       enable = true;
       stages = [ "pre-commit" ];
-      excludes = [ ".envrc" ".direnv/*" ];
+      excludes = [ "^.envrc$" "^.direnv/.*" ];
     };
 
     mdsh = {
@@ -215,6 +216,27 @@
         cargo clippy --all-targets -- -D warnings
         cargo shear --fix
         cargo llvm-cov --html nextest --no-fail-fast
+      '';
+    };
+
+    watch-test = {
+      description = "Watch and re-run tests on file changes";
+      exec = ''
+        cargo watch -x 'clippy --all-targets -- -D warnings' -x 'llvm-cov --html nextest --no-fail-fast'
+      '';
+    };
+
+    watch-nextest = {
+      description = "Watch and re-run nextest on file changes";
+      exec = ''
+        cargo watch -x 'nextest run --no-fail-fast --all-targets'
+      '';
+    };
+
+    watch-check = {
+      description = "Watch and run quick checks (clippy only)";
+      exec = ''
+        cargo watch -x 'clippy --all-targets -- -D warnings'
       '';
     };
   };
