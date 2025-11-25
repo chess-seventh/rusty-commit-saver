@@ -47,6 +47,7 @@ jobs:
         run: |
           cargo llvm-cov --no-report nextest
           cargo llvm-cov --no-report --doc
+          rustup default nightly
           cargo llvm-cov report --doctests --lcov --output-path lcov.info
       - name: 💭 Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5
