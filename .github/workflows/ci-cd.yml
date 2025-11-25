@@ -206,7 +206,7 @@ jobs:
           </html>
           EOF
       - name: 📤 Upload artifact
-        uses: upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v3
         with:
           path: ./target/doc
   deploy-docs:
