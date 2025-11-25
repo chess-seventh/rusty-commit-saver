@@ -1,0 +1,51 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Creates a new diary file with Obsidian frontmatter and table template."><title>create_diary_file in rusty_commit_saver::vim_commit - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-84e720fa.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="rusty_commit_saver" data-themes="" data-resource-suffix="" data-rustdoc-version="1.89.0 (29483883e 2025-08-04)" data-channel="1.89.0" data-search-js="search-92309212.js" data-settings-js="settings-5514c975.js" ><script src="../../static.files/storage-4e99c027.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../static.files/main-fd3af306.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc fn"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../rusty_commit_saver/index.html">rusty_<wbr>commit_<wbr>saver</a><span class="version">4.2.0</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">create_<wbr>diary_<wbr>file</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#arguments" title="Arguments">Arguments</a></li><li><a href="#returns" title="Returns">Returns</a></li><li><a href="#errors" title="Errors">Errors</a></li><li><a href="#examples" title="Examples">Examples</a></li></ul></section><div id="rustdoc-modnav"><h2><a href="index.html">In rusty_<wbr>commit_<wbr>saver::<wbr>vim_<wbr>commit</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../index.html">rusty_commit_saver</a>::<wbr><a href="index.html">vim_commit</a></div><h1>Function <span class="fn">create_diary_file</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../src/rusty_commit_saver/vim_commit.rs.html#501-525">Source</a> </span></div><pre class="rust item-decl"><code>pub fn create_diary_file(
+    full_diary_file_path: &amp;<a class="primitive" href="https://doc.rust-lang.org/1.89.0/std/primitive.str.html">str</a>,
+    commit_saver_struct: &amp;mut <a class="struct" href="struct.CommitSaver.html" title="struct rusty_commit_saver::vim_commit::CommitSaver">CommitSaver</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.89.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.89.0/std/primitive.unit.html">()</a>, <a class="struct" href="https://doc.rust-lang.org/1.89.0/alloc/boxed/struct.Box.html" title="struct alloc::boxed::Box">Box</a>&lt;dyn <a class="trait" href="https://doc.rust-lang.org/1.89.0/core/error/trait.Error.html" title="trait core::error::Error">Error</a>&gt;&gt;</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Creates a new diary file with Obsidian frontmatter and table template.</p>
+<p>Generates a diary entry file with:</p>
+<ul>
+<li>YAML frontmatter containing metadata and tags for Obsidian organization</li>
+<li>A markdown table header for commit entries (folder, time, message, repo, branch, hash)</li>
+<li>Pre-formatted for use with <a href="struct.CommitSaver.html#method.append_entry_to_diary" title="method rusty_commit_saver::vim_commit::CommitSaver::append_entry_to_diary"><code>CommitSaver::append_entry_to_diary()</code></a></li>
+</ul>
+<p>The created file is ready for commit entries to be appended to its table.</p>
+<h2 id="arguments"><a class="doc-anchor" href="#arguments">§</a>Arguments</h2>
+<ul>
+<li><code>full_diary_file_path</code> - The complete path where the file should be created</li>
+<li><code>commit_saver_struct</code> - The <code>CommitSaver</code> instance to extract metadata from</li>
+</ul>
+<h2 id="returns"><a class="doc-anchor" href="#returns">§</a>Returns</h2>
+<ul>
+<li><code>Ok(())</code> - File was successfully created with the template</li>
+<li><code>Err(Box&lt;dyn Error&gt;)</code> - File creation or write operation failed</li>
+</ul>
+<h2 id="errors"><a class="doc-anchor" href="#errors">§</a>Errors</h2>
+<p>Returns an error if:</p>
+<ul>
+<li>The file cannot be created (parent directory doesn’t exist, permission denied)</li>
+<li>Write operations fail (disk full, I/O error)</li>
+<li>Path is invalid or contains invalid UTF-8</li>
+</ul>
+<h2 id="examples"><a class="doc-anchor" href="#examples">§</a>Examples</h2>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>rusty_commit_saver::vim_commit::create_diary_file;
+<span class="kw">use </span>rusty_commit_saver::CommitSaver;
+<span class="kw">use </span>chrono::{TimeZone, Utc};
+<span class="kw">use </span>std::fs;
+
+<span class="kw">let </span><span class="kw-2">mut </span>saver = CommitSaver {
+    repository_url: <span class="string">"https://github.com/example/repo.git"</span>.to_string(),
+    commit_branch_name: <span class="string">"main"</span>.to_string(),
+    commit_hash: <span class="string">"abc123def456"</span>.to_string(),
+    commit_msg: <span class="string">"feat: implement feature"</span>.to_string(),
+    commit_datetime: Utc.with_ymd_and_hms(<span class="number">2025</span>, <span class="number">1</span>, <span class="number">14</span>, <span class="number">10</span>, <span class="number">30</span>, <span class="number">0</span>).unwrap(),
+};
+
+<span class="kw">let </span>file_path = <span class="string">"/home/user/diary/2025-01-14.md"</span>;
+create_diary_file(file_path, <span class="kw-2">&amp;mut </span>saver).unwrap();
+
+<span class="comment">// Verify file was created with proper structure
+</span><span class="kw">let </span>content = fs::read_to_string(file_path).unwrap();
+<span class="macro">assert!</span>(content.contains(<span class="string">"---"</span>)); <span class="comment">// Frontmatter markers
+</span><span class="macro">assert!</span>(content.contains(<span class="string">"category: diary"</span>));
+<span class="macro">assert!</span>(content.contains(<span class="string">"| FOLDER | TIME | COMMIT MESSAGE"</span>)); <span class="comment">// Table header</span></code></pre></div>
+</div></details></section></div></main></body></html>

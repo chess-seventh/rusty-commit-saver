@@ -1,0 +1,9 @@
+(function() {
+    var implementors = Object.fromEntries([["rusty_commit_saver",[["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.89.0/core/marker/trait.Send.html\" title=\"trait core::marker::Send\">Send</a> for <a class=\"struct\" href=\"rusty_commit_saver/config/struct.GlobalVars.html\" title=\"struct rusty_commit_saver::config::GlobalVars\">GlobalVars</a>",1,["rusty_commit_saver::config::GlobalVars"]],["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.89.0/core/marker/trait.Send.html\" title=\"trait core::marker::Send\">Send</a> for <a class=\"struct\" href=\"rusty_commit_saver/config/struct.UserInput.html\" title=\"struct rusty_commit_saver::config::UserInput\">UserInput</a>",1,["rusty_commit_saver::config::UserInput"]],["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.89.0/core/marker/trait.Send.html\" title=\"trait core::marker::Send\">Send</a> for <a class=\"struct\" href=\"rusty_commit_saver/vim_commit/struct.CommitSaver.html\" title=\"struct rusty_commit_saver::vim_commit::CommitSaver\">CommitSaver</a>",1,["rusty_commit_saver::vim_commit::CommitSaver"]],["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.89.0/core/marker/trait.Send.html\" title=\"trait core::marker::Send\">Send</a> for <a class=\"struct\" href=\"rusty_commit_saver/vim_commit/struct.DiaryFileEntry.html\" title=\"struct rusty_commit_saver::vim_commit::DiaryFileEntry\">DiaryFileEntry</a>",1,["rusty_commit_saver::vim_commit::DiaryFileEntry"]]]]]);
+    if (window.register_implementors) {
+        window.register_implementors(implementors);
+    } else {
+        window.pending_implementors = implementors;
+    }
+})()
+//{"start":57,"fragment_lengths":[1424]}

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["check_diary_path_exists","create_diary_file","create_directories_for_new_entry","get_parent_from_full_path"],"struct":["CommitSaver","DiaryFileEntry"]};

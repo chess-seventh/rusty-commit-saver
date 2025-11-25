@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["run_commit_saver"],"mod":["config","vim_commit"]};

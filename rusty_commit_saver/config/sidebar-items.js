@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["get_default_ini_path","get_ini_file","get_or_default_config_ini_path","parse_ini_content","retrieve_config_file_path","set_proper_home_dir"],"struct":["GlobalVars","UserInput"]};

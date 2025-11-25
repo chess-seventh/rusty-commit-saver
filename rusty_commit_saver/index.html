@@ -1,0 +1,53 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Rusty Commit Saver"><title>rusty_commit_saver - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../static.files/rustdoc-84e720fa.css"><meta name="rustdoc-vars" data-root-path="../" data-static-root-path="../static.files/" data-current-crate="rusty_commit_saver" data-themes="" data-resource-suffix="" data-rustdoc-version="1.89.0 (29483883e 2025-08-04)" data-channel="1.89.0" data-search-js="search-92309212.js" data-settings-js="settings-5514c975.js" ><script src="../static.files/storage-4e99c027.js"></script><script defer src="../crates.js"></script><script defer src="../static.files/main-fd3af306.js"></script><noscript><link rel="stylesheet" href="../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../static.files/favicon-044be391.svg"></head><body class="rustdoc mod crate"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../rusty_commit_saver/index.html">rusty_<wbr>commit_<wbr>saver</a><span class="version">4.2.0</span></h2></div><div class="sidebar-elems"><ul class="block"><li><a id="all-types" href="all.html">All Items</a></li></ul><section id="rustdoc-toc"><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#rusty-commit-saver" title="Rusty Commit Saver">Rusty Commit Saver</a><ul><li><a href="#overview" title="Overview">Overview</a></li><li><a href="#quick-start" title="Quick Start">Quick Start</a></li><li><a href="#configuration" title="Configuration">Configuration</a></li><li><a href="#modules" title="Modules">Modules</a></li><li><a href="#features" title="Features">Features</a></li></ul></li></ul><h3><a href="#modules-1">Crate Items</a></h3><ul class="block"><li><a href="#modules-1" title="Modules">Modules</a></li><li><a href="#functions" title="Functions">Functions</a></li></ul></section><div id="rustdoc-modnav"></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1>Crate <span>rusty_commit_saver</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../src/rusty_commit_saver/lib.rs.html#1-117">Source</a> </span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><h2 id="rusty-commit-saver"><a class="doc-anchor" href="#rusty-commit-saver">§</a>Rusty Commit Saver</h2>
+<p>A Rust tool to automatically log Git commits into Obsidian diary entries.</p>
+<h3 id="overview"><a class="doc-anchor" href="#overview">§</a>Overview</h3>
+<p>Rusty Commit Saver captures each commit’s metadata and appends it to a dated
+diary entry in your Obsidian vault. Each entry includes:</p>
+<ul>
+<li>Timestamp</li>
+<li>Commit message</li>
+<li>Repository URL</li>
+<li>Branch name</li>
+<li>Commit hash</li>
+</ul>
+<h3 id="quick-start"><a class="doc-anchor" href="#quick-start">§</a>Quick Start</h3>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>rusty_commit_saver::{run_commit_saver, config::GlobalVars};
+<span class="kw">use </span>std::path::PathBuf;
+
+<span class="comment">// Initialize configuration
+</span><span class="kw">let </span>global_vars = GlobalVars::new();
+global_vars.set_all();
+
+<span class="comment">// Get configuration values
+</span><span class="kw">let </span>obsidian_root = global_vars.get_obsidian_root_path_dir();
+<span class="kw">let </span>commit_path = global_vars.get_obsidian_commit_path();
+<span class="kw">let </span>date_template = global_vars.get_template_commit_date_path();
+
+<span class="comment">// Save the commit
+</span>run_commit_saver(obsidian_root, <span class="kw-2">&amp;</span>commit_path, <span class="kw-2">&amp;</span>date_template).unwrap();</code></pre></div>
+<h3 id="configuration"><a class="doc-anchor" href="#configuration">§</a>Configuration</h3>
+<p>Configuration is stored in an INI file at:
+<code>~/.config/rusty-commit-saver/rusty-commit-saver.ini</code></p>
+<p>Example configuration:</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code>[obsidian]
+root_path_dir = ~/Documents/Obsidian
+commit_path = Diaries/Commits
+
+[templates]
+commit_date_path = %Y/%m-%B/%F.md
+commit_datetime = %Y-%m-%d %H:%M:%S</code></pre></div>
+<h3 id="modules"><a class="doc-anchor" href="#modules">§</a>Modules</h3>
+<ul>
+<li><a href="vim_commit/index.html" title="mod rusty_commit_saver::vim_commit"><code>vim_commit</code></a> - Core commit processing and diary file operations</li>
+<li><a href="config/index.html" title="mod rusty_commit_saver::config"><code>config</code></a> - Configuration management and INI file parsing</li>
+</ul>
+<h3 id="features"><a class="doc-anchor" href="#features">§</a>Features</h3>
+<ul>
+<li>✅ Automatic diary entry creation with YAML frontmatter</li>
+<li>✅ Timestamped commit rows formatted for Obsidian</li>
+<li>✅ Customizable storage path with date-based organization</li>
+<li>✅ Pipe escaping in commit messages for Markdown table safety</li>
+<li>✅ Thread-safe configuration with <code>OnceCell</code></li>
+</ul>
+</div></details><h2 id="modules-1" class="section-header">Modules<a href="#modules-1" class="anchor">§</a></h2><dl class="item-table"><dt><a class="mod" href="config/index.html" title="mod rusty_commit_saver::config">config</a></dt><dt><a class="mod" href="vim_commit/index.html" title="mod rusty_commit_saver::vim_commit">vim_<wbr>commit</a></dt></dl><h2 id="functions" class="section-header">Functions<a href="#functions" class="anchor">§</a></h2><dl class="item-table"><dt><a class="fn" href="fn.run_commit_saver.html" title="fn rusty_commit_saver::run_commit_saver">run_<wbr>commit_<wbr>saver</a></dt><dd>Core logic for saving a commit to an Obsidian diary file.</dd></dl></section></div></main></body></html>
