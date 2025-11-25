@@ -10,8 +10,80 @@ use configparser::ini::Ini;
 use dirs::home_dir;
 use once_cell::sync::OnceCell;
 
-/// Parse INI content into an Ini struct. Pure function, no I/O.
-/// Useful for testing config parsing without file I/O.
+/// Parses INI file content into a configuration object without file I/O.
+///
+/// This is a pure function that takes raw INI text and parses it into an `Ini` struct.
+/// It's useful for testing configuration parsing logic without reading from disk.
+///
+/// # Arguments
+///
+/// * `content` - The raw INI file content as a string
+///
+/// # Returns
+///
+/// - `Ok(Ini)` - Successfully parsed configuration
+/// - `Err(String)` - Parsing failed with error description
+///
+/// # INI Format
+///
+/// The INI format supported:
+/// ```
+/// [section_name]
+/// key1 = value1
+/// key2 = value2
+///
+/// [another_section]
+/// key3 = value3
+/// ```
+///
+/// # Examples
+///
+/// ```
+/// use rusty_commit_saver::config::parse_ini_content;
+///
+/// let ini_content = r#"
+/// [obsidian]
+/// root_path_dir = ~/Documents/Obsidian
+/// commit_path = Diaries/Commits
+///
+/// [templates]
+/// commit_date_path = %Y/%m-%B/%F.md
+/// commit_datetime = %Y-%m-%d %H:%M:%S
+/// "#;
+///
+/// let config = parse_ini_content(ini_content).unwrap();
+///
+/// // Access parsed values
+/// assert_eq!(
+///     config.get("obsidian", "root_path_dir"),
+///     Some("~/Documents/Obsidian".to_string())
+/// );
+/// assert_eq!(
+///     config.get("templates", "commit_date_path"),
+///     Some("%Y/%m-%B/%F.md".to_string())
+/// );
+/// ```
+///
+/// # Errors
+///
+/// Returns an error if:
+/// - INI syntax is invalid (malformed sections or key-value pairs)
+/// - The content cannot be parsed as valid UTF-8
+///
+/// # Testing
+///
+/// This function is particularly useful for unit testing without needing
+/// to create temporary files:
+///
+/// ```
+/// use rusty_commit_saver::config::parse_ini_content;
+///
+/// fn test_config_parsing() {
+///     let test_config = "[section]\nkey=value\n";
+///     let result = parse_ini_content(test_config);
+///     assert!(result.is_ok());
+/// }
+/// ```
 pub fn parse_ini_content(content: &str) -> Result<Ini, String> {
     let mut config = Ini::new();
     config
@@ -32,6 +104,39 @@ pub struct GlobalVars {
 }
 
 impl GlobalVars {
+    /// Creates a new uninitialized `GlobalVars` instance.
+    ///
+    /// This constructor initializes all fields as empty `OnceCell` values.
+    /// Use [`set_all()`](Self::set_all) to load configuration from the INI file.
+    ///
+    /// # Thread Safety
+    ///
+    /// `GlobalVars` uses `OnceCell` for thread-safe, lazy initialization.
+    /// Configuration values are set once and cannot be changed afterward.
+    ///
+    /// # Returns
+    ///
+    /// A new `GlobalVars` instance with all fields uninitialized
+    ///
+    /// # Fields
+    ///
+    /// - `config` - The parsed INI configuration file
+    /// - `obsidian_root_path_dir` - Root directory of Obsidian vault
+    /// - `obsidian_commit_path` - Subdirectory path for commit entries
+    /// - `template_commit_date_path` - Chrono format for date-based directory structure
+    /// - `template_commit_datetime` - Chrono format for datetime strings
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rusty_commit_saver::config::GlobalVars;
+    ///
+    /// // Create new instance
+    /// let global_vars = GlobalVars::new();
+    ///
+    /// // Now call set_all() to initialize from config file
+    /// // global_vars.set_all();
+    /// ```
     pub fn new() -> Self {
         info!("[GlobalVars::new()] Creating new GlobalVars with OnceCell default values.");
         GlobalVars {
@@ -45,6 +150,54 @@ impl GlobalVars {
         }
     }
 
+    /// Loads and initializes all configuration from the INI file.
+    ///
+    /// This is the main entry point for configuration setup. It:
+    /// 1. Reads the INI configuration file from disk (or CLI argument)
+    /// 2. Parses it into the `config` field
+    /// 3. Extracts and initializes all Obsidian and template variables
+    ///
+    /// Configuration is loaded from (in order of preference):
+    /// - `--config-ini <PATH>` CLI argument
+    /// - Default: `~/.config/rusty-commit-saver/rusty-commit-saver.ini`
+    ///
+    /// # Panics
+    ///
+    /// Panics if:
+    /// - Configuration file doesn't exist
+    /// - Configuration file cannot be read
+    /// - Configuration file has invalid INI format
+    /// - Required sections or keys are missing
+    /// - Section count is not exactly 2 (obsidian + templates)
+    ///
+    /// # Returns
+    ///
+    /// Returns `self` for method chaining
+    ///
+    /// # Required INI Structure
+    ///
+    /// ```
+    /// [obsidian]
+    /// root_path_dir = ~/Documents/Obsidian
+    /// commit_path = Diaries/Commits
+    ///
+    /// [templates]
+    /// commit_date_path = %Y/%m-%B/%F.md
+    /// commit_datetime = %Y-%m-%d %H:%M:%S
+    /// ```
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rusty_commit_saver::config::GlobalVars;
+    ///
+    /// let global_vars = GlobalVars::new();
+    /// global_vars.set_all(); // Reads from default or CLI config
+    ///
+    /// // Now all getters will return values
+    /// let root_path = global_vars.get_obsidian_root_path_dir();
+    /// let commit_path = global_vars.get_obsidian_commit_path();
+    /// ```
     pub fn set_all(&self) -> &Self {
         info!("[GlobalVars::set_all()] Setting all variables for GlobalVars");
         let config = get_ini_file();
@@ -60,6 +213,40 @@ impl GlobalVars {
         self
     }
 
+    /// Returns the root directory of the Obsidian vault.
+    ///
+    /// This is the base directory where all Obsidian vault files are stored.
+    /// All diary entries are created under this directory according to the
+    /// configured subdirectory structure.
+    ///
+    /// # Panics
+    ///
+    /// Panics if called before [`set_all()`](Self::set_all) has been invoked
+    ///
+    /// # Returns
+    ///
+    /// A `PathBuf` representing the Obsidian vault root directory
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rusty_commit_saver::config::GlobalVars;
+    ///
+    /// let global_vars = GlobalVars::new();
+    /// global_vars.set_all();
+    ///
+    /// let root = global_vars.get_obsidian_root_path_dir();
+    /// println!("Obsidian vault root: {}", root.display());
+    /// // Output: Obsidian vault root: /home/user/Documents/Obsidian
+    /// ```
+    ///
+    /// # Configuration Source
+    ///
+    /// Read from INI file:
+    /// ```
+    /// [obsidian]
+    /// root_path_dir = ~/Documents/Obsidian
+    /// ```
     pub fn get_obsidian_root_path_dir(&self) -> PathBuf {
         info!("[GlobalVars::get_obsidian_root_path_dir()]: Getting obsidian_root_path_dir.");
         self.obsidian_root_path_dir
@@ -68,6 +255,43 @@ impl GlobalVars {
             .clone()
     }
 
+    /// Returns the subdirectory path where commits are stored.
+    ///
+    /// This is a relative path under [`get_obsidian_root_path_dir()`](Self::get_obsidian_root_path_dir)
+    /// where commit diary entries will be organized. The full path is constructed by
+    /// combining this with the Obsidian root and the date-based directory structure.
+    ///
+    /// # Panics
+    ///
+    /// Panics if called before [`set_all()`](Self::set_all) has been invoked
+    ///
+    /// # Returns
+    ///
+    /// A `PathBuf` representing the commits subdirectory (relative path)
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rusty_commit_saver::config::GlobalVars;
+    ///
+    /// let global_vars = GlobalVars::new();
+    /// global_vars.set_all();
+    ///
+    /// let commit_path = global_vars.get_obsidian_commit_path();
+    /// println!("Commit subdirectory: {}", commit_path.display());
+    /// // Output: Commit subdirectory: Diaries/Commits
+    ///
+    /// // Full path would be constructed as:
+    /// // /home/user/Documents/Obsidian/Diaries/Commits/2025/01-January/2025-01-14.md
+    /// ```
+    ///
+    /// # Configuration Source
+    ///
+    /// Read from INI file:
+    /// ```
+    /// [obsidian]
+    /// commit_path = Diaries/Commits
+    /// ```
     pub fn get_obsidian_commit_path(&self) -> PathBuf {
         info!("[GlobalVars::get_obsidian_commit_path()]: Getting obsidian_commit_path.");
         self.obsidian_commit_path
@@ -76,6 +300,55 @@ impl GlobalVars {
             .clone()
     }
 
+    /// Returns the Chrono format string for diary file date hierarchies.
+    ///
+    /// This format string is used to create the directory structure and filename
+    /// for diary entries based on the commit timestamp. It controls how commits
+    /// are organized by date.
+    ///
+    /// # Chrono Format Specifiers
+    ///
+    /// - `%Y` - Full year (e.g., `2025`)
+    /// - `%m` - Month as zero-padded number (e.g., `01`)
+    /// - `%B` - Full month name (e.g., `January`)
+    /// - `%b` - Abbreviated month (e.g., `Jan`)
+    /// - `%d` - Day of month, zero-padded (e.g., `14`)
+    /// - `%F` - ISO 8601 date (equivalent to `%Y-%m-%d`, e.g., `2025-01-14`)
+    /// - `%H` - Hour in 24-hour format (e.g., `14`)
+    /// - `%M` - Minute (e.g., `30`)
+    /// - `%S` - Second (e.g., `45`)
+    ///
+    /// # Panics
+    ///
+    /// Panics if called before [`set_all()`](Self::set_all) has been invoked
+    ///
+    /// # Returns
+    ///
+    /// A `String` containing the Chrono format specifiers
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rusty_commit_saver::config::GlobalVars;
+    ///
+    /// let global_vars = GlobalVars::new();
+    /// global_vars.set_all();
+    ///
+    /// let date_template = global_vars.get_template_commit_date_path();
+    /// println!("Date format: {}", date_template);
+    /// // Output: Date format: %Y/%m-%B/%F.md
+    ///
+    /// // This creates paths like:
+    /// // /home/user/Obsidian/Diaries/Commits/2025/01-January/2025-01-14.md
+    /// ```
+    ///
+    /// # Configuration Source
+    ///
+    /// Read from INI file:
+    /// ```
+    /// [templates]
+    /// commit_date_path = %Y/%m-%B/%F.md
+    /// ```
     pub fn get_template_commit_date_path(&self) -> String {
         info!("[GlobalVars::get_template_commit_date_path()]: Getting template_commit_date_path.");
         self.template_commit_date_path
@@ -84,6 +357,62 @@ impl GlobalVars {
             .clone()
     }
 
+    /// Returns the Chrono format string for commit timestamps in diary entries.
+    ///
+    /// This format string is used to display the commit time in the diary table.
+    /// It controls how timestamps appear in the commit entry rows.
+    ///
+    /// # Chrono Format Specifiers
+    ///
+    /// - `%Y` - Full year (e.g., `2025`)
+    /// - `%m` - Month as zero-padded number (e.g., `01`)
+    /// - `%B` - Full month name (e.g., `January`)
+    /// - `%d` - Day of month, zero-padded (e.g., `14`)
+    /// - `%H` - Hour in 24-hour format (e.g., `14`)
+    /// - `%M` - Minute, zero-padded (e.g., `30`)
+    /// - `%S` - Second, zero-padded (e.g., `45`)
+    /// - `%T` - Time in HH:MM:SS format (equivalent to `%H:%M:%S`)
+    ///
+    /// # Panics
+    ///
+    /// Panics if called before [`set_all()`](Self::set_all) has been invoked
+    ///
+    /// # Returns
+    ///
+    /// A `String` containing the Chrono format specifiers for datetime
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rusty_commit_saver::config::GlobalVars;
+    ///
+    /// let global_vars = GlobalVars::new();
+    /// global_vars.set_all();
+    ///
+    /// let datetime_template = global_vars.get_template_commit_datetime();
+    /// println!("Datetime format: {}", datetime_template);
+    /// // Output: Datetime format: %Y-%m-%d %H:%M:%S
+    ///
+    /// // This renders timestamps like:
+    /// // 2025-01-14 14:30:45
+    /// ```
+    ///
+    /// # Diary Table Usage
+    ///
+    /// In the diary table, this format appears in the TIME column:
+    /// ```
+    /// | FOLDER | TIME | COMMIT MESSAGE | REPOSITORY URL | BRANCH | COMMIT HASH |
+    /// |--------|------|----------------|----------------|--------|-------------|
+    /// | /work/project | 14:30:45 | feat: add feature | https://github.com/... | main | abc123... |
+    /// ```
+    ///
+    /// # Configuration Source
+    ///
+    /// Read from INI file:
+    /// ```
+    /// [templates]
+    /// commit_datetime = %Y-%m-%d %H:%M:%S
+    /// ```
     pub fn get_template_commit_datetime(&self) -> String {
         info!("[GlobalVars::get_template_commit_datetime()]: Getting template_commit_datetime.");
         self.template_commit_datetime

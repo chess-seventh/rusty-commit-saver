@@ -55,6 +55,28 @@ impl Default for CommitSaver {
 }
 
 impl CommitSaver {
+    /// Creates a new `CommitSaver` instance by discovering the current Git repository.
+    ///
+    /// This function automatically:
+    /// - Discovers the Git repository in the current directory (`.`)
+    /// - Extracts commit metadata from the HEAD commit
+    /// - Formats the commit message for Obsidian (escapes pipes, adds `<br/>`)
+    ///
+    /// # Panics
+    ///
+    /// Panics if:
+    /// - No Git repository is found in the current directory
+    /// - The repository has no HEAD (uninitialized repo)
+    /// - The HEAD cannot be resolved to a commit
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rusty_commit_saver::CommitSaver;
+    ///
+    /// let saver = CommitSaver::new();
+    /// println!("Commit hash: {}", saver.commit_hash);
+    /// ```
     pub fn new() -> Self {
         CommitSaver::default()
     }
@@ -72,6 +94,42 @@ impl CommitSaver {
         )
     }
 
+    /// Generates Obsidian-style frontmatter tags based on the commit timestamp.
+    ///
+    /// Creates three metadata tags for organizing diary entries:
+    /// 1. **Week tag**: `#datetime/week/WW` (e.g., `#datetime/week/02` for week 2)
+    /// 2. **Day tag**: `#datetime/days/DDDD` (e.g., `#datetime/days/Monday`)
+    /// 3. **Category tag**: `#diary/commits` (constant)
+    ///
+    /// These tags are used in the Obsidian diary file's YAML frontmatter to enable:
+    /// - Filtering commits by week number
+    /// - Organizing by day of week
+    /// - Cross-referencing with other diary entries
+    ///
+    /// # Returns
+    ///
+    /// A vector of three strings containing formatted Obsidian tags
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rusty_commit_saver::CommitSaver;
+    /// use chrono::{TimeZone, Utc};
+    ///
+    /// let mut saver = CommitSaver {
+    ///     repository_url: "https://github.com/example/repo.git".to_string(),
+    ///     commit_branch_name: "main".to_string(),
+    ///     commit_hash: "abc123".to_string(),
+    ///     commit_msg: "feat: add feature".to_string(),
+    ///     commit_datetime: Utc.with_ymd_and_hms(2025, 1, 13, 10, 30, 0).unwrap(), // Monday
+    /// };
+    ///
+    /// let tags = saver.prepare_frontmatter_tags();
+    /// assert_eq!(tags.len(), 3);
+    /// assert!(tags.contains("week"));
+    /// assert!(tags.contains("Monday"));[1]
+    /// assert_eq!(tags, "#diary/commits");
+    /// ```
     pub fn prepare_frontmatter_tags(&mut self) -> Vec<String> {
         info!("[CommitSaver::prepare_frontmatter_tags()]: Preparing the frontmatter week number.");
         let week_number = format!("#datetime/week/{:}", self.commit_datetime.format("%W"));
@@ -85,6 +143,52 @@ impl CommitSaver {
         vec![week_number, week_day, "#diary/commits".to_string()]
     }
 
+    /// Constructs the full file path for a diary entry based on the commit timestamp.
+    ///
+    /// Combines the Obsidian commit directory path with a date-formatted subdirectory structure
+    /// to create the final path where the commit entry should be saved.
+    ///
+    /// # Arguments
+    ///
+    /// * `obsidian_commit_path` - Base directory path for commits (e.g., `Diaries/Commits`)
+    /// * `template_commit_date_path` - Chrono format string for the date hierarchy (e.g., `%Y/%m-%B/%F.md`)
+    ///
+    /// # Returns
+    ///
+    /// A formatted path string combining the base directory and formatted date
+    ///
+    /// # Format Specifiers (Chrono)
+    ///
+    /// - `%Y` - Year (e.g., `2025`)
+    /// - `%m` - Month as number (e.g., `01`)
+    /// - `%B` - Full month name (e.g., `January`)
+    /// - `%F` - ISO 8601 date (e.g., `2025-01-14.md`)
+    /// - `%d` - Day of month (e.g., `14`)
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rusty_commit_saver::CommitSaver;
+    /// use std::path::PathBuf;
+    /// use chrono::{TimeZone, Utc};
+    ///
+    /// let mut saver = CommitSaver {
+    ///     repository_url: "https://github.com/example/repo.git".to_string(),
+    ///     commit_branch_name: "main".to_string(),
+    ///     commit_hash: "abc123".to_string(),
+    ///     commit_msg: "feat: add feature".to_string(),
+    ///     commit_datetime: Utc.with_ymd_and_hms(2025, 1, 14, 10, 30, 0).unwrap(),
+    /// };
+    ///
+    /// let path = saver.prepare_path_for_commit(
+    ///     &PathBuf::from("Diaries/Commits"),
+    ///     "%Y/%m-%B/%F.md"
+    /// );
+    /// // Returns: "/Diaries/Commits/2025/01-January/2025-01-14.md"
+    /// assert!(path.contains("2025"));
+    /// assert!(path.contains("January"));
+    /// assert!(path.contains("2025-01-14.md"));
+    /// ```
     pub fn prepare_path_for_commit(
         &mut self,
         obsidian_commit_path: &Path,
@@ -116,7 +220,41 @@ impl CommitSaver {
         self.commit_datetime.format(path_format).to_string()
     }
 
-    /// Append commit to existing diary
+    /// Appends the current commit as a table row to an Obsidian diary file.
+    ///
+    /// This method writes a formatted commit entry to the specified diary file in append mode.
+    /// The entry includes: current directory, timestamp, commit message, repository URL, branch, and commit hash.
+    ///
+    /// # Arguments
+    ///
+    /// * `wiki` - Path to the diary file where the commit entry should be appended
+    ///
+    /// # Returns
+    ///
+    /// - `Ok(())` - Successfully appended the commit entry to the file
+    /// - `Err(Box<dyn Error>)` - If file operations fail (file doesn't exist, permission denied, etc.)
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - The diary file cannot be opened for appending
+    /// - The current working directory cannot be determined
+    /// - File write operations fail (I/O error, permission denied)
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rusty_commit_saver::CommitSaver;
+    /// use std::path::PathBuf;
+    ///
+    /// let mut saver = CommitSaver::new();
+    /// let diary_path = PathBuf::from("/home/user/diary/2025-01-14.md");
+    ///
+    /// match saver.append_entry_to_diary(&diary_path) {
+    ///     Ok(()) => println!("Commit logged successfully!"),
+    ///     Err(e) => eprintln!("Failed to log commit: {}", e),
+    /// }
+    /// ```
     pub fn append_entry_to_diary(&mut self, wiki: &PathBuf) -> Result<(), Box<dyn Error>> {
         info!("[CommitSaver::append_entry_to_diary()]: Getting current directory.");
         let path = env::current_dir()?;
@@ -157,6 +295,46 @@ tags:\n"
     }
 }
 
+/// Extracts the parent directory from a file path.
+///
+/// Returns a reference to the parent directory component of the given path.
+/// This is useful for creating parent directories before writing a file.
+///
+/// # Arguments
+///
+/// * `full_diary_path` - A file path to extract the parent directory from
+///
+/// # Returns
+///
+/// - `Ok(&Path)` - Reference to the parent directory
+/// - `Err(Box<dyn Error>)` - If the path has no parent (e.g., root directory `/`)
+///
+/// # Errors
+///
+/// Returns an error if:
+/// - The path is the root directory (has no parent)
+/// - The path is a relative single component with no parent
+///
+/// # Examples
+///
+/// ```
+/// use rusty_commit_saver::vim_commit::get_parent_from_full_path;
+/// use std::path::{Path, PathBuf};
+///
+/// // Normal nested path
+/// let path = Path::new("/home/user/documents/diary.md");
+/// let parent = get_parent_from_full_path(path).unwrap();
+/// assert_eq!(parent, Path::new("/home/user/documents"));
+///
+/// // Deep nesting
+/// let deep = Path::new("/a/b/c/d/e/f/file.txt");
+/// let parent = get_parent_from_full_path(deep).unwrap();
+/// assert_eq!(parent, Path::new("/a/b/c/d/e/f"));
+///
+/// // Root directory fails
+/// let root = Path::new("/");
+/// assert!(get_parent_from_full_path(root).is_err());
+/// ```
 pub fn get_parent_from_full_path(full_diary_path: &Path) -> Result<&Path, Box<dyn Error>> {
     info!(
         "[get_parent_from_full_path()] Checking if there is parents for: {:}.",
@@ -172,8 +350,39 @@ pub fn get_parent_from_full_path(full_diary_path: &Path) -> Result<&Path, Box<dy
     }
 }
 
-/// Method to veritfy that the file exists
-/// Will trigger the creation of it with a template if it doesn't
+/// Verifies whether a diary file exists at the specified path.
+///
+/// This function checks if the file at the given path exists on the filesystem.
+/// It's used to determine whether to create a new diary file with a template
+/// or append to an existing one.
+///
+/// # Arguments
+///
+/// * `full_diary_path` - Path to the diary file to check
+///
+/// # Returns
+///
+/// - `Ok(())` - File exists at the specified path
+/// - `Err(Box<dyn Error>)` - File does not exist at the specified path
+///
+/// # Examples
+///
+/// ```
+/// use rusty_commit_saver::vim_commit::check_diary_path_exists;
+/// use std::path::PathBuf;
+/// use std::fs::File;
+///
+/// // Create a temporary test file
+/// let test_file = PathBuf::from("/tmp/test_diary.md");
+/// File::create(&test_file).unwrap();
+///
+/// // File exists - returns Ok
+/// assert!(check_diary_path_exists(&test_file).is_ok());
+///
+/// // File doesn't exist - returns Err
+/// let missing_file = PathBuf::from("/tmp/nonexistent.md");
+/// assert!(check_diary_path_exists(&missing_file).is_err());
+/// ```
 pub fn check_diary_path_exists(full_diary_path: &PathBuf) -> Result<(), Box<dyn Error>> {
     info!(
         "[check_diary_path_exists()]: Checking that full_diary_path exists: {:}",
@@ -186,6 +395,47 @@ pub fn check_diary_path_exists(full_diary_path: &PathBuf) -> Result<(), Box<dyn 
     Err("Path does not exist!".into())
 }
 
+/// Creates all necessary parent directories for a diary file path.
+///
+/// Recursively creates the complete directory hierarchy needed to store a diary file.
+/// Uses `fs::create_dir_all()` which is idempotent—calling it on existing directories
+/// is safe and will not cause errors.
+///
+/// # Arguments
+///
+/// * `obsidian_root_path_dir` - The full path including the filename for the diary entry
+///
+/// # Returns
+///
+/// - `Ok(())` - All parent directories were successfully created
+/// - `Err(Box<dyn Error>)` - Directory creation failed (permission denied, invalid path, etc.)
+///
+/// # Errors
+///
+/// Returns an error if:
+/// - The parent path cannot be determined (root directory)
+/// - No write permissions to the parent directory
+/// - Invalid filesystem (e.g., read-only filesystem)
+/// - Path components are invalid (e.g., null bytes)
+///
+/// # Examples
+///
+/// ```
+/// use rusty_commit_saver::vim_commit::create_directories_for_new_entry;
+/// use std::path::PathBuf;
+/// use std::fs;
+///
+/// let diary_path = PathBuf::from("/tmp/test/deep/nested/path/diary.md");
+///
+/// // Create all parent directories
+/// create_directories_for_new_entry(&diary_path).unwrap();
+///
+/// // Verify the directories were created
+/// assert!(PathBuf::from("/tmp/test/deep/nested/path").exists());
+///
+/// // Calling again on existing directories is safe (idempotent)
+/// assert!(create_directories_for_new_entry(&diary_path).is_ok());
+/// ```
 pub fn create_directories_for_new_entry(
     obsidian_root_path_dir: &Path,
 ) -> Result<(), Box<dyn Error>> {
@@ -197,6 +447,57 @@ pub fn create_directories_for_new_entry(
     Ok(())
 }
 
+/// Creates a new diary file with Obsidian frontmatter and table template.
+///
+/// Generates a diary entry file with:
+/// - YAML frontmatter containing metadata and tags for Obsidian organization
+/// - A markdown table header for commit entries (folder, time, message, repo, branch, hash)
+/// - Pre-formatted for use with [`CommitSaver::append_entry_to_diary()`]
+///
+/// The created file is ready for commit entries to be appended to its table.
+///
+/// # Arguments
+///
+/// * `full_diary_file_path` - The complete path where the file should be created
+/// * `commit_saver_struct` - The `CommitSaver` instance to extract metadata from
+///
+/// # Returns
+///
+/// - `Ok(())` - File was successfully created with the template
+/// - `Err(Box<dyn Error>)` - File creation or write operation failed
+///
+/// # Errors
+///
+/// Returns an error if:
+/// - The file cannot be created (parent directory doesn't exist, permission denied)
+/// - Write operations fail (disk full, I/O error)
+/// - Path is invalid or contains invalid UTF-8
+///
+/// # Examples
+///
+/// ```
+/// use rusty_commit_saver::vim_commit::create_diary_file;
+/// use rusty_commit_saver::CommitSaver;
+/// use chrono::{TimeZone, Utc};
+/// use std::fs;
+///
+/// let mut saver = CommitSaver {
+///     repository_url: "https://github.com/example/repo.git".to_string(),
+///     commit_branch_name: "main".to_string(),
+///     commit_hash: "abc123def456".to_string(),
+///     commit_msg: "feat: implement feature".to_string(),
+///     commit_datetime: Utc.with_ymd_and_hms(2025, 1, 14, 10, 30, 0).unwrap(),
+/// };
+///
+/// let file_path = "/home/user/diary/2025-01-14.md";
+/// create_diary_file(file_path, &mut saver).unwrap();
+///
+/// // Verify file was created with proper structure
+/// let content = fs::read_to_string(file_path).unwrap();
+/// assert!(content.contains("---")); // Frontmatter markers
+/// assert!(content.contains("category: diary"));
+/// assert!(content.contains("| FOLDER | TIME | COMMIT MESSAGE")); // Table header
+/// ```
 pub fn create_diary_file(
     full_diary_file_path: &str,
     commit_saver_struct: &mut CommitSaver,

@@ -1,0 +1,41 @@
+name: 📚 Documentation
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+env:
+  CARGO_TERM_COLOR: always
+jobs:
+  # Generate Rustdoc and deploy to GitHub Pages
+  rustdoc:
+    name: 📚 Generate & Deploy Rustdoc
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: 📚 Generate documentation
+        run: |
+          cargo doc --no-deps --document-private-items
+          echo '<meta http-equiv="refresh" content="0; url=rusty_commit_saver">' > target/doc/index.html
+      - name: 📤 Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./target/doc
+          destination_dir: api
+  # Sync README to Wiki homepage
+  wiki:
+    name: 📖 Sync Wiki
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    steps:
+      - uses: actions/checkout@v4
+      - name: 📖 Sync README to Wiki
+        uses: Andrew-Chen-Wang/github-wiki-action@v4
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
