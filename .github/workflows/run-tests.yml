@@ -1,0 +1,92 @@
+name: 🧪 Rust Tests & Coverage
+on:
+  push:
+    branches: ["master"]
+  pull_request:
+    branches: ["master"]
+env:
+  CARGO_TERM_COLOR: always
+jobs:
+  unittest:
+    name: 🧪 Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: 🛠️ Install latest nextest release
+        uses: taiki-e/install-action@v2 # v2
+        with:
+          tool: nextest
+      - uses: Swatinem/rust-cache@v2 # v2
+      - name: 🛠️ Run nextests
+        run: cargo nextest run --no-fail-fast
+  coverage:
+    name: 📚 Collect test coverage
+    runs-on: ubuntu-latest
+    # nightly rust might break from time to time
+    continue-on-error: true
+    env:
+      RUSTFLAGS: -D warnings
+      CARGO_TERM_COLOR: always
+    steps:
+      - uses: actions/checkout@v4
+        # Nightly Rust is used for cargo llvm-cov --doc below.
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: llvm-tools-preview
+      - uses: Swatinem/rust-cache@v2 # v2
+      - name: 🛠️ Install latest nextest release
+        uses: taiki-e/install-action@v2 # v2
+        with:
+          tool: nextest
+      - name: 🛠️ Install cargo-llvm-cov
+        uses: taiki-e/install-action@v2 # v2
+        with:
+          tool: cargo-llvm-cov
+      - name: 📚 Collect coverage data
+        # Generate separate reports for nextest and doctests, and combine them.
+        run: |
+          cargo llvm-cov --no-report nextest
+          cargo llvm-cov --no-report --doc
+          cargo llvm-cov report --doctests --lcov --output-path lcov.info
+      - name: 💭 Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          files: lcov.info
+          token: ${{ secrets.CODECOV_TOKEN }}
+          slug: chess-seventh/rusty-commit-saver
+  clippy:
+    name: ✂️ Rust Clippy
+    runs-on: ubuntu-latest
+    steps:
+      - name: ♻️ Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: 🛠️ Install correct toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          profile: minimal
+          components: clippy
+      - name: ♻️ Cache
+        uses: Swatinem/rust-cache@v2
+      - name: ✂️ Clippy
+        run: cargo clippy --all-targets -- -W clippy::pedantic
+  cleanup-deps:
+    name: 🧹 Cleanup Dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - name: ♻️ Checkout repository
+        uses: actions/checkout@v4
+      - name: 🛠️ Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          profile: minimal
+          components: rustfmt
+      - name: 🛠️ Install Cargo-Shear
+        run: |
+          cargo install cargo-shear
+      - name: 🛠️ Check un-used dependenecies
+        run: |
+          cargo shear
