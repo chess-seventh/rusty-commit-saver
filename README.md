@@ -1,24 +1,15 @@
 # 🦀 Rusty Commit Saver
 
-## *✨ A simple Rust tool to automatically log your Git commits into a Markdown filei for Obsidian. ✨*
-
 <div align="center">
 
 [![Rust](https://img.shields.io/badge/🦀%20rust-blue)](https://rustlang.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Build Status](https://img.shields.io/github/actions/workflow/status/chess-seventh/rusty-commit-saver/tests.yml?branch=master)](https://github.com/chess-seventh/rusty-commit-saver/actions)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/chess-seventh/rusty-commit-saver/.github/workflows/release.yml?branch=master)](https://github.com/chess-seventh/rusty-commit-saver/actions)
 [![codecov](https://codecov.io/github/chess-seventh/rusty-commit-saver/graph/badge.svg?token=4ZK40EALQ8)](https://codecov.io/github/chess-seventh/rusty-commit-saver)
 
 </div>
 
-**Table of Contents:**
-
-- [🚀 Features](#features-)
-- [📦 Installation](#installation-)
-- [⚙️ Usage](#usage-)
-- [🛠️ Configuration](#configuration-)
-- [📈 Roadmap & Improvements](#roadmap--improvements-)
-- [💖 Contributing](#contributing-)
+✨ A Rust flake to automatically log al Git commits into Obsidian. ✨
 
 Rusty Commit Saver captures each commit’s:
 
@@ -29,6 +20,15 @@ Rusty Commit Saver captures each commit’s:
 - **Commit hash**
 
 and appends it to a dated diary entry in your Wiki directory.
+
+**Table of Contents:**
+
+- [🚀 Features](#features-)
+- [📦 Installation](#installation-)
+- [🛞 Usage](#usage-)
+- [🛠️ Configuration](#configuration-)
+- [📈 Roadmap & Improvements](#roadmap--improvements-)
+- [💖 Contributing](#contributing-)
 
 ---
 
@@ -70,11 +70,11 @@ and appends it to a dated diary entry in your Wiki directory.
 
 ---
 
-## Usage ⚙️
+## Usage 🛞
 
 Simply commit as usual. The pre-commit hook will:
 
-1. Run linters (clippy, rustfmt, etc.) inside the Nix shell
+1. Run linters (`clippy`, `rustfmt`, etc.) inside the Nix shell
 2. Invoke Rusty Commit Saver to log the commit
 
 If you prefer manual invocation:
@@ -125,4 +125,4 @@ Contributions welcome! Feel free to open issues or submit PRs.
 
 ## License 📄
 
-MIT © 2025 Chess7th
+MIT © 2025 [Chess7th](mailto:chess7th@pm.me)

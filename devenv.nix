@@ -174,7 +174,6 @@
           tables = false;
         };
         MD041 = false;
-        MD051 = false;
       };
     };
 
