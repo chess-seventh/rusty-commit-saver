@@ -1,6 +1,14 @@
-# Rusty Commit Saver
+# 🦀 Rusty Commit Saver
 
-**A simple Rust tool to automatically log your Git commits into Markdown files for Obsidian.**
+<div align="center">
+
+[![Rust](https://img.shields.io/badge/Rust-000000?style=for-the-badge&logo=rust&logoColor=white)](https://rustlang.org)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/chess-seventh/rusty-commit-saver/.github/workflow/build.yml?branch=main&style=for-the-badge)](https://github.com/chess-seventh/rusty-commit-saver/actions)
+[![codecov](https://codecov.io/github/chess-seventh/rusty-commit-saver/graph/badge.svg?token=4ZK40EALQ8)](https://codecov.io/github/chess-seventh/rusty-commit-saver)
+*✨ A simple Rust tool to automatically log your Git commits into a Markdown filei for Obsidian. ✨*
+
+</div>
 
 Rusty Commit Saver captures each commit’s:
 
