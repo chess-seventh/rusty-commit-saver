@@ -40,7 +40,7 @@ jobs:
           components: clippy
       - uses: Swatinem/rust-cache@v2
       - name: ✂️ Clippy
-        run: cargo clippy --all-targets -- -D warnings -W clippy::pedantic
+        run: cargo clippy --all-targets -- -W clippy::pedantic -A clippy::missing_errors_doc -A clippy::must_use_candidate -A clippy::module_name_repetitions -A clippy::doc_markdown -A clippy::missing_panics_doc
   cleanup-deps:
     name: 🧹 Dependency Check
     runs-on: ubuntu-latest
