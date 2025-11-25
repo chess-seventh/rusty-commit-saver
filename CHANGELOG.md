@@ -1,3 +1,12 @@
+# [4.1.0](https://github.com/chess-seventh/rusty-commit-saver/compare/v4.0.1...v4.1.0) (2025-11-25)
+
+
+### Features
+
+* Enhance dev environment with auto tools ([4bb79e5](https://github.com/chess-seventh/rusty-commit-saver/commit/4bb79e570303c7b06385234cefe3e904ec3fbdee))
+
+
+
 ## [4.0.1](https://github.com/chess-seventh/rusty-commit-saver/compare/v4.0.0...v4.0.1) (2025-11-25)
 
 
