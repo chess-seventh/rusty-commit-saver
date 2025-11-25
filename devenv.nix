@@ -2,6 +2,7 @@
 
 {
   dotenv.enable = true;
+  difftastic.enable = true;
 
   env.GREET = "Welcome to the Rusty CV Commit Saver";
 
@@ -34,7 +35,7 @@
 
     rust = {
       enable = true;
-      channel = "stable";
+      channel = "nightly";
       components = [
         "rustc"
         "cargo"
