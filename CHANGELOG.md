@@ -1,3 +1,7 @@
+## [4.1.4](https://github.com/chess-seventh/rusty-commit-saver/compare/v4.1.3...v4.1.4) (2025-11-25)
+
+
+
 ## [4.1.3](https://github.com/chess-seventh/rusty-commit-saver/compare/v4.1.2...v4.1.3) (2025-11-25)
 
 
