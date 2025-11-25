@@ -50,14 +50,14 @@
     shell.enable = true;
   };
 
-  processes = { cargo-watch.exec = "cargo-watch"; };
+  # processes = { cargo-watch.exec = "cargo-watch"; };
 
-  tasks = {
-    "bash:source_env" = {
-      exec = "source $PWD/.env";
-      after = [ "devenv:enterShell" ];
-    };
-  };
+  # tasks = {
+  #   "bash:source_env" = {
+  #     exec = "source $PWD/.env";
+  #     after = [ "devenv:enterShell" ];
+  #   };
+  # };
 
   git-hooks.hooks = {
     rusty-commit-saver = {
@@ -113,6 +113,7 @@
       name = "✨ Shell Check";
       enable = true;
       stages = [ "pre-commit" ];
+      excludes = [ ".envrc" ".direnv/*" ];
     };
 
     mdsh = {
@@ -163,6 +164,7 @@
       name = "✨ MarkdownLint";
       enable = true;
       stages = [ "pre-commit" ];
+      excludes = [ "CHANGELOG.md" ];
       settings.configuration = {
         MD033 = false;
         MD013 = {
@@ -230,5 +232,11 @@
     (lib.mapAttrs (name: value: value.description) config.scripts)}
     EOF
     echo
+  '';
+
+  enterTest = ''
+    cargo clippy --all-targets -- -D warnings
+    cargo llvm-cov --html nextest --no-fail-fast
+    cargo nextest run --no-fail-fast --all-targets
   '';
 }
