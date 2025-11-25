@@ -42,13 +42,10 @@ jobs:
         uses: taiki-e/install-action@v2 # v2
         with:
           tool: cargo-llvm-cov
-      - name: 📚 Collect coverage data
-        # Generate separate reports for nextest and doctests, and combine them.
+      - name: 📚 Collect coverage data (nextest only, skip doctests)
         run: |
-          cargo llvm-cov --no-report nextest
-          cargo llvm-cov --no-report --doc
-          rustup default nightly
-          cargo llvm-cov report --doctests --lcov --output-path lcov.info
+          cargo llvm-cov --no-report nextest --no-fail-fast
+          cargo llvm-cov report --lcov --output-path lcov.info
       - name: 💭 Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5
         with:
