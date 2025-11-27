@@ -14,7 +14,7 @@
         overlays = [ (import rust-overlay) ];
         pkgs = import nixpkgs { inherit system overlays; };
 
-        rustVersion = pkgs.rust-bin.stable."1.89.0".default;
+        rustVersion = pkgs.rust-bin.nightly."1.89.0".default;
 
         rustPlatform = pkgs.makeRustPlatform {
           cargo = rustVersion;
