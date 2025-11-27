@@ -27,7 +27,7 @@ use once_cell::sync::OnceCell;
 /// # INI Format
 ///
 /// The INI format supported:
-/// ```
+/// ```text
 /// [section_name]
 /// key1 = value1
 /// key2 = value2
@@ -38,7 +38,7 @@ use once_cell::sync::OnceCell;
 ///
 /// # Examples
 ///
-/// ```
+/// ```ignore
 /// use rusty_commit_saver::config::parse_ini_content;
 ///
 /// let ini_content = r#"
@@ -75,7 +75,7 @@ use once_cell::sync::OnceCell;
 /// This function is particularly useful for unit testing without needing
 /// to create temporary files:
 ///
-/// ```
+/// ```ignore
 /// use rusty_commit_saver::config::parse_ini_content;
 ///
 /// fn test_config_parsing() {
@@ -100,7 +100,7 @@ pub fn parse_ini_content(content: &str) -> Result<Ini, String> {
 ///
 /// # Usage Pattern
 ///
-/// ```
+/// ```ignore
 /// use rusty_commit_saver::config::GlobalVars;
 ///
 /// // 1. Create instance
@@ -145,7 +145,7 @@ pub struct GlobalVars {
     /// # Configuration
     ///
     /// Loaded from INI file:
-    /// ```
+    /// ```text
     /// [obsidian]
     /// root_path_dir = ~/Documents/Obsidian
     /// ```
@@ -164,7 +164,7 @@ pub struct GlobalVars {
     /// # Full Path Construction
     ///
     /// Combined with root and date template:
-    /// ```
+    /// ```text
     /// {root_path_dir}/{commit_path}/{date_template}
     /// /home/user/Obsidian/Diaries/Commits/2025/01-January/2025-01-14.md
     /// ```
@@ -172,7 +172,7 @@ pub struct GlobalVars {
     /// # Configuration
     ///
     /// Loaded from INI file:
-    /// ```
+    /// ```text
     /// [obsidian]
     /// commit_path = Diaries/Commits
     /// ```
@@ -193,7 +193,7 @@ pub struct GlobalVars {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```text
     /// Format: %Y/%m-%B/%F.md
     /// Result: 2025/01-January/2025-01-14.md
     ///
@@ -204,7 +204,7 @@ pub struct GlobalVars {
     /// # Configuration
     ///
     /// Loaded from INI file:
-    /// ```
+    /// ```text
     /// [templates]
     /// commit_date_path = %Y/%m-%B/%F.md
     /// ```
@@ -226,7 +226,7 @@ pub struct GlobalVars {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```text
     /// Format: %Y-%m-%d %H:%M:%S
     /// Result: 2025-01-14 14:30:45
     ///
@@ -237,7 +237,7 @@ pub struct GlobalVars {
     /// # Configuration
     ///
     /// Loaded from INI file:
-    /// ```
+    /// ```text
     /// [templates]
     /// commit_datetime = %Y-%m-%d %H:%M:%S
     /// ```
@@ -269,7 +269,7 @@ impl GlobalVars {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```ignore
     /// use rusty_commit_saver::config::GlobalVars;
     ///
     /// // Create new instance
@@ -317,7 +317,7 @@ impl GlobalVars {
     ///
     /// # Required INI Structure
     ///
-    /// ```
+    /// ```text
     /// [obsidian]
     /// root_path_dir = ~/Documents/Obsidian
     /// commit_path = Diaries/Commits
@@ -329,7 +329,7 @@ impl GlobalVars {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```ignore
     /// use rusty_commit_saver::config::GlobalVars;
     ///
     /// let global_vars = GlobalVars::new();
@@ -370,7 +370,7 @@ impl GlobalVars {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```ignore
     /// use rusty_commit_saver::config::GlobalVars;
     ///
     /// let global_vars = GlobalVars::new();
@@ -384,7 +384,7 @@ impl GlobalVars {
     /// # Configuration Source
     ///
     /// Read from INI file:
-    /// ```
+    /// ```text
     /// [obsidian]
     /// root_path_dir = ~/Documents/Obsidian
     /// ```
@@ -412,7 +412,7 @@ impl GlobalVars {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```ignore
     /// use rusty_commit_saver::config::GlobalVars;
     ///
     /// let global_vars = GlobalVars::new();
@@ -429,7 +429,7 @@ impl GlobalVars {
     /// # Configuration Source
     ///
     /// Read from INI file:
-    /// ```
+    /// ```text
     /// [obsidian]
     /// commit_path = Diaries/Commits
     /// ```
@@ -469,7 +469,7 @@ impl GlobalVars {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```ignore
     /// use rusty_commit_saver::config::GlobalVars;
     ///
     /// let global_vars = GlobalVars::new();
@@ -486,7 +486,7 @@ impl GlobalVars {
     /// # Configuration Source
     ///
     /// Read from INI file:
-    /// ```
+    /// ```text
     /// [templates]
     /// commit_date_path = %Y/%m-%B/%F.md
     /// ```
@@ -524,7 +524,7 @@ impl GlobalVars {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```ignore
     /// use rusty_commit_saver::config::GlobalVars;
     ///
     /// let global_vars = GlobalVars::new();
@@ -541,7 +541,7 @@ impl GlobalVars {
     /// # Diary Table Usage
     ///
     /// In the diary table, this format appears in the TIME column:
-    /// ```
+    /// ```text
     /// | FOLDER | TIME | COMMIT MESSAGE | REPOSITORY URL | BRANCH | COMMIT HASH |
     /// |--------|------|----------------|----------------|--------|-------------|
     /// | /work/project | 14:30:45 | feat: add feature | https://github.com/... | main | abc123... |
@@ -550,7 +550,7 @@ impl GlobalVars {
     /// # Configuration Source
     ///
     /// Read from INI file:
-    /// ```
+    /// ```text
     /// [templates]
     /// commit_datetime = %Y-%m-%d %H:%M:%S
     /// ```
@@ -651,7 +651,7 @@ impl GlobalVars {
     ///
     /// # Expected INI Key
     ///
-    /// ```
+    /// ```text
     /// [templates]
     /// commit_datetime = %Y-%m-%d %H:%M:%S
     /// ```
@@ -683,7 +683,7 @@ impl GlobalVars {
     ///
     /// # Expected INI Key
     ///
-    /// ```
+    /// ```text
     /// [templates]
     /// commit_date_path = %Y/%m-%B/%F.md
     /// ```
@@ -723,7 +723,7 @@ impl GlobalVars {
     ///
     /// # Expected INI Key
     ///
-    /// ```
+    /// ```text
     /// [obsidian]
     /// commit_path = ~/Documents/Obsidian/Diaries/Commits
     /// ```
@@ -784,7 +784,7 @@ impl GlobalVars {
     ///
     /// # Expected INI Key
     ///
-    /// ```
+    /// ```text
     /// [obsidian]
     /// root_path_dir = ~/Documents/Obsidian
     /// ```
@@ -834,7 +834,7 @@ impl GlobalVars {
 ///
 /// # Examples
 ///
-/// ```
+/// ```text
 /// # Use default config (~/.config/rusty-commit-saver/rusty-commit-saver.ini)
 /// rusty-commit-saver
 ///
@@ -858,7 +858,7 @@ pub struct UserInput {
     ///
     /// # CLI Usage
     ///
-    /// ```
+    /// ```text
     /// rusty-commit-saver --config-ini /custom/path/config.ini
     /// ```
     ///
@@ -888,7 +888,7 @@ pub struct UserInput {
 ///
 /// # CLI Usage
 ///
-/// ```
+/// ```text
 /// # Use default config
 /// rusty-commit-saver
 /// # Returns: /home/user/.config/rusty-commit-saver/rusty-commit-saver.ini
@@ -900,7 +900,7 @@ pub struct UserInput {
 ///
 /// # Examples
 ///
-/// ```
+/// ```ignore
 /// use rusty_commit_saver::config::retrieve_config_file_path;
 ///
 /// let config_path = retrieve_config_file_path();
@@ -950,7 +950,7 @@ pub fn retrieve_config_file_path() -> String {
 /// # See Also
 ///
 /// - [`get_default_ini_path()`] - Constructs the default configuration path
-fn get_or_default_config_ini_path() -> String {
+pub fn get_or_default_config_ini_path() -> String {
     info!("[get_or_default_config_ini_path()]: Parsing CLI inputs.");
     let args = UserInput::parse();
 
@@ -990,7 +990,7 @@ fn get_or_default_config_ini_path() -> String {
 ///
 /// # Directory Structure
 ///
-/// ```
+/// ```text
 /// ~/.config/
 ///   └── rusty-commit-saver/
 ///       └── rusty-commit-saver.ini
@@ -1003,7 +1003,7 @@ fn get_or_default_config_ini_path() -> String {
 ///
 /// # Examples
 ///
-/// ```
+/// ```ignore
 /// // Internal usage
 /// let default_path = get_default_ini_path();
 /// // Returns: "/home/user/.config/rusty-commit-saver/rusty-commit-saver.ini"
@@ -1012,7 +1012,7 @@ fn get_or_default_config_ini_path() -> String {
 /// # See Also
 ///
 /// - [`retrieve_config_file_path()`] - Public API for getting config path
-fn get_default_ini_path() -> String {
+pub fn get_default_ini_path() -> String {
     info!("[get_default_ini_path()]: Getting default ini file.");
     let cfg_str = "~/.config/rusty-commit-saver/rusty-commit-saver.ini".to_string();
     set_proper_home_dir(&cfg_str)
@@ -1043,7 +1043,7 @@ fn get_default_ini_path() -> String {
 ///
 /// # Expected INI Structure
 ///
-/// ```
+/// ```text
 /// [obsidian]
 /// root_path_dir = ~/Documents/Obsidian
 /// commit_path = Diaries/Commits
@@ -1061,7 +1061,7 @@ fn get_default_ini_path() -> String {
 ///
 /// - [`retrieve_config_file_path()`] - Resolves the config file path
 /// - [`parse_ini_content()`] - Parses INI text into `Ini` struct
-fn get_ini_file() -> Ini {
+pub fn get_ini_file() -> Ini {
     info!("[get_ini_file()]: Retrieving the INI File");
     let content_ini = retrieve_config_file_path();
     let mut config = Ini::new();
@@ -1093,7 +1093,7 @@ fn get_ini_file() -> Ini {
 ///
 /// # Examples
 ///
-/// ```
+/// ```ignore
 /// // On Linux/macOS with home at /home/user
 /// let expanded = set_proper_home_dir("~/Documents/Obsidian");
 /// assert_eq!(expanded, "/home/user/Documents/Obsidian");

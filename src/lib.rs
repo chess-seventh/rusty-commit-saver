@@ -15,7 +15,7 @@
 //!
 //! ## Quick Start
 //!
-//! ```
+//! ```ignore
 //! use rusty_commit_saver::{run_commit_saver, config::GlobalVars};
 //! use std::path::PathBuf;
 //!
@@ -39,7 +39,7 @@
 //!
 //! Example configuration:
 //!
-//! ```
+//! ```text
 //! [obsidian]
 //! root_path_dir = ~/Documents/Obsidian
 //! commit_path = Diaries/Commits

@@ -3,10 +3,10 @@
     "devenv": {
       "locked": {
         "dir": "src/modules",
-        "lastModified": 1764082355,
+        "lastModified": 1764227073,
         "owner": "cachix",
         "repo": "devenv",
-        "rev": "42c2bdc468814a18a81eb19df79c47929b298b1b",
+        "rev": "ee868b9986b84b82fee40ecc2524340d4a154961",
         "type": "github"
       },
       "original": {
@@ -106,10 +106,10 @@
     },
     "nixpkgs_2": {
       "locked": {
-        "lastModified": 1763934636,
+        "lastModified": 1764167966,
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "ee09932cedcef15aaf476f9343d1dea2cb77e261",
+        "rev": "5c46f3bd98147c8d82366df95bbef2cab3a967ea",
         "type": "github"
       },
       "original": {
@@ -138,10 +138,10 @@
         ]
       },
       "locked": {
-        "lastModified": 1764038373,
+        "lastModified": 1764211126,
         "owner": "oxalica",
         "repo": "rust-overlay",
-        "rev": "ab3536fe850211a96673c6ffb2cb88aab8071cc9",
+        "rev": "895935bff08cfcfb663fb9c8263c43596e7cd1ed",
         "type": "github"
       },
       "original": {
@@ -155,10 +155,10 @@
         "nixpkgs": "nixpkgs_2"
       },
       "locked": {
-        "lastModified": 1757989933,
+        "lastModified": 1764038373,
         "owner": "oxalica",
         "repo": "rust-overlay",
-        "rev": "8249aa3442fb9b45e615a35f39eca2fe5510d7c3",
+        "rev": "ab3536fe850211a96673c6ffb2cb88aab8071cc9",
         "type": "github"
       },
       "original": {
@@ -176,15 +176,15 @@
         "rust-overlay": "rust-overlay_2"
       },
       "locked": {
-        "lastModified": 1764115189,
+        "lastModified": 1764089152,
         "owner": "chess-seventh",
         "repo": "rusty-commit-saver",
-        "rev": "982216f44cbd22e8be972da8fcaa5c9c7b6bedd5",
+        "rev": "cc0bf19ae14b04901be5ee654df30733484fffae",
         "type": "github"
       },
       "original": {
         "owner": "chess-seventh",
-        "ref": "HEAD",
+        "ref": "v4.0.0",
         "repo": "rusty-commit-saver",
         "type": "github"
       }
