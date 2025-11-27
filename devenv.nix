@@ -30,6 +30,16 @@
     cargo-watch
     rustup
     bacon
+
+    cargo-edit # cargo add, cargo rm, cargo upgrade
+    cargo-expand # cargo expand for macro debugging
+    cargo-outdated # check for outdated dependencies
+    cargo-audit # security audit
+    cargo-deny # dependency management
+    cargo-release # release management
+    cargo-cross # cross-compilation
+    cargo-machete # find unused dependencies
+    cargo-update # update installed binaries
   ];
 
   languages = {
@@ -219,24 +229,137 @@
       '';
     };
 
-    watch-test = {
+    watch-clippy = {
       description = "Watch and re-run tests on file changes";
       exec = ''
-        cargo watch -x 'clippy --all-targets -- -D warnings' -x 'llvm-cov --html nextest --no-fail-fast'
+        bacon clippy
       '';
     };
+    # cargo watch -x 'clippy --all-targets -- -D warnings' -x 'llvm-cov --html nextest --no-fail-fast'
 
-    watch-nextest = {
+    watch-coverage = {
       description = "Watch and re-run nextest on file changes";
       exec = ''
-        cargo watch -x 'nextest run --no-fail-fast --all-targets'
+        bacon coverage
       '';
     };
+    # cargo watch -x 'nextest run --no-fail-fast --all-targets'
 
     watch-check = {
       description = "Watch and run quick checks (clippy only)";
       exec = ''
         cargo watch -x 'clippy --all-targets -- -D warnings'
+      '';
+    };
+
+    build = {
+      description = "Build the Rust project";
+      exec = ''
+        #!/usr/bin/env bash
+        set -euo pipefail
+        echo "🔨 Building Rust project..."
+        cargo build
+      '';
+    };
+
+    build-release = {
+      description = "Build the Rust project in release mode";
+      exec = ''
+        #!/usr/bin/env bash
+        set -euo pipefail
+        echo "🚀 Building Rust project (release mode)..."
+        cargo build --release
+      '';
+    };
+
+    test = {
+      description = "Run tests with cargo test";
+      exec = ''
+        #!/usr/bin/env bash
+        set -euo pipefail
+        echo "🧪 Running tests..."
+        cargo test
+      '';
+    };
+
+    test-coverage = {
+      description = "Run tests with coverage";
+      exec = ''
+        #!/usr/bin/env bash
+        set -euo pipefail
+        echo "📊 Running tests with coverage..."
+        cargo llvm-cov --all-features --workspace --lcov --output-path lcov.info
+        cargo llvm-cov report
+      '';
+    };
+
+    lint = {
+      description = "Run Clippy linter";
+      exec = ''
+        #!/usr/bin/env bash
+        set -euo pipefail
+        echo "🔍 Running Clippy linter..."
+        cargo clippy --all-targets --all-features -- -D warnings
+      '';
+    };
+
+    format = {
+      description = "Format code with rustfmt";
+      exec = ''
+        #!/usr/bin/env bash
+        set -euo pipefail
+        echo "🎨 Formatting code..."
+        cargo fmt
+      '';
+    };
+
+    check = {
+      description = "Check code without building";
+      exec = ''
+        #!/usr/bin/env bash
+        set -euo pipefail
+        echo "✅ Checking code..."
+        cargo check
+      '';
+    };
+
+    audit = {
+      description = "Security audit with cargo audit";
+      exec = ''
+        #!/usr/bin/env bash
+        set -euo pipefail
+        echo "🔒 Running security audit..."
+        cargo audit
+      '';
+    };
+
+    outdated = {
+      description = "Check for outdated dependencies";
+      exec = ''
+        #!/usr/bin/env bash
+        set -euo pipefail
+        echo "📦 Checking for outdated dependencies..."
+        cargo outdated
+      '';
+    };
+
+    clean = {
+      description = "Clean build artifacts";
+      exec = ''
+        #!/usr/bin/env bash
+        set -euo pipefail
+        echo "🧹 Cleaning build artifacts..."
+        cargo clean
+      '';
+    };
+
+    deps = {
+      description = "Show dependency tree";
+      exec = ''
+        #!/usr/bin/env bash
+        set -euo pipefail
+        echo "📦 Dependency tree:"
+        cargo tree
       '';
     };
   };
