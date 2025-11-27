@@ -206,7 +206,7 @@
         Run clippy
       '';
       exec = ''
-        cargo clippy --all-targets -- -W clippy::pedantic -A clippy::missing_errors_doc -A clippy::must_use_candidate -A clippy::module_name_repetitions -A clippy::doc_markdown -A clippy::missing_panics_doc
+        cargo clippy --all-targets -- -W clippy::pedantic -A clippy::must-use-candidate
       '';
     };
 

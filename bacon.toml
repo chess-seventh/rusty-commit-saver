@@ -7,7 +7,9 @@ command = [
   "--all-targets",
   "--",
   "-W",
-  "clippy::pedantic"
+  "clippy::pedantic",
+  "-A",
+  "clippy::must-use-candidate"
 ]
 need_stdout = true
 watch = ["src", "tests", "Cargo.toml"]
