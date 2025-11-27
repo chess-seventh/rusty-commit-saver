@@ -190,6 +190,7 @@ impl CommitSaver {
     /// let saver = CommitSaver::new();
     /// println!("Commit hash: {}", saver.commit_hash);
     /// ```
+    #[must_use]
     pub fn new() -> Self {
         CommitSaver::default()
     }
@@ -307,6 +308,12 @@ impl CommitSaver {
     /// - `%B` - Full month name (e.g., `January`)
     /// - `%F` - ISO 8601 date (e.g., `2025-01-14.md`)
     /// - `%d` - Day of month (e.g., `14`)
+    ///
+    /// # Panics
+    ///
+    /// Panics if:
+    /// - The `obsidian_commit_path` cannot be converted to a valid UTF-8 string
+    /// - The path contains invalid characters that cannot be represented as a string
     ///
     /// # Examples
     ///
@@ -553,6 +560,13 @@ pub fn get_parent_from_full_path(full_diary_path: &Path) -> Result<&Path, Box<dy
 ///
 /// - `Ok(())` - File exists at the specified path
 /// - `Err(Box<dyn Error>)` - File does not exist at the specified path
+///
+/// # Errors
+///
+/// Returns an error if:
+/// - The file does not exist on the filesystem
+/// - The path cannot be accessed due to permission issues
+/// - The path represents a directory instead of a file
 ///
 /// # Examples
 ///

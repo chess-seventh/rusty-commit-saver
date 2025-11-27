@@ -75,6 +75,16 @@ use vim_commit::{
 /// Core logic for saving a commit to an Obsidian diary file.
 ///
 /// (Full documentation from Function 9 above)
+///
+/// # Errors
+///
+/// Returns an error if:
+/// - Git repository cannot be discovered (not in a git repo or parent directories)
+/// - The diary path cannot be converted to valid UTF-8 encoding
+/// - Parent directories cannot be created (permission denied, invalid path, etc.)
+/// - The diary file cannot be created or written to (disk full, IO error, etc.)
+/// - The commit entry cannot be appended to the file (permission denied, file locked, etc.)
+/// - The current working directory cannot be determined
 pub fn run_commit_saver(
     obsidian_root_path_dir: PathBuf,
     obsidian_commit_path: &Path,

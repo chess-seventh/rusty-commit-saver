@@ -1,9 +1,6 @@
 use log::{error, info};
 
-use std::{
-    fs,
-    path::{Path, PathBuf},
-};
+use std::path::{Path, PathBuf};
 
 use clap::Parser;
 use configparser::ini::Ini;
@@ -278,6 +275,7 @@ impl GlobalVars {
     /// // Now call set_all() to initialize from config file
     /// // global_vars.set_all();
     /// ```
+    #[must_use]
     pub fn new() -> Self {
         info!("[GlobalVars::new()] Creating new GlobalVars with OnceCell default values.");
         GlobalVars {
@@ -613,6 +611,37 @@ impl GlobalVars {
         }
     }
 
+    /// Loads all configuration variables from the "obsidian" and "templates" sections.
+    ///
+    /// This method iterates through all sections returned by `get_sections_from_config`.
+    /// For each recognized section, it initializes the corresponding runtime variables
+    /// by calling their dedicated setters:
+    ///
+    /// - For the **"obsidian"** section: calls `set_obsidian_root_path_dir` and `set_obsidian_commit_path`.
+    /// - For the **"templates"** section: calls `set_templates_commit_date_path` and `set_templates_datetime`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the INI file contains a section other than "obsidian" or "templates", as only these two sections are supported.
+    ///
+    /// # Logging
+    ///
+    /// - Logs an info message when applying each section.
+    /// - Logs an error right before panicking on unsupported sections.
+    ///
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use rusty_commit_saver::config::GlobalVars;
+    /// let mut config = configparser::ini::Ini::new();
+    /// config.set("obsidian", "root_path_dir", Some("~/Obsidian".to_string()));
+    /// config.set("obsidian", "commit_path", Some("Diary/Commits".to_string()));
+    /// config.set("templates", "commit_date_path", Some("%Y-%m-%d.md".to_string()));
+    /// config.set("templates", "commit_datetime", Some("%Y-%m-%d %H:%M:%S".to_string()));
+    /// let global_vars = GlobalVars::new();
+    /// global_vars.config.set(config).unwrap();
+    /// global_vars.set_obsidian_vars();
+    /// ```
     pub fn set_obsidian_vars(&self) {
         for section in self.get_sections_from_config() {
             if section == "obsidian" {
@@ -874,9 +903,8 @@ pub struct UserInput {
 
 /// Retrieves the configuration file path from CLI arguments or returns the default.
 ///
-/// This function parses command-line arguments and returns the path to the INI
-/// configuration file. If no `--config-ini` argument is provided, returns the
-/// default path.
+/// This function parses command-line arguments and returns the path to the INI configuration file.
+/// If no `--config-ini` argument is provided, returns the default path.
 ///
 /// # Default Path
 ///
@@ -884,19 +912,26 @@ pub struct UserInput {
 ///
 /// # Returns
 ///
-/// A `String` containing the absolute path to the configuration file
+/// A `String` containing the absolute path to the configuration file.
 ///
 /// # CLI Usage
 ///
 /// ```text
-/// # Use default config
-/// rusty-commit-saver
-/// # Returns: /home/user/.config/rusty-commit-saver/rusty-commit-saver.ini
+/// // Use default config
+/// $ rusty-commit-saver
+/// // Returns: ~/.config/rusty-commit-saver/rusty-commit-saver.ini
 ///
-/// # Use custom config
-/// rusty-commit-saver --config-ini /custom/path/config.ini
-/// # Returns: /custom/path/config.ini
+/// // Use custom config
+/// $ rusty-commit-saver --config-ini /custom/path/config.ini
+/// // Returns: /custom/path/config.ini
 /// ```
+///
+/// # Panics
+///
+/// Panics if:
+/// - The resolved configuration file does not exist on the filesystem
+/// - The file cannot be read (permission denied, IO error)
+/// - The file path cannot be converted to a valid string
 ///
 /// # Examples
 ///
@@ -909,8 +944,9 @@ pub struct UserInput {
 ///
 /// # See Also
 ///
-/// - [`UserInput`] - CLI argument parser
-/// - [`get_or_default_config_ini_path()`] - Helper that implements the logic
+/// - [`get_or_default_config_ini_path`] - Helper that implements the CLI parsing logic
+/// - [`get_default_ini_path`] - Constructs the default configuration path
+#[must_use]
 pub fn retrieve_config_file_path() -> String {
     info!(
         "[UserInput::retrieve_config_file_path()]: retrieving the string path from CLI or default"
@@ -918,7 +954,8 @@ pub fn retrieve_config_file_path() -> String {
     let config_path = get_or_default_config_ini_path();
 
     if Path::new(&config_path).exists() {
-        info!("[UserInput::retrieve_config_file_path()]: config_path exists {config_path:}");
+        info!("[UserInput::retrieve_config_file_path()]: {config_path} exists");
+        config_path
     } else {
         error!(
             "[UserInput::retrieve_config_file_path()]: config_path DOES NOT exists {config_path:}"
@@ -927,9 +964,6 @@ pub fn retrieve_config_file_path() -> String {
             "[UserInput::retrieve_config_file_path()]: config_path DOES NOT exists {config_path:}"
         );
     }
-    info!("[UserInput::retrieve_config_file_path()] retrieved config path: {config_path:}");
-    fs::read_to_string(config_path.clone())
-        .unwrap_or_else(|_| panic!("Should have been able to read the file: {config_path:}"))
 }
 
 /// Returns the config path from CLI arguments or the default path.
@@ -950,6 +984,7 @@ pub fn retrieve_config_file_path() -> String {
 /// # See Also
 ///
 /// - [`get_default_ini_path()`] - Constructs the default configuration path
+#[must_use]
 pub fn get_or_default_config_ini_path() -> String {
     info!("[get_or_default_config_ini_path()]: Parsing CLI inputs.");
     let args = UserInput::parse();
@@ -1012,6 +1047,7 @@ pub fn get_or_default_config_ini_path() -> String {
 /// # See Also
 ///
 /// - [`retrieve_config_file_path()`] - Public API for getting config path
+#[must_use]
 pub fn get_default_ini_path() -> String {
     info!("[get_default_ini_path()]: Getting default ini file.");
     let cfg_str = "~/.config/rusty-commit-saver/rusty-commit-saver.ini".to_string();
@@ -1061,6 +1097,7 @@ pub fn get_default_ini_path() -> String {
 ///
 /// - [`retrieve_config_file_path()`] - Resolves the config file path
 /// - [`parse_ini_content()`] - Parses INI text into `Ini` struct
+#[must_use]
 pub fn get_ini_file() -> Ini {
     info!("[get_ini_file()]: Retrieving the INI File");
     let content_ini = retrieve_config_file_path();
