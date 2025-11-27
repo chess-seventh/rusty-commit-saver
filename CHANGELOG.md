@@ -1,3 +1,12 @@
+# [4.5.0](https://github.com/chess-seventh/rusty-commit-saver/compare/v4.4.0...v4.5.0) (2025-11-27)
+
+
+### Features
+
+* Upgrade rusty-commit-saver to v4.4.0 [skip ci] ([a1b20b7](https://github.com/chess-seventh/rusty-commit-saver/commit/a1b20b78b70caaccdb7faf2c8112e94b8d05b0c8))
+
+
+
 # [4.4.0](https://github.com/chess-seventh/rusty-commit-saver/compare/v4.3.0...v4.4.0) (2025-11-25)
 
 
@@ -236,3 +245,6 @@
 * split into multiple files to make the code more readable ([b88fdba](https://github.com/chess-seventh/rusty-commit-saver/commit/b88fdba9139384c43dcef2771339c8a5fb8e96c2))
 * trim all commits to 120 chars ([84706bc](https://github.com/chess-seventh/rusty-commit-saver/commit/84706bc3e33e1686c5a0a14810bb3d11d320fdb4))
 * Update YAML formatting in treefmt.toml ([e7241c7](https://github.com/chess-seventh/rusty-commit-saver/commit/e7241c78e9dcce6a8b7c31297cadeefe95a461f9))
+
+
+
