@@ -1,3 +1,12 @@
+# [4.7.0](https://github.com/chess-seventh/rusty-commit-saver/compare/v4.6.0...v4.7.0) (2025-11-27)
+
+
+### Features
+
+* Enhance error handling and documentation ([62b53ac](https://github.com/chess-seventh/rusty-commit-saver/commit/62b53ac3425612e707c704e438d10f4ba85b37f2))
+
+
+
 # [4.6.0](https://github.com/chess-seventh/rusty-commit-saver/compare/v4.5.0...v4.6.0) (2025-11-27)
 
 
