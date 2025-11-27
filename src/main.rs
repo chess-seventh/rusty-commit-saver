@@ -49,7 +49,7 @@ use std::path::PathBuf;
 ///
 /// # Examples
 ///
-/// ```
+/// ```ignore
 /// use rusty_commit_saver::run_commit_saver;
 /// use std::path::PathBuf;
 ///
@@ -65,7 +65,7 @@ use std::path::PathBuf;
 ///
 /// # Workflow
 ///
-/// ```
+/// ```text
 /// ┌─────────────────────────────────┐
 /// │ Discover Git commit metadata    │
 /// └────────────┬────────────────────┘

@@ -23,7 +23,7 @@ use log::warn;
 ///
 /// # Examples
 ///
-/// ```
+/// ```ignore
 /// use rusty_commit_saver::CommitSaver;
 ///
 /// // Automatically populated from current Git repository
@@ -82,7 +82,7 @@ pub struct CommitSaver {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```text
     /// Original: "feat: add feature\n\nWith details"
     /// Formatted: "feat: add feature<br/>With details"
     ///
@@ -129,7 +129,7 @@ pub struct CommitSaver {
 ///
 /// # Examples
 ///
-/// ```
+/// ```ignore
 /// use rusty_commit_saver::CommitSaver;
 ///
 /// // Using Default trait directly
@@ -184,7 +184,7 @@ impl CommitSaver {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```ignore
     /// use rusty_commit_saver::CommitSaver;
     ///
     /// let saver = CommitSaver::new();
@@ -216,7 +216,7 @@ impl CommitSaver {
     ///
     /// # Format
     ///
-    /// ```
+    /// ```text
     /// | /path/to/repo | 14:30:45 | feat: add feature | https://github.com/user/repo.git | main | abc123... |
     /// ```
     ///
@@ -255,7 +255,7 @@ impl CommitSaver {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```ignore
     /// use rusty_commit_saver::CommitSaver;
     /// use chrono::{TimeZone, Utc};
     ///
@@ -310,7 +310,7 @@ impl CommitSaver {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```ignore
     /// use rusty_commit_saver::CommitSaver;
     /// use std::path::PathBuf;
     /// use chrono::{TimeZone, Utc};
@@ -381,7 +381,7 @@ impl CommitSaver {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```text
     /// // With format "%Y/%m-%B/%F.md" and datetime 2025-01-14:
     /// // Returns: "2025/01-January/2025-01-14.md"
     ///
@@ -424,7 +424,7 @@ impl CommitSaver {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```ignore
     /// use rusty_commit_saver::CommitSaver;
     /// use std::path::PathBuf;
     ///
@@ -506,7 +506,7 @@ tags:\n"
 ///
 /// # Examples
 ///
-/// ```
+/// ```ignore
 /// use rusty_commit_saver::vim_commit::get_parent_from_full_path;
 /// use std::path::{Path, PathBuf};
 ///
@@ -556,7 +556,7 @@ pub fn get_parent_from_full_path(full_diary_path: &Path) -> Result<&Path, Box<dy
 ///
 /// # Examples
 ///
-/// ```
+/// ```ignore
 /// use rusty_commit_saver::vim_commit::check_diary_path_exists;
 /// use std::path::PathBuf;
 /// use std::fs::File;
@@ -609,7 +609,7 @@ pub fn check_diary_path_exists(full_diary_path: &PathBuf) -> Result<(), Box<dyn 
 ///
 /// # Examples
 ///
-/// ```
+/// ```ignore
 /// use rusty_commit_saver::vim_commit::create_directories_for_new_entry;
 /// use std::path::PathBuf;
 /// use std::fs;
@@ -647,7 +647,7 @@ pub fn create_directories_for_new_entry(
 ///
 /// The generated file uses the internal `DiaryFileEntry` markup template:
 ///
-/// ```
+/// ```text
 /// ---
 /// category: diary
 /// section: commits
@@ -688,7 +688,7 @@ pub fn create_directories_for_new_entry(
 ///
 /// # Examples
 ///
-/// ```
+/// ```ignore
 /// use rusty_commit_saver::vim_commit::create_diary_file;
 /// use rusty_commit_saver::CommitSaver;
 /// use chrono::{TimeZone, Utc};

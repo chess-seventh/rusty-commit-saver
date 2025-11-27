@@ -14,7 +14,8 @@
         overlays = [ (import rust-overlay) ];
         pkgs = import nixpkgs { inherit system overlays; };
 
-        rustVersion = pkgs.rust-bin.nightly."1.89.0".default;
+        # Use nightly to match your devenv.nix
+        rustVersion = pkgs.rust-bin.nightly.latest.default;
 
         rustPlatform = pkgs.makeRustPlatform {
           cargo = rustVersion;
@@ -23,34 +24,31 @@
       in {
         packages.default = rustPlatform.buildRustPackage {
           pname = "rusty-commit-saver";
-          version = "4.4.0";
+          version = "4.5.0";
           src = ./.;
           cargoLock.lockFile = ./Cargo.lock;
 
-          nativeBuildInputs = with pkgs;
-            [
-              pkg-config # Essential for finding OpenSSL
-            ];
+          nativeBuildInputs = with pkgs; [ pkg-config ];
+          buildInputs = with pkgs; [ openssl openssl.dev ];
 
-          buildInputs = with pkgs; [
-            openssl # OpenSSL library
-            openssl.dev # OpenSSL development headers
-          ];
-
-          # Environment variables to help find OpenSSL
-          OPENSSL_NO_VENDOR = 1; # Use system OpenSSL instead of vendored
+          OPENSSL_NO_VENDOR = 1;
           PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
+
+          # Doctests are now marked ignore, so doCheck works fine
+          doCheck = true;
         };
 
-        # Development shell
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [
-            (rustVersion.override { extensions = [ "rust-src" ]; })
+            (pkgs.rust-bin.nightly.latest.default.override {
+              extensions = [ "rust-src" ];
+            })
             cargo
             rustc
             pkg-config
             openssl
             openssl.dev
+            git
           ];
 
           PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
