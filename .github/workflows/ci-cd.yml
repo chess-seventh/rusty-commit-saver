@@ -141,16 +141,24 @@ jobs:
         run: |
           cargo set-version ${{ steps.changelog.outputs.version }}
           cargo build --verbose
+      - name: 🛠️ Update flake.nix version to match Cargo.toml
+        if: steps.changelog.outputs.skipped == 'false'
+        run: |
+          VERSION="${{ steps.changelog.outputs.version }}"
+          # Update version in flake.nix - matches pattern: version = "X.Y.Z";
+          sed -i "s/version = \"[0-9]*\.[0-9]*\.[0-9]*\";/version = \"${VERSION}\";/" flake.nix
+          # Verify the update
+          grep "version = " flake.nix | head -1
       - name: 🛠️ Update lockfile
         if: steps.changelog.outputs.skipped == 'false'
         run: cargo update
-      - name: 🛠️ Commit Cargo.lock
+      - name: 🛠️ Commit Cargo.lock, Cargo.toml, and flake.nix
         if: steps.changelog.outputs.skipped == 'false'
         run: |
           git config user.name "chess-seventh"
           git config user.email "chess7th@pm.me"
-          git add Cargo.lock Cargo.toml
-          git commit -m "chore: update Cargo.lock and Cargo.toml [skip ci]"
+          git add Cargo.lock Cargo.toml flake.nix
+          git commit -m "chore: update Cargo.lock, Cargo.toml, and flake.nix [skip ci]"
           git push
       - name: ✨ Create Release
         if: steps.changelog.outputs.skipped == 'false'
