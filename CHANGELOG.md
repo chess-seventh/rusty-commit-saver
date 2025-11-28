@@ -1,3 +1,12 @@
+## [4.7.1](https://github.com/chess-seventh/rusty-commit-saver/compare/v4.7.0...v4.7.1) (2025-11-28)
+
+
+### Bug Fixes
+
+* Configuration file handling ([5f0059d](https://github.com/chess-seventh/rusty-commit-saver/commit/5f0059d4e3a1d880d59f44d8af0dd29de945ce18))
+
+
+
 # [4.7.0](https://github.com/chess-seventh/rusty-commit-saver/compare/v4.6.0...v4.7.0) (2025-11-27)
 
 
