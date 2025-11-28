@@ -1,6 +1,9 @@
 use log::{error, info};
 
-use std::path::{Path, PathBuf};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
 
 use clap::Parser;
 use configparser::ini::Ini;
@@ -954,8 +957,7 @@ pub fn retrieve_config_file_path() -> String {
     let config_path = get_or_default_config_ini_path();
 
     if Path::new(&config_path).exists() {
-        info!("[UserInput::retrieve_config_file_path()]: {config_path} exists");
-        config_path
+        info!("[UserInput::retrieve_config_file_path()]: config_path exists {config_path:}");
     } else {
         error!(
             "[UserInput::retrieve_config_file_path()]: config_path DOES NOT exists {config_path:}"
@@ -964,6 +966,9 @@ pub fn retrieve_config_file_path() -> String {
             "[UserInput::retrieve_config_file_path()]: config_path DOES NOT exists {config_path:}"
         );
     }
+    info!("[UserInput::retrieve_config_file_path()] retrieved config path: {config_path:}");
+    fs::read_to_string(config_path.clone())
+        .unwrap_or_else(|_| panic!("Should have been able to read the file: {config_path:}"))
 }
 
 /// Returns the config path from CLI arguments or the default path.
