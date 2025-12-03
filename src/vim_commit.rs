@@ -145,10 +145,20 @@ impl Default for CommitSaver {
         let commit = head.peel_to_commit().unwrap();
         CommitSaver {
             repository_url: {
-                let bind = git_repo.find_remote("origin").unwrap();
-                bind.url().unwrap().replace('\"', "")
+                let url = match git_repo.find_remote("origin") {
+                    Ok(bind) => bind.url().unwrap().replace('\"', ""),
+                    _ => "no_url_set".to_string(),
+                };
+                url
             },
-            commit_branch_name: { head.shorthand().unwrap().replace('\"', "") },
+            commit_branch_name: {
+                // head.shorthand().unwrap().replace('\"', "")
+                let branch = match head.shorthand() {
+                    Some(branch) => branch.replace('\"', ""),
+                    None => "no_branch_set".to_string(),
+                };
+                branch
+            },
             commit_hash: { commit.id().to_string() },
             commit_msg: {
                 // Preserve original lines, escape pipes, then join with <br/>
