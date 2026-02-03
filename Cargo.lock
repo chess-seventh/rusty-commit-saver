@@ -560,18 +560,18 @@ checksum = "5e5032e24019045c762d3c0f28f5b6b8bbf38563a65908389bf7978758920897"
 
 [[package]]
 name = "markup"
-version = "0.15.0"
+version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "74a887ad620fe1022257343ac77fcdd3720e92888e1b2e66e1b7a4707f453898"
+checksum = "be10fa8085360758d551c6577b0692c9e7614d2d743036cf2fa452476a3e0569"
 dependencies = [
  "markup-proc-macro",
 ]
 
 [[package]]
 name = "markup-proc-macro"
-version = "0.15.0"
+version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9ab6ee21fd1855134cacf2f41afdf45f1bc456c7d7f6165d763b4647062dd2be"
+checksum = "ee486981a2fe832d4deb4d23a35508c111ef7070758177ce3580eb2a384fab2f"
 dependencies = [
  "proc-macro2",
  "quote",
