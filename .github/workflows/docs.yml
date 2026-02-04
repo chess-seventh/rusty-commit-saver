@@ -1,10 +1,8 @@
 name: 📚 Documentation
 on:
-  push:
-    branches: ["master"]
-    paths:
-      - "CHANGELOG.md" # Trigger when changelog updates (after release)
-  workflow_dispatch: # Allow manual trigger
+  release:
+    types: [published]
+  workflow_dispatch:
 permissions:
   contents: write
   pages: write
@@ -22,6 +20,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: master
+          fetch-depth: 0
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - name: 📚 Generate documentation
@@ -101,3 +100,9 @@ jobs:
           git add Home.md
           git diff --quiet && git diff --staged --quiet || git commit -m "docs: sync README with API docs link [skip ci]"
           git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.wiki.git || exit 0
+      - name: 📊 Summary
+        run: |
+          echo "## 📚 Documentation Deployed!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Docs:** https://chess-seventh.github.io/rusty-commit-saver/" >> $GITHUB_STEP_SUMMARY
+          echo "- **Wiki:** https://github.com/${{ github.repository }}/wiki" >> $GITHUB_STEP_SUMMARY
