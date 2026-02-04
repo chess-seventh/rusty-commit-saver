@@ -1,5 +1,8 @@
 name: Stage 2 - 📊 Coverage Analysis
 on:
+  workflow_run:
+    workflows: ["Stage 1 - 🔍 Quality Checks"]
+    types: [completed]
   push:
     branches: ["master"]
   pull_request:
