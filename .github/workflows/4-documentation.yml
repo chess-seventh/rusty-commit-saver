@@ -1,6 +1,8 @@
 name: Stage 4 - 📚 Documentation
 on:
-  push:
+  workflow_run:
+    workflows: ["Stage 3 - 🎯 Release"]
+    types: [completed]
     branches: ["master"]
 permissions:
   contents: read
@@ -15,12 +17,7 @@ jobs:
   build-docs:
     name: 📚 Build Documentation
     runs-on: ubuntu-latest
-    needs:
-      - build
-      - unittest
-      - clippy
-      - coverage
-      - release
+    if: github.event.workflow_run.conclusion == 'success'
     steps:
       - uses: actions/checkout@v4
         with:
