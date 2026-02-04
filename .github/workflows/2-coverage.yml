@@ -3,9 +3,9 @@ on:
   workflow_run:
     workflows: ["Stage 1 - 🔍 Quality Checks"]
     types: [completed]
-  push:
-    branches: ["master"]
   pull_request:
+    branches: ["master"]
+  push:
     branches: ["master"]
 env:
   CARGO_TERM_COLOR: always
