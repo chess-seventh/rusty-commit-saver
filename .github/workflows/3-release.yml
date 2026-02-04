@@ -1,7 +1,7 @@
 name: Stage 3 - 🎯 Release
 on:
   workflow_run:
-    workflows: ["Stage 1 - 🔍 Quality Checks", "Stage 2 - 📊 Coverage Analysis"]
+    workflows: ["Stage 2 - 📊 Coverage Analysis"]
     types: [completed]
     branches: ["master"]
 permissions:
@@ -24,18 +24,19 @@ jobs:
         id: changelog
         uses: TriPSs/conventional-changelog-action@v5
         with:
-          git-user-name: "chess-seventh"
-          git-user-email: "chess7th@pm.me"
+          create-summary: "true"
           github-token: ${{ secrets.GITHUB_TOKEN }}
           git-message: "ci: version bump"
+          git-user-email: "chess7th@pm.me"
+          git-user-name: "chess-seventh"
           output-file: "CHANGELOG.md"
+          preset: "conventionalcommits"
           release-count: "0"
-          skip-version-file: "false"
           skip-commit: "false"
           skip-on-empty: "true"
+          skip-version-file: "false"
           version-file: "Cargo.toml"
           version-path: "package.version"
-          create-summary: "true"
       - name: 🛠️ Update Cargo.toml version
         if: steps.changelog.outputs.skipped == 'false'
         run: |
