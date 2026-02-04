@@ -1,3 +1,12 @@
+# [4.9.0](https://github.com/chess-seventh/rusty-commit-saver/compare/v4.8.1...v4.9.0) (2026-02-04)
+
+
+### Features
+
+* remove untested&unused code ([#26](https://github.com/chess-seventh/rusty-commit-saver/issues/26)) ([e235f70](https://github.com/chess-seventh/rusty-commit-saver/commit/e235f704c809a8adc26f6fa61b8ecf619e0e7e67))
+
+
+
 ## [4.8.1](https://github.com/chess-seventh/rusty-commit-saver/compare/v4.8.0...v4.8.1) (2026-02-04)
 
 
