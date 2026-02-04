@@ -114,7 +114,7 @@ jobs:
     name: 🎯 Release
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-    needs: [build, unittest, clippy, cleanup-deps]
+    needs: [build, unittest, clippy]
     steps:
       - uses: actions/checkout@v4
         with:
