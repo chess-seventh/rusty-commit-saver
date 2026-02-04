@@ -5,9 +5,17 @@
 [![Rust](https://img.shields.io/badge/🦀%20rust-blue)](https://rustlang.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Documentation](https://img.shields.io/badge/docs-rustdoc-blue)](https://chess-seventh.github.io/rusty-commit-saver/rusty_commit_saver/)
-[![Build Status](https://img.shields.io/github/actions/workflow/status/chess-seventh/rusty-commit-saver/.github/workflows/ci-cd.yml?branch=master)](https://github.com/chess-seventh/rusty-commit-saver/actions)
 [![codecov](https://codecov.io/github/chess-seventh/rusty-commit-saver/graph/badge.svg?token=4ZK40EALQ8)](https://codecov.io/github/chess-seventh/rusty-commit-saver)
 [![Codecov Test Analytics](https://img.shields.io/badge/Codecov-Test%20Analytics-brightgreen)](https://app.codecov.io/gh/chess-seventh/rusty-commit-saver/analytics/tests)
+
+---
+
+- [![Stage 1 - 🔍 Quality Checks](https://github.com/chess-seventh/rusty-commit-saver/actions/workflows/1-quality-checks.yml/badge.svg?branch=master)](https://github.com/chess-seventh/rusty-commit-saver/actions/workflows/1-quality-checks.yml)
+- [![Stage 2 - 📊 Coverage Analysis](https://github.com/chess-seventh/rusty-commit-saver/actions/workflows/2-coverage.yml/badge.svg?branch=master)](https://github.com/chess-seventh/rusty-commit-saver/actions/workflows/2-coverage.yml)
+- [![Stage 3 - 🎯 Release](https://github.com/chess-seventh/rusty-commit-saver/actions/workflows/3-release.yml/badge.svg?branch=master)](https://github.com/chess-seventh/rusty-commit-saver/actions/workflows/3-release.yml)
+- [![Stage 4 - 📚 Documentation](https://github.com/chess-seventh/rusty-commit-saver/actions/workflows/4-documentation.yml/badge.svg?branch=master)](https://github.com/chess-seventh/rusty-commit-saver/actions/workflows/4-documentation.yml)
+
+---
 
 </div>
 
@@ -127,4 +135,4 @@ Contributions welcome! Feel free to open issues or submit PRs.
 
 ## License 📄
 
-MIT © 2025 [Chess7th](mailto:chess7th@pm.me)
+MIT © 2026 [Chess7th](mailto:chess7th@pm.me)
