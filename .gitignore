@@ -30,3 +30,6 @@ devenv.local.nix
 result
 
 .direnv*
+.direnv/bin
+.direnv/nix-profile-25.05-3y2jb4nbmrxx5qwh
+.direnv/nix-profile-25.05-3y2jb4nbmrxx5qwh.rc
