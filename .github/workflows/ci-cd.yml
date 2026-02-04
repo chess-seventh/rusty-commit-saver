@@ -70,10 +70,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@nightly
+      - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - name: 🛠️ Install cargo-shear
-        run: cargo install cargo-shear --locked
+        run: cargo install cargo-shear@1.8 --locked
       - name: 🧹 Check unused dependencies
         run: cargo shear
   # ============================================================================
