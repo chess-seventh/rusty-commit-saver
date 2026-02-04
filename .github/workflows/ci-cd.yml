@@ -73,7 +73,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@nightly
       - uses: Swatinem/rust-cache@v2
       - name: 🛠️ Install cargo-shear
-        run: cargo install cargo-shear
+        run: cargo install cargo-shear --locked
       - name: 🧹 Check unused dependencies
         run: cargo shear
   # ============================================================================
