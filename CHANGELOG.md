@@ -1,3 +1,12 @@
+## [4.8.1](https://github.com/chess-seventh/rusty-commit-saver/compare/v4.8.0...v4.8.1) (2026-02-04)
+
+
+### Bug Fixes
+
+* update crates, devenv and github actions ([#25](https://github.com/chess-seventh/rusty-commit-saver/issues/25)) ([91df6d6](https://github.com/chess-seventh/rusty-commit-saver/commit/91df6d6c91b5f5c8e8d4779841ecc1b192619647))
+
+
+
 # [4.8.0](https://github.com/chess-seventh/rusty-commit-saver/compare/v4.7.1...v4.8.0) (2025-12-03)
 
 
