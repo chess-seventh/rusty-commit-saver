@@ -1,0 +1,71 @@
+name: 🔍 CI - Quality & Coverage
+on:
+  pull_request:
+    branches: ["master"]
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
+env:
+  CARGO_TERM_COLOR: always
+jobs:
+  quality-checks:
+    name: 🛠️ Quality Checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+      - name: 🛠️ Build
+        run: cargo build --verbose
+      - name: 🛠️ Install nextest
+        uses: taiki-e/install-action@v2
+        with:
+          tool: nextest
+      - name: 🧪 Run tests
+        run: cargo nextest run --no-fail-fast
+      - name: ✂️ Clippy
+        run: cargo clippy --all-targets -- -W clippy::pedantic -A clippy::must_use_candidate
+  coverage:
+    name: 📊 Coverage Analysis
+    runs-on: ubuntu-latest
+    needs: quality-checks
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: llvm-tools-preview
+      - uses: Swatinem/rust-cache@v2
+      - name: 🛠️ Install tools
+        uses: taiki-e/install-action@v2
+        with:
+          tool: nextest,cargo-llvm-cov,cargo2junit
+      - name: 📚 Collect coverage
+        run: |
+          cargo llvm-cov --no-report nextest --no-fail-fast
+          cargo llvm-cov report --lcov --output-path lcov.info
+      - name: 📊 Generate JUnit XML
+        if: always()
+        run: |
+          cargo test --no-fail-fast --lib --bins -- --format json -Z unstable-options --report-time 2>&1 | \
+          cargo2junit > junit.xml || true
+        env:
+          RUSTC_BOOTSTRAP: 1
+      - name: 💭 Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          files: lcov.info
+          token: ${{ secrets.CODECOV_TOKEN }}
+          flags: coverage
+          name: Code Coverage
+      - name: 📊 Upload test results to Codecov
+        if: always() && hashFiles('junit.xml') != ''
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: junit.xml
+          flags: unittests
+          name: Unit Tests
+          report_type: test_results
