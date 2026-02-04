@@ -48,12 +48,13 @@ jobs:
           RUSTC_BOOTSTRAP: 1
       - name: 📊 Upload test results to Codecov
         if: always() && hashFiles('junit.xml') != ''
-        uses: codecov/test-results-action@v1
+        uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: junit.xml
           flags: unittests
           name: Unit Tests
+          report_type: test_results
   clippy:
     name: ✂️ Clippy
     runs-on: ubuntu-latest
@@ -65,17 +66,19 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: ✂️ Clippy
         run: cargo clippy --all-targets -- -W clippy::pedantic -A clippy::must_use_candidate
-  cleanup-deps:
-    name: 🧹 Dependency Check
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-      - name: 🛠️ Install cargo-shear
-        run: cargo install cargo-shear
-      - name: 🧹 Check unused dependencies
-        run: cargo shear
+  # Temporary remove as there's an issue with shear needing Rust 1.91 - not available yet.
+  # Moved this check in the pre-commit hook.
+  # cleanup-deps:
+  #   name: 🧹 Dependency Check
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: dtolnay/rust-toolchain@stable
+  #     - uses: Swatinem/rust-cache@v2
+  #     - name: 🛠️ Install cargo-shear
+  #       run: cargo install cargo-shear@1.8.0
+  #     - name: 🧹 Check unused dependencies
+  #       run: cargo shear
   # ============================================================================
   # STAGE 2: Coverage (optional, allowed to fail)
   # ============================================================================
@@ -112,7 +115,7 @@ jobs:
     name: 🎯 Release
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-    needs: [build, unittest, clippy, cleanup-deps]
+    needs: [build, unittest, clippy]
     steps:
       - uses: actions/checkout@v4
         with:
