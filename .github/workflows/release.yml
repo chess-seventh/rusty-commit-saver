@@ -11,10 +11,9 @@ jobs:
   release:
     name: 🎯 Create Release
     runs-on: ubuntu-latest
-    # Skip if commit message contains [skip ci] or is from the bot
     if: |
       !contains(github.event.head_commit.message, '[skip ci]') &&
-      github.event.head_commit.author.name != 'chess-seventh'
+      !contains(github.event.head_commit.message, 'chore(release)')
     steps:
       - name: 🔑 Generate GitHub App Token
         id: generate_token
@@ -25,30 +24,67 @@ jobs:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Fetch all history for changelog
+          fetch-depth: 0
           token: ${{ steps.generate_token.outputs.token }}
       - name: 🦀 Setup Rust
         uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - name: 🛠️ Install cargo-edit
         run: cargo install cargo-edit
+      - name: 📝 Create Changelog Config
+        run: |
+          cat > .changelogrc.json << 'EOF'
+          {
+            "types": [
+              {"type": "feat", "section": "🎉 Features"},
+              {"type": "fix", "section": "🐛 Bug Fixes"},
+              {"type": "perf", "section": "⚡ Performance"},
+              {"type": "docs", "section": "📚 Documentation"},
+              {"type": "style", "section": "💄 Styling"},
+              {"type": "refactor", "section": "♻️ Refactoring"},
+              {"type": "test", "section": "✅ Tests"},
+              {"type": "build", "section": "📦 Build"},
+              {"type": "ci", "section": "🔧 CI/CD"},
+              {"type": "chore", "section": "🏠 Chores"}
+            ],
+            "preMajor": false,
+            "commitUrlFormat": "{{host}}/{{owner}}/{{repository}}/commit/{{hash}}",
+            "compareUrlFormat": "{{host}}/{{owner}}/{{repository}}/compare/{{previousTag}}...{{currentTag}}",
+            "issueUrlFormat": "{{host}}/{{owner}}/{{repository}}/issues/{{id}}",
+            "userUrlFormat": "{{host}}/{{user}}",
+            "releaseCommitMessageFormat": "chore(release): bump to {{currentTag}} [skip ci]",
+            "issuePrefixes": ["#"]
+          }
+          EOF
       - name: 🎨 Generate Changelog & Bump Version
         id: changelog
         uses: TriPSs/conventional-changelog-action@v5
         with:
           github-token: ${{ steps.generate_token.outputs.token }}
-          git-message: "chore(release): {version} [skip ci]"
+          git-message: "chore(release): bump to {version} [skip ci]"
           git-user-name: "chess-seventh"
           git-user-email: "chess7th@pm.me"
           preset: "conventionalcommits"
           output-file: "CHANGELOG.md"
           release-count: 0
           skip-on-empty: true
-          skip-git-pull: false
-          skip-commit: false
-          skip-tag: false
+          config-file-path: ".changelogrc.json"
           version-file: "Cargo.toml"
           version-path: "package.version"
+          skip-git-pull: true
+          skip-commit: true
+          skip-tag: true
+          git-push: false
+      - name: 📊 Debug Changelog Output
+        if: always()
+        run: |
+          echo "Skipped: ${{ steps.changelog.outputs.skipped }}"
+          echo "Version: ${{ steps.changelog.outputs.version }}"
+          echo "Tag: ${{ steps.changelog.outputs.tag }}"
+          if [ -f CHANGELOG.md ]; then
+            echo "=== CHANGELOG.md (first 50 lines) ==="
+            head -50 CHANGELOG.md
+          fi
       - name: 🛠️ Update Cargo.toml version
         if: steps.changelog.outputs.skipped == 'false'
         run: |
@@ -66,14 +102,18 @@ jobs:
       - name: 🔒 Update Cargo.lock
         if: steps.changelog.outputs.skipped == 'false'
         run: cargo update -p rusty-commit-saver
-      - name: 💾 Commit version updates
+      - name: 💾 Commit and Tag
         if: steps.changelog.outputs.skipped == 'false'
         run: |
           git config user.name "chess-seventh"
           git config user.email "chess7th@pm.me"
-          git add Cargo.lock Cargo.toml flake.nix
-          git commit -m "chore(release): update lockfiles for ${{ steps.changelog.outputs.version }} [skip ci]" || echo "No changes to commit"
+
+          git add CHANGELOG.md Cargo.lock Cargo.toml flake.nix
+          git commit -m "chore(release): bump to ${{ steps.changelog.outputs.version }} [skip ci]"
+          git tag -a "${{ steps.changelog.outputs.tag }}" -m "Release ${{ steps.changelog.outputs.version }}"
+
           git push origin master
+          git push origin "${{ steps.changelog.outputs.tag }}"
       - name: ✨ Create GitHub Release
         if: steps.changelog.outputs.skipped == 'false'
         uses: ncipollo/release-action@v1
@@ -94,8 +134,9 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 📝 Changelog" >> $GITHUB_STEP_SUMMARY
           echo "${{ steps.changelog.outputs.clean_changelog }}" >> $GITHUB_STEP_SUMMARY
-      - name: ⏭️ Release Skipped
+      - name: ⏭️ No Release Needed
         if: steps.changelog.outputs.skipped == 'true'
         run: |
-          echo "## ⏭️ Release Skipped" >> $GITHUB_STEP_SUMMARY
-          echo "No conventional commits found since last release." >> $GITHUB_STEP_SUMMARY
+          echo "## ⏭️ No Release Created" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "No conventional commits since last release (v${{ steps.changelog.outputs.version || '4.9.1' }})" >> $GITHUB_STEP_SUMMARY
