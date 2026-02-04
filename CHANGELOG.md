@@ -2,6 +2,8 @@
 
 * feat: enhance GitHub workflows for PRs and releases (#34) ([780209e](https://github.com/chess-seventh/rusty-commit-saver/commit/780209e)), closes [#34](https://github.com/chess-seventh/rusty-commit-saver/issues/34)
 * feat: Refine GitHub Actions for release process ([e303c15](https://github.com/chess-seventh/rusty-commit-saver/commit/e303c15))
+* feat: update rusty-commit-saver to v4.9.1 (#35) ([0c90483](https://github.com/chess-seventh/rusty-commit-saver/commit/0c90483)), closes [#35](https://github.com/chess-seventh/rusty-commit-saver/issues/35)
+* chore(release): vnull [skip ci] [skip ci] ([7907227](https://github.com/chess-seventh/rusty-commit-saver/commit/7907227))
 * ci: Enhance release workflow with GitHub App Token ([4b334e8](https://github.com/chess-seventh/rusty-commit-saver/commit/4b334e8))
 * ci: Overhaul GitHub Actions workflows ([18f60ef](https://github.com/chess-seventh/rusty-commit-saver/commit/18f60ef))
 * docs: Update README with CI stages and copyright ([f7ab595](https://github.com/chess-seventh/rusty-commit-saver/commit/f7ab595))
