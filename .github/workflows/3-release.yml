@@ -14,18 +14,28 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event.workflow_run.conclusion == 'success'
     steps:
+      # STEP 1: Generate GitHub App token
+      - name: 🔑 Generate GitHub App Token
+        id: generate_token
+        uses: tibdex/github-app-token@v2
+        with:
+          app_id: ${{ secrets.APP_ID }}
+          private_key: ${{ secrets.APP_PRIVATE_KEY }}
+      # STEP 2: Checkout with the app token
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          token: ${{ steps.generate_token.outputs.token }}
       - uses: dtolnay/rust-toolchain@stable
       - name: 🛠️ Install cargo-edit
         run: cargo install cargo-edit
+      # STEP 3: Use app token for changelog action
       - name: 🎨 Conventional Changelog
         id: changelog
         uses: TriPSs/conventional-changelog-action@v5
         with:
           create-summary: "true"
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ steps.generate_token.outputs.token }}
           git-message: "ci: version bump"
           git-user-email: "chess7th@pm.me"
           git-user-name: "chess-seventh"
@@ -47,7 +57,7 @@ jobs:
         run: |
           VERSION="${{ steps.changelog.outputs.version }}"
           # Update version in flake.nix - matches pattern: version = "X.Y.Z";
-          sed -i "s/version = \\"[0-9]*\\.[0-9]*\\.[0-9]*\\";/version = \\"${VERSION}\\";/" flake.nix
+          sed -i "s/version = \"[0-9]*\.[0-9]*\.[0-9]*\";/version = \"${VERSION}\";/" flake.nix
           # Verify the update
           grep "version = " flake.nix | head -1
       - name: 🛠️ Update lockfile
@@ -68,4 +78,4 @@ jobs:
           tag: ${{ steps.changelog.outputs.tag }}
           name: ${{ steps.changelog.outputs.tag }}
           body: ${{ steps.changelog.outputs.clean_changelog }}
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ steps.generate_token.outputs.token }}
