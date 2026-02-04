@@ -1,4 +1,4 @@
-name: 📊 Stage 2 - Coverage Analysis
+name: Stage 2 - 📊 Coverage Analysis
 on:
   push:
     branches: ["master"]
