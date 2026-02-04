@@ -1,3 +1,10 @@
+## [4.10.1](https://github.com/chess-seventh/rusty-commit-saver/compare/v4.10.0...v4.10.1) (2026-02-04)
+
+
+### Bug Fixes
+
+* revamp docs workflow triggers and jobs ([#37](https://github.com/chess-seventh/rusty-commit-saver/issues/37)) ([cc389eb](https://github.com/chess-seventh/rusty-commit-saver/commit/cc389ebbfba1c171b1f1fee023fd495a03d8f56b))
+
 ## [4.10.0](https://github.com/chess-seventh/rusty-commit-saver/compare/v4.9.1...v4.10.0) (2026-02-04)
 
 
