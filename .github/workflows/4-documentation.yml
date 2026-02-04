@@ -1,4 +1,4 @@
-name: 📚 Stage 4 - Documentation
+name: Stage 4 - 📚 Documentation
 on:
   push:
     branches: ["master"]

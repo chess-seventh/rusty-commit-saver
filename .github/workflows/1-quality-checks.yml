@@ -1,4 +1,4 @@
-name: 🔍 Stage 1 - Quality Checks
+name: Stage 1 - 🔍 Quality Checks
 on:
   push:
     branches: ["master"]

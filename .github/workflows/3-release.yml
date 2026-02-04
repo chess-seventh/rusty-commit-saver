@@ -1,4 +1,4 @@
-name: 🎯 Stage 3 - Release
+name: Stage 3 - 🎯 Release
 on:
   push:
     branches: ["master"]
