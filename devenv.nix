@@ -62,15 +62,6 @@
     shell.enable = true;
   };
 
-  # processes = { cargo-watch.exec = "cargo-watch"; };
-
-  # tasks = {
-  #   "bash:source_env" = {
-  #     exec = "source $PWD/.env";
-  #     after = [ "devenv:enterShell" ];
-  #   };
-  # };
-
   git-hooks.hooks = {
     rusty-commit-saver = {
       enable = true;
@@ -394,22 +385,6 @@
         set -euo pipefail
         echo "📦 Dependency tree:"
         cargo tree
-      '';
-    };
-
-    shear = {
-      description = "Check for unused dependencies with cargo-shear";
-      exec = ''
-        set -euo pipefail
-
-        if ! command -v cargo-shear >/dev/null 2>&1; then
-          echo "cargo-shear not found in PATH."
-          echo "Install it locally with: cargo install cargo-shear --locked"
-          exit 1
-        fi
-
-        echo "Running cargo shear..."
-        cargo shear
       '';
     };
   };
