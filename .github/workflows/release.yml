@@ -28,9 +28,8 @@ jobs:
           token: ${{ steps.generate_token.outputs.token }}
       - name: 🦀 Setup Rust
         uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-      - name: 🛠️ Install cargo-edit
-        run: cargo install cargo-edit
+      - name: 📦 Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
       - name: 📝 Create Changelog Config
         run: |
           cat > .changelogrc.json << 'EOF'
@@ -42,78 +41,95 @@ jobs:
               {"type": "docs", "section": "📚 Documentation"},
               {"type": "style", "section": "💄 Styling"},
               {"type": "refactor", "section": "♻️ Refactoring"},
-              {"type": "test", "section": "✅ Tests"},
+              {"type": "test", "section": "🧪 Tests"},
               {"type": "build", "section": "📦 Build"},
               {"type": "ci", "section": "🔧 CI/CD"},
-              {"type": "chore", "section": "🏠 Chores"}
-            ],
-            "preMajor": false,
-            "commitUrlFormat": "{{host}}/{{owner}}/{{repository}}/commit/{{hash}}",
-            "compareUrlFormat": "{{host}}/{{owner}}/{{repository}}/compare/{{previousTag}}...{{currentTag}}",
-            "issueUrlFormat": "{{host}}/{{owner}}/{{repository}}/issues/{{id}}",
-            "userUrlFormat": "{{host}}/{{user}}",
-            "releaseCommitMessageFormat": "chore(release): bump to {{currentTag}} [skip ci]",
-            "issuePrefixes": ["#"]
+              {"type": "chore", "section": "🔨 Chores"},
+              {"type": "revert", "section": "⏪ Reverts"}
+            ]
           }
           EOF
+      - name: 🔍 Debug Git State
+        run: |
+          echo "=== Current Branch ==="
+          git branch -a
+          echo ""
+          echo "=== Recent Tags ==="
+          git tag --sort=-v:refname | head -5
+          echo ""
+          echo "=== Last Tag ==="
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "none")
+          echo "Last tag: $LAST_TAG"
+          echo ""
+          echo "=== Commits Since Last Tag ==="
+          if [ "$LAST_TAG" != "none" ]; then
+            echo "Comparing ${LAST_TAG}..HEAD"
+            git log ${LAST_TAG}..HEAD --pretty=format:"%h %s"
+          else
+            echo "No tags found, showing all commits"
+            git log --pretty=format:"%h %s"
+          fi
       - name: 🎨 Generate Changelog & Bump Version
         id: changelog
         uses: TriPSs/conventional-changelog-action@v5
         with:
           github-token: ${{ steps.generate_token.outputs.token }}
-          git-message: "chore(release): bump to {version} [skip ci]"
+          git-message: "chore(release): {version} [skip ci]"
           git-user-name: "chess-seventh"
           git-user-email: "chess7th@pm.me"
           preset: "conventionalcommits"
+          config-file-path: ".changelogrc.json"
           output-file: "CHANGELOG.md"
           release-count: 0
-          skip-on-empty: true
-          config-file-path: ".changelogrc.json"
+          skip-on-empty: false
+          skip-git-pull: false
+          skip-commit: false
+          skip-tag: false
           version-file: "Cargo.toml"
           version-path: "package.version"
-          skip-git-pull: true
-          skip-commit: true
-          skip-tag: true
-          git-push: false
+          git-pull-method: "--ff-only"
+          git-push: true
+          git-branch: "refs/heads/master"
+          tag-prefix: "v"
       - name: 📊 Debug Changelog Output
         if: always()
         run: |
+          echo "=== Changelog Action Outputs ==="
           echo "Skipped: ${{ steps.changelog.outputs.skipped }}"
           echo "Version: ${{ steps.changelog.outputs.version }}"
           echo "Tag: ${{ steps.changelog.outputs.tag }}"
-          if [ -f CHANGELOG.md ]; then
-            echo "=== CHANGELOG.md (first 50 lines) ==="
+          echo "Clean changelog: ${{ steps.changelog.outputs.clean_changelog }}"
+          echo ""
+          echo "=== CHANGELOG.md (first 50 lines) ==="
+          if [ -f "CHANGELOG.md" ]; then
             head -50 CHANGELOG.md
+          else
+            echo "CHANGELOG.md not found"
           fi
-      - name: 🛠️ Update Cargo.toml version
+          echo ""
+          echo "=== Cargo.toml version ==="
+          grep '^version = ' Cargo.toml || echo "Version not found in Cargo.toml"
+      - name: 🔄 Update Cargo.lock
         if: steps.changelog.outputs.skipped == 'false'
         run: |
-          VERSION="${{ steps.changelog.outputs.version }}"
-          echo "📦 Updating to version: $VERSION"
-          cargo set-version "$VERSION"
-          cargo build --verbose
-      - name: 🛠️ Update flake.nix version
-        if: steps.changelog.outputs.skipped == 'false'
-        run: |
-          VERSION="${{ steps.changelog.outputs.version }}"
-          echo "❄️ Updating flake.nix to version: $VERSION"
-          sed -i "s/version = \"[0-9]\+\.[0-9]\+\.[0-9]\+\"/version = \"${VERSION}\"/" flake.nix
-          grep "version = " flake.nix | head -1
-      - name: 🔒 Update Cargo.lock
-        if: steps.changelog.outputs.skipped == 'false'
-        run: cargo update -p rusty-commit-saver
-      - name: 💾 Commit and Tag
-        if: steps.changelog.outputs.skipped == 'false'
-        run: |
-          git config user.name "chess-seventh"
-          git config user.email "chess7th@pm.me"
+          echo "Building to update Cargo.lock..."
+          cargo build --release --locked || cargo build --release
 
-          git add CHANGELOG.md Cargo.lock Cargo.toml flake.nix
-          git commit -m "chore(release): bump to ${{ steps.changelog.outputs.version }} [skip ci]"
-          git tag -a "${{ steps.changelog.outputs.tag }}" -m "Release ${{ steps.changelog.outputs.version }}"
-
-          git push origin master
-          git push origin "${{ steps.changelog.outputs.tag }}"
+          if git diff --quiet Cargo.lock; then
+            echo "No changes to Cargo.lock"
+          else
+            echo "Committing updated Cargo.lock"
+            git config user.name "chess-seventh"
+            git config user.email "chess7th@pm.me"
+            git add Cargo.lock
+            git commit -m "chore(release): update lockfile for ${{ steps.changelog.outputs.version }} [skip ci]"
+            git push origin master
+          fi
+        env:
+          GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
+      - name: 📦 Build Release Binary
+        if: steps.changelog.outputs.skipped == 'false'
+        run: cargo build --release --locked
       - name: ✨ Create GitHub Release
         if: steps.changelog.outputs.skipped == 'false'
         uses: ncipollo/release-action@v1
@@ -124,6 +140,8 @@ jobs:
           token: ${{ steps.generate_token.outputs.token }}
           draft: false
           prerelease: false
+          artifacts: "target/release/rusty-commit-saver"
+          artifactErrorsFailBuild: false
       - name: 📊 Release Summary
         if: steps.changelog.outputs.skipped == 'false'
         run: |
@@ -134,9 +152,8 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 📝 Changelog" >> $GITHUB_STEP_SUMMARY
           echo "${{ steps.changelog.outputs.clean_changelog }}" >> $GITHUB_STEP_SUMMARY
-      - name: ⏭️ No Release Needed
+      - name: ⏭️ Release Skipped
         if: steps.changelog.outputs.skipped == 'true'
         run: |
-          echo "## ⏭️ No Release Created" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "No conventional commits since last release (v${{ steps.changelog.outputs.version || '4.9.1' }})" >> $GITHUB_STEP_SUMMARY
+          echo "## ⏭️ Release Skipped" >> $GITHUB_STEP_SUMMARY
+          echo "No conventional commits found since last release." >> $GITHUB_STEP_SUMMARY
