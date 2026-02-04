@@ -30,45 +30,16 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
       - name: 📦 Cache Rust dependencies
         uses: Swatinem/rust-cache@v2
-      - name: 📝 Create Changelog Config
+      - name: 🔍 Debug - Current State
         run: |
-          cat > .changelogrc.json << 'EOF'
-          {
-            "types": [
-              {"type": "feat", "section": "🎉 Features"},
-              {"type": "fix", "section": "🐛 Bug Fixes"},
-              {"type": "perf", "section": "⚡ Performance"},
-              {"type": "docs", "section": "📚 Documentation"},
-              {"type": "style", "section": "💄 Styling"},
-              {"type": "refactor", "section": "♻️ Refactoring"},
-              {"type": "test", "section": "🧪 Tests"},
-              {"type": "build", "section": "📦 Build"},
-              {"type": "ci", "section": "🔧 CI/CD"},
-              {"type": "chore", "section": "🔨 Chores"},
-              {"type": "revert", "section": "⏪ Reverts"}
-            ]
-          }
-          EOF
-      - name: 🔍 Debug Git State
-        run: |
-          echo "=== Current Branch ==="
-          git branch -a
+          echo "=== Current Version ==="
+          grep '^version' Cargo.toml | head -1
           echo ""
-          echo "=== Recent Tags ==="
+          echo "=== Latest Tags ==="
           git tag --sort=-v:refname | head -5
           echo ""
-          echo "=== Last Tag ==="
-          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "none")
-          echo "Last tag: $LAST_TAG"
-          echo ""
-          echo "=== Commits Since Last Tag ==="
-          if [ "$LAST_TAG" != "none" ]; then
-            echo "Comparing ${LAST_TAG}..HEAD"
-            git log ${LAST_TAG}..HEAD --pretty=format:"%h %s"
-          else
-            echo "No tags found, showing all commits"
-            git log --pretty=format:"%h %s"
-          fi
+          echo "=== Recent Commits ==="
+          git log --oneline -10
       - name: 🎨 Generate Changelog & Bump Version
         id: changelog
         uses: TriPSs/conventional-changelog-action@v5
@@ -78,7 +49,6 @@ jobs:
           git-user-name: "chess-seventh"
           git-user-email: "chess7th@pm.me"
           preset: "conventionalcommits"
-          config-file-path: ".changelogrc.json"
           output-file: "CHANGELOG.md"
           release-count: 0
           skip-on-empty: false
@@ -87,49 +57,51 @@ jobs:
           skip-tag: false
           version-file: "Cargo.toml"
           version-path: "package.version"
-          git-pull-method: "--ff-only"
-          git-push: true
-          git-branch: "refs/heads/master"
           tag-prefix: "v"
-      - name: 📊 Debug Changelog Output
-        if: always()
+      - name: 🔍 Debug - Changelog Outputs
         run: |
           echo "=== Changelog Action Outputs ==="
           echo "Skipped: ${{ steps.changelog.outputs.skipped }}"
           echo "Version: ${{ steps.changelog.outputs.version }}"
           echo "Tag: ${{ steps.changelog.outputs.tag }}"
-          echo "Clean changelog: ${{ steps.changelog.outputs.clean_changelog }}"
           echo ""
-          echo "=== CHANGELOG.md (first 50 lines) ==="
-          if [ -f "CHANGELOG.md" ]; then
-            head -50 CHANGELOG.md
-          else
-            echo "CHANGELOG.md not found"
-          fi
-          echo ""
-          echo "=== Cargo.toml version ==="
-          grep '^version = ' Cargo.toml || echo "Version not found in Cargo.toml"
-      - name: 🔄 Update Cargo.lock
+          echo "=== Cargo.toml After Bump ==="
+          grep '^version' Cargo.toml | head -1
+      - name: ❌ Fail if Version is Invalid
         if: steps.changelog.outputs.skipped == 'false'
         run: |
-          echo "Building to update Cargo.lock..."
-          cargo build --release --locked || cargo build --release
+          VERSION="${{ steps.changelog.outputs.version }}"
+          if [ -z "$VERSION" ] || [ "$VERSION" = "null" ]; then
+            echo "::error::Version bump failed! Got: '$VERSION'"
+            exit 1
+          fi
+          echo "✅ Valid version: $VERSION"
+      - name: ❄️ Update flake.nix version
+        if: steps.changelog.outputs.skipped == 'false'
+        run: |
+          VERSION="${{ steps.changelog.outputs.version }}"
+          echo "Updating flake.nix to version: $VERSION"
+          sed -i "s/version = \"[0-9]\+\.[0-9]\+\.[0-9]\+\"/version = \"${VERSION}\"/" flake.nix
+          grep 'version = ' flake.nix | head -1
+      - name: 🔒 Update Cargo.lock
+        if: steps.changelog.outputs.skipped == 'false'
+        run: |
+          cargo update -p rusty-commit-saver
+          cargo check
+      - name: 💾 Commit Version File Updates
+        if: steps.changelog.outputs.skipped == 'false'
+        run: |
+          git config user.name "chess-seventh"
+          git config user.email "chess7th@pm.me"
 
-          if git diff --quiet Cargo.lock; then
-            echo "No changes to Cargo.lock"
+          git add flake.nix Cargo.lock
+
+          if git diff --staged --quiet; then
+            echo "No additional changes to commit"
           else
-            echo "Committing updated Cargo.lock"
-            git config user.name "chess-seventh"
-            git config user.email "chess7th@pm.me"
-            git add Cargo.lock
-            git commit -m "chore(release): update lockfile for ${{ steps.changelog.outputs.version }} [skip ci]"
+            git commit -m "chore(release): update flake.nix and Cargo.lock for ${{ steps.changelog.outputs.version }} [skip ci]"
             git push origin master
           fi
-        env:
-          GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
-      - name: 📦 Build Release Binary
-        if: steps.changelog.outputs.skipped == 'false'
-        run: cargo build --release --locked
       - name: ✨ Create GitHub Release
         if: steps.changelog.outputs.skipped == 'false'
         uses: ncipollo/release-action@v1
@@ -140,8 +112,6 @@ jobs:
           token: ${{ steps.generate_token.outputs.token }}
           draft: false
           prerelease: false
-          artifacts: "target/release/rusty-commit-saver"
-          artifactErrorsFailBuild: false
       - name: 📊 Release Summary
         if: steps.changelog.outputs.skipped == 'false'
         run: |
@@ -156,4 +126,4 @@ jobs:
         if: steps.changelog.outputs.skipped == 'true'
         run: |
           echo "## ⏭️ Release Skipped" >> $GITHUB_STEP_SUMMARY
-          echo "No conventional commits found since last release." >> $GITHUB_STEP_SUMMARY
+          echo "No releasable commits found since last tag." >> $GITHUB_STEP_SUMMARY
