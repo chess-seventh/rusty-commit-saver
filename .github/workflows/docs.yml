@@ -1,11 +1,12 @@
-name: Stage 4 - 📚 Documentation
+name: 📚 Documentation
 on:
-  workflow_run:
-    workflows: ["Stage 3 - 🎯 Release"]
-    types: [completed]
+  push:
     branches: ["master"]
+    paths:
+      - "CHANGELOG.md" # Trigger when changelog updates (after release)
+  workflow_dispatch: # Allow manual trigger
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 concurrency:
@@ -17,18 +18,15 @@ jobs:
   build-docs:
     name: 📚 Build Documentation
     runs-on: ubuntu-latest
-    if: github.event.workflow_run.conclusion == 'success'
     steps:
       - uses: actions/checkout@v4
         with:
-          # CRITICAL: Pull latest changes after release commit
           ref: master
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - name: 📚 Generate documentation
         run: |
           cargo doc --no-deps --document-private-items
-
           touch target/doc/.nojekyll
 
           cat > target/doc/index.html << 'EOF'
@@ -67,7 +65,7 @@ jobs:
         with:
           path: ./target/doc
   deploy-docs:
-    name: 🚀 Deploy Documentation
+    name: 🚀 Deploy to GitHub Pages
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -84,7 +82,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          # CRITICAL: Pull latest changes including release updates
           ref: master
       - name: 📖 Update Wiki
         run: |
@@ -102,5 +99,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add Home.md
-          git diff --quiet && git diff --staged --quiet || git commit -m "docs: sync README with API docs link"
+          git diff --quiet && git diff --staged --quiet || git commit -m "docs: sync README with API docs link [skip ci]"
           git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.wiki.git || exit 0

@@ -1,0 +1,101 @@
+name: 🎯 Release
+on:
+  push:
+    branches: ["master"]
+permissions:
+  contents: write
+  pull-requests: write
+env:
+  CARGO_TERM_COLOR: always
+jobs:
+  release:
+    name: 🎯 Create Release
+    runs-on: ubuntu-latest
+    # Skip if commit message contains [skip ci] or is from the bot
+    if: |
+      !contains(github.event.head_commit.message, '[skip ci]') &&
+      github.event.head_commit.author.name != 'chess-seventh'
+    steps:
+      - name: 🔑 Generate GitHub App Token
+        id: generate_token
+        uses: tibdex/github-app-token@v2
+        with:
+          app_id: ${{ secrets.APP_ID }}
+          private_key: ${{ secrets.APP_PRIVATE_KEY }}
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch all history for changelog
+          token: ${{ steps.generate_token.outputs.token }}
+      - name: 🦀 Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: 🛠️ Install cargo-edit
+        run: cargo install cargo-edit
+      - name: 🎨 Generate Changelog & Bump Version
+        id: changelog
+        uses: TriPSs/conventional-changelog-action@v5
+        with:
+          github-token: ${{ steps.generate_token.outputs.token }}
+          git-message: "chore(release): {version} [skip ci]"
+          git-user-name: "chess-seventh"
+          git-user-email: "chess7th@pm.me"
+          preset: "conventionalcommits"
+          output-file: "CHANGELOG.md"
+          release-count: 0
+          skip-on-empty: true
+          skip-git-pull: false
+          skip-commit: false
+          skip-tag: false
+          version-file: "Cargo.toml"
+          version-path: "package.version"
+      - name: 🛠️ Update Cargo.toml version
+        if: steps.changelog.outputs.skipped == 'false'
+        run: |
+          VERSION="${{ steps.changelog.outputs.version }}"
+          echo "📦 Updating to version: $VERSION"
+          cargo set-version "$VERSION"
+          cargo build --verbose
+      - name: 🛠️ Update flake.nix version
+        if: steps.changelog.outputs.skipped == 'false'
+        run: |
+          VERSION="${{ steps.changelog.outputs.version }}"
+          echo "❄️ Updating flake.nix to version: $VERSION"
+          sed -i "s/version = \"[0-9]\+\.[0-9]\+\.[0-9]\+\"/version = \"${VERSION}\"/" flake.nix
+          grep "version = " flake.nix | head -1
+      - name: 🔒 Update Cargo.lock
+        if: steps.changelog.outputs.skipped == 'false'
+        run: cargo update -p rusty-commit-saver
+      - name: 💾 Commit version updates
+        if: steps.changelog.outputs.skipped == 'false'
+        run: |
+          git config user.name "chess-seventh"
+          git config user.email "chess7th@pm.me"
+          git add Cargo.lock Cargo.toml flake.nix
+          git commit -m "chore(release): update lockfiles for ${{ steps.changelog.outputs.version }} [skip ci]" || echo "No changes to commit"
+          git push origin master
+      - name: ✨ Create GitHub Release
+        if: steps.changelog.outputs.skipped == 'false'
+        uses: ncipollo/release-action@v1
+        with:
+          tag: ${{ steps.changelog.outputs.tag }}
+          name: "Release ${{ steps.changelog.outputs.tag }}"
+          body: ${{ steps.changelog.outputs.clean_changelog }}
+          token: ${{ steps.generate_token.outputs.token }}
+          draft: false
+          prerelease: false
+      - name: 📊 Release Summary
+        if: steps.changelog.outputs.skipped == 'false'
+        run: |
+          echo "## 🎉 Release Created!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** ${{ steps.changelog.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Tag:** ${{ steps.changelog.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📝 Changelog" >> $GITHUB_STEP_SUMMARY
+          echo "${{ steps.changelog.outputs.clean_changelog }}" >> $GITHUB_STEP_SUMMARY
+      - name: ⏭️ Release Skipped
+        if: steps.changelog.outputs.skipped == 'true'
+        run: |
+          echo "## ⏭️ Release Skipped" >> $GITHUB_STEP_SUMMARY
+          echo "No conventional commits found since last release." >> $GITHUB_STEP_SUMMARY
