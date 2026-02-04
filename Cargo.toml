@@ -18,6 +18,6 @@ doctest = false
 
 [package]
 name = "rusty-commit-saver"
-version = "4.9.1"
+version = "4.10.0"
 edition = "2021"
 authors = ["chess7th"]
