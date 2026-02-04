@@ -65,17 +65,19 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: ✂️ Clippy
         run: cargo clippy --all-targets -- -W clippy::pedantic -A clippy::must_use_candidate
-  cleanup-deps:
-    name: 🧹 Dependency Check
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-      - name: 🛠️ Install cargo-shear
-        run: cargo install cargo-shear@1.8.0
-      - name: 🧹 Check unused dependencies
-        run: cargo shear
+  # Temporary remove as there's an issue with shear needing Rust 1.91 - not available yet.
+  # Moved this check in the pre-commit hook.
+  # cleanup-deps:
+  #   name: 🧹 Dependency Check
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: dtolnay/rust-toolchain@stable
+  #     - uses: Swatinem/rust-cache@v2
+  #     - name: 🛠️ Install cargo-shear
+  #       run: cargo install cargo-shear@1.8.0
+  #     - name: 🧹 Check unused dependencies
+  #       run: cargo shear
   # ============================================================================
   # STAGE 2: Coverage (optional, allowed to fail)
   # ============================================================================

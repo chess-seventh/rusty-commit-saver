@@ -187,6 +187,27 @@
       };
     };
 
+    pre-commit-shear = {
+      name = "✨ Cargo Dependency Check";
+      enable = true;
+      # this is a simple shell hook
+      entry = ''
+        echo "Running cargo-shear pre-commit check..."
+        if ! command -v cargo-shear >/dev/null 2>&1; then
+          echo "cargo-shear not installed. Run: cargo install cargo-shear --locked"
+          exit 1
+        fi
+
+        # Only run if there are staged changes in Cargo.toml or Cargo.lock
+        if git diff --cached --name-only | grep -Eq '^Cargo\.toml$|^Cargo\.lock$'; then
+          cargo shear
+        else
+          echo "No dependency files changed, skipping cargo-shear."
+        fi
+      '';
+      language = "system";
+      stages = [ "pre-commit" ];
+    };
   };
 
   scripts = {
@@ -360,6 +381,22 @@
         set -euo pipefail
         echo "📦 Dependency tree:"
         cargo tree
+      '';
+    };
+
+    shear = {
+      description = "Check for unused dependencies with cargo-shear";
+      exec = ''
+        set -euo pipefail
+
+        if ! command -v cargo-shear >/dev/null 2>&1; then
+          echo "cargo-shear not found in PATH."
+          echo "Install it locally with: cargo install cargo-shear --locked"
+          exit 1
+        fi
+
+        echo "Running cargo shear..."
+        cargo shear
       '';
     };
   };
