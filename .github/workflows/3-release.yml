@@ -1,6 +1,8 @@
 name: Stage 3 - 🎯 Release
 on:
-  push:
+  workflow_run:
+    workflows: ["Stage 1 - 🔍 Quality Checks", "Stage 2 - 📊 Coverage Analysis"]
+    types: [completed]
     branches: ["master"]
 permissions:
   contents: write
@@ -10,11 +12,7 @@ jobs:
   release:
     name: 🎯 Release
     runs-on: ubuntu-latest
-    needs:
-      - build
-      - unittest
-      - clippy
-      - coverage
+    if: github.event.workflow_run.conclusion == 'success'
     steps:
       - uses: actions/checkout@v4
         with:
