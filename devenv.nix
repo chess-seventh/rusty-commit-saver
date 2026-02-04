@@ -211,6 +211,19 @@
   };
 
   scripts = {
+    devhelp = {
+      description = "Shows all available commands in Devenv";
+      exec = ''
+        echo
+        echo 💡 Helper scripts to ease development process:
+        echo
+        ${pkgs.gnused}/bin/sed -e 's| |••|g' -e 's|=| |' <<EOF | ${pkgs.util-linuxMinimal}/bin/column -t | ${pkgs.gnused}/bin/sed -e 's|^|• |' -e 's|••| |g'
+        ${lib.generators.toKeyValue { }
+        (lib.mapAttrs (name: value: value.description) config.scripts)}
+        EOF
+      '';
+    };
+
     install_pre_hooks = {
       description = "Install Pre Hooks, such as gptcommit";
       exec = ''
@@ -273,7 +286,7 @@
       '';
     };
 
-    build = {
+    build-project = {
       description = "Build the Rust project";
       exec = ''
         #!/usr/bin/env bash
@@ -293,7 +306,7 @@
       '';
     };
 
-    test = {
+    test-cargo = {
       description = "Run tests with cargo test";
       exec = ''
         #!/usr/bin/env bash
@@ -334,7 +347,7 @@
       '';
     };
 
-    check = {
+    check-code = {
       description = "Check code without building";
       exec = ''
         #!/usr/bin/env bash
@@ -344,7 +357,7 @@
       '';
     };
 
-    audit = {
+    audit-cargo = {
       description = "Security audit with cargo audit";
       exec = ''
         #!/usr/bin/env bash
