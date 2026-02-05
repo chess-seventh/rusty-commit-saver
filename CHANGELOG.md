@@ -1,3 +1,10 @@
+## [4.11.0](https://github.com/chess-seventh/rusty-commit-saver/compare/v4.10.1...v4.11.0) (2026-02-05)
+
+
+### Features
+
+* workflow and devenv improvements, added badges to docs ([#38](https://github.com/chess-seventh/rusty-commit-saver/issues/38)) ([a173deb](https://github.com/chess-seventh/rusty-commit-saver/commit/a173deb713a1078d0de9f43100ccdeebd60da75f))
+
 ## [4.10.1](https://github.com/chess-seventh/rusty-commit-saver/compare/v4.10.0...v4.10.1) (2026-02-04)
 
 
