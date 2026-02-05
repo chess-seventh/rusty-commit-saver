@@ -1,0 +1,30 @@
+name: "🔐 Security Audit"
+on:
+  pull_request:
+    branches: ["master"]
+    paths:
+      - "**/Cargo.toml"
+      - "**/Cargo.lock"
+  push:
+    branches: ["master"]
+    paths:
+      - "**/Cargo.toml"
+      - "**/Cargo.lock"
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+permissions:
+  contents: read
+  issues: write
+jobs:
+  audit:
+    name: 🔍 Cargo Audit
+    runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, 'chore(release)')"
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+      - name: 🔐 Security Audit
+        uses: rustsec/audit-check@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
