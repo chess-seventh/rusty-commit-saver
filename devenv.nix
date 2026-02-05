@@ -1,6 +1,44 @@
 { pkgs, lib, config, inputs, ... }:
 
-{
+let
+  # Fetch and patch Codecov CLI binary for NixOS
+  codecov-cli-bin = pkgs.stdenv.mkDerivation rec {
+    pname = "codecov-cli";
+    version = "0.7.5";
+
+    src = pkgs.fetchurl {
+      url = "https://cli.codecov.io/latest/linux/codecov";
+      sha256 = "0v1zmw25f6z8xcn1zrdfx787bsf47v1b545cwd48wwrc5d722d7x";
+    };
+
+    dontUnpack = true;
+
+    nativeBuildInputs = [ pkgs.autoPatchelfHook ];
+
+    # Runtime dependencies the binary needs
+    buildInputs = [
+      pkgs.stdenv.cc.cc.lib # libstdc++
+      pkgs.zlib
+      pkgs.glibc
+    ];
+
+    installPhase = ''
+      runHook preInstall
+      mkdir -p $out/bin
+      cp $src $out/bin/codecov
+      chmod +x $out/bin/codecov
+      runHook postInstall
+    '';
+
+    meta = with lib; {
+      description = "Codecov CLI";
+      homepage = "https://cli.codecov.io";
+      license = licenses.asl20;
+      platforms = platforms.linux;
+    };
+  };
+
+in {
   dotenv.enable = true;
   difftastic.enable = true;
 
@@ -42,6 +80,9 @@
     cargo-cross # cross-compilation
     cargo-machete # find unused dependencies
     cargo-update # update installed binaries
+
+    # Codecov CLI for local baseline comparison
+    codecov-cli-bin
   ];
 
   languages = {
@@ -310,13 +351,115 @@
     };
 
     test-coverage = {
-      description = "Run tests with coverage";
+      description = "Run tests with coverage (matches CI exactly)";
       exec = ''
         #!/usr/bin/env bash
         set -euo pipefail
-        echo "📊 Running tests with coverage..."
-        cargo llvm-cov --all-features --workspace --lcov --output-path lcov.info
+        echo "📊 Running tests with coverage (CI-equivalent)..."
+
+        # Clean previous coverage data
+        cargo llvm-cov clean --workspace
+
+        # Run tests with nextest (same as CI)
+        cargo llvm-cov --no-report nextest --no-fail-fast
+
+        # Generate lcov report (same as CI)
+        cargo llvm-cov report --lcov --output-path lcov.info
+
+        # Also generate human-readable summary
+        echo ""
+        echo "📈 Coverage Summary:"
         cargo llvm-cov report
+
+        echo ""
+        echo "✅ Coverage report saved to: lcov.info"
+      '';
+    };
+
+    test-coverage-html = {
+      description = "Run tests with coverage and open HTML report";
+      exec = ''
+        #!/usr/bin/env bash
+        set -euo pipefail
+        echo "📊 Running tests with coverage (HTML)..."
+        cargo llvm-cov clean --workspace
+        cargo llvm-cov --no-report nextest --no-fail-fast
+        cargo llvm-cov report --html
+        cargo llvm-cov report
+        echo ""
+        echo "📂 HTML report: target/llvm-cov/html/index.html"
+      '';
+    };
+
+    codecov-compare = {
+      description = "Compare local coverage against Codecov baseline";
+      exec = ''
+        #!/usr/bin/env bash
+        set -euo pipefail
+
+        echo "🔍 Comparing local coverage with Codecov baseline..."
+        echo ""
+
+        # Check if lcov.info exists
+        if [ ! -f "lcov.info" ]; then
+          echo "⚠️  No lcov.info found. Running coverage first..."
+          test-coverage
+        fi
+
+        # Show local coverage percentage
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        awk '
+          /^LF:/ { lf += $2 }
+          /^LH:/ { lh += $2 }
+          END {
+            if (lf > 0) {
+              pct = lh * 100 / lf
+              printf "📊 Local Coverage: %.2f%% (%d / %d lines)\n", pct, lh, lf
+            }
+          }
+        ' FS=: lcov.info
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+
+        # Check for CODECOV_TOKEN
+        if [ -z "''${CODECOV_TOKEN:-}" ]; then
+          echo "ℹ️  CODECOV_TOKEN not set — skipping Codecov upload validation"
+          echo "   Set it in .env or export it to enable upload testing"
+          exit 0
+        fi
+
+        echo "📤 Validating upload (dry-run)..."
+        codecov do-upload \
+          --token="$CODECOV_TOKEN" \
+          --slug=chess-seventh/rusty-commit-saver \
+          --file=lcov.info \
+          --flag=local \
+          --dry-run 2>&1 | grep -E "(Found|coverage|complete|error)" || true
+
+        echo ""
+        echo "✅ Local coverage ready. Compare with: https://app.codecov.io/gh/chess-seventh/rusty-commit-saver"
+      '';
+    };
+
+    coverage-check = {
+      description = "Show coverage percentage (quick check)";
+      exec = ''
+        #!/usr/bin/env bash
+        set -euo pipefail
+
+        if [ ! -f "lcov.info" ]; then
+          echo "⚠️  No lcov.info found. Run 'test-coverage' first."
+          exit 1
+        fi
+
+        echo "📊 Local Coverage Summary:"
+        echo ""
+        cargo llvm-cov report 2>/dev/null || {
+          # Fallback: parse lcov.info directly
+          LINES_HIT=$(grep -c "^DA:" lcov.info || echo 0)
+          LINES_FOUND=$(grep "^DA:" lcov.info | cut -d',' -f2 | grep -c "0" || echo 0)
+          echo "Lines in lcov.info: $LINES_HIT"
+        }
       '';
     };
 
