@@ -1005,4 +1005,37 @@ mod commit_saver_tests {
         assert!(output.contains("2023-12-30"));
         assert!(output.contains("| FOLDER | TIME | COMMIT MESSAGE"));
     }
+
+    #[test]
+    fn test_commit_saver_default_no_origin_remote() {
+        use git2::{Repository, Signature};
+        use tempfile::tempdir;
+
+        // Save original directory to restore later
+        let original_dir = std::env::current_dir().unwrap();
+
+        let temp_dir = tempdir().unwrap();
+        let repo = Repository::init(temp_dir.path()).unwrap();
+
+        // Create a commit so HEAD exists (required for peel_to_commit)
+        let sig = Signature::now("Test User", "test@example.com").unwrap();
+        let tree_id = repo.index().unwrap().write_tree().unwrap();
+        let tree = repo.find_tree(tree_id).unwrap();
+        repo.commit(Some("HEAD"), &sig, &sig, "Initial commit", &tree, &[])
+            .unwrap();
+
+        // Change to the temp repo directory
+        std::env::set_current_dir(temp_dir.path()).unwrap();
+
+        // This should hit the `_ => "no_url_set"` branch
+        let saver = CommitSaver::default();
+
+        // Restore original directory
+        std::env::set_current_dir(original_dir).unwrap();
+
+        assert_eq!(saver.repository_url, "no_url_set");
+        // Branch name depends on git config; just verify it's not empty
+        assert!(!saver.commit_branch_name.is_empty());
+        assert!(!saver.commit_hash.is_empty());
+    }
 }
