@@ -1218,6 +1218,33 @@ mod global_vars_tests {
     }
 
     #[test]
+    #[should_panic(expected = "config has the wrong number of sections")]
+    fn test_get_sections_from_config_panics_with_three_sections() {
+        let mut config = Ini::new();
+        config.set("obsidian", "root_path_dir", Some("/tmp/test".to_string()));
+        config.set("templates", "commit_date_path", Some("%Y.md".to_string()));
+        config.set("extra", "unexpected_key", Some("value".to_string()));
+
+        let global_vars = GlobalVars::new();
+        global_vars.config.set(config).unwrap();
+
+        // Panics: 3 sections instead of 2
+        global_vars.get_sections_from_config();
+    }
+
+    #[test]
+    #[should_panic(expected = "config has the wrong number of sections")]
+    fn test_get_sections_from_config_panics_with_zero_sections() {
+        let config = Ini::new(); // Empty config, 0 sections
+
+        let global_vars = GlobalVars::new();
+        global_vars.config.set(config).unwrap();
+
+        // Panics: 0 sections instead of 2
+        global_vars.get_sections_from_config();
+    }
+
+    #[test]
     fn test_get_key_from_section_from_ini_exists() {
         let mut config = Ini::new();
         config.set(
