@@ -1,0 +1,27 @@
+name: "📋 Dependency Check"
+on:
+  pull_request:
+    branches: ["master"]
+    paths:
+      - "**/Cargo.toml"
+      - "**/Cargo.lock"
+      - "deny.toml"
+  push:
+    branches: ["master"]
+    paths:
+      - "**/Cargo.toml"
+      - "**/Cargo.lock"
+      - "deny.toml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  deny:
+    name: 🔍 Cargo Deny
+    runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, 'chore(release)')"
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+      - name: 📋 Check Dependencies
+        uses: EmbarkStudios/cargo-deny-action@v2
