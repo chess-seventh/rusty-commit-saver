@@ -184,9 +184,13 @@ in {
     clippy = {
       name = "✂️ Clippy";
       enable = true;
+      entry =
+        "cargo clippy --all-targets -- -W clippy::pedantic -A clippy::must-use-candidate";
+      language = "system";
       settings.allFeatures = true;
       extraPackages = [ pkgs.openssl ];
       stages = [ "pre-commit" ];
+      pass_filenames = false;
     };
 
     commitizen = {
