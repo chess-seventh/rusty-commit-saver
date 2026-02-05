@@ -48,7 +48,7 @@ jobs:
         uses: TriPSs/conventional-changelog-action@v5
         with:
           github-token: ${{ steps.generate_token.outputs.token }}
-          git-message: "chore(release): {version} [skip ci]"
+          git-message: "chore(release): {version}"
           git-user-name: "chess-seventh"
           git-user-email: "chess7th@pm.me"
           preset: "conventionalcommits"
