@@ -21,3 +21,4 @@ name = "rusty-commit-saver"
 version = "4.11.1"
 edition = "2021"
 authors = ["chess7th"]
+license = "MIT"
