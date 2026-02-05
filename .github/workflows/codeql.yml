@@ -1,0 +1,43 @@
+name: "🔒 CodeQL"
+on:
+  pull_request:
+    branches: ["master"]
+    paths:
+      - "**.rs"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - ".github/workflows/codeql.yml"
+  schedule:
+    # Run weekly scan on Mondays at 00:00 UTC
+    - cron: "0 0 * * 1"
+  workflow_dispatch: # Allow manual triggers
+permissions:
+  actions: read
+  contents: read
+  security-events: write
+jobs:
+  analyze:
+    name: 🔍 Analyze Code
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        language: ["rust"]
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+      - name: 🔒 Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          queries: security-extended,security-and-quality
+      - name: 🦀 Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: 📦 Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+      - name: 🔨 Build
+        run: cargo build --release
+      - name: 🔍 Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{matrix.language}}"

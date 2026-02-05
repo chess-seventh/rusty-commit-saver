@@ -1,6 +1,8 @@
 name: 🎯 Release
 on:
-  push:
+  workflow_run:
+    workflows: ["🔍 CI - Quality & Coverage"]
+    types: [completed]
     branches: ["master"]
 permissions:
   contents: write
@@ -12,8 +14,9 @@ jobs:
     name: 🎯 Create Release
     runs-on: ubuntu-latest
     if: |
-      !contains(github.event.head_commit.message, '[skip ci]') &&
-      !contains(github.event.head_commit.message, 'chore(release)')
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      !contains(github.event.workflow_run.head_commit.message, 'chore(release)')
     steps:
       - name: 🔑 Generate GitHub App Token
         id: generate_token

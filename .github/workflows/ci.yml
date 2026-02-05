@@ -2,6 +2,8 @@ name: 🔍 CI - Quality & Coverage
 on:
   pull_request:
     branches: ["master"]
+  push:
+    branches: ["master"]
 permissions:
   contents: read
   checks: write
@@ -12,6 +14,7 @@ jobs:
   quality-checks:
     name: 🛠️ Quality Checks
     runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, 'chore(release)')"
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
