@@ -993,6 +993,17 @@ pub fn retrieve_config_file_path() -> String {
 #[must_use]
 pub fn get_or_default_config_ini_path() -> String {
     info!("[get_or_default_config_ini_path()]: Parsing CLI inputs.");
+
+    // Check env var first (useful for testing)
+    if let Ok(env_path) = std::env::var("RUSTY_COMMIT_SAVER_CONFIG") {
+        info!("[get_or_default_config_ini_path()]: Using config from env var.");
+        return if env_path.contains('~') {
+            set_proper_home_dir(&env_path)
+        } else {
+            env_path
+        };
+    }
+
     let args = UserInput::parse();
 
     let config_path = if let Some(cfg_str) = args.config_ini {
@@ -2091,5 +2102,39 @@ commit_datetime=%Y-%m-%d %H:%M:%S
         let result = panic::catch_unwind(|| global_vars.get_sections_from_config());
 
         assert!(result.is_err(), "Should have panicked");
+    }
+
+    #[test]
+    fn test_set_all_loads_config_and_sets_vars() {
+        use std::env;
+        use std::fs;
+        use tempfile::NamedTempFile;
+
+        let temp_file = NamedTempFile::new().expect("Failed to create temp file");
+        let config_content = r#"[obsidian]
+root_path_dir = /tmp/test_obsidian
+commit_path = Commits
+
+[templates]
+commit_date_path = %Y/%m/%d.md
+commit_datetime = %Y-%m-%d %H:%M:%S
+"#;
+        fs::write(temp_file.path(), config_content).expect("Failed to write temp config");
+
+        env::set_var(
+            "RUSTY_COMMIT_SAVER_CONFIG",
+            temp_file.path().to_str().unwrap(),
+        );
+
+        let global_vars = GlobalVars::new();
+        let result = global_vars.set_all();
+
+        // Verify method chaining
+        assert!(std::ptr::eq(result, &global_vars));
+
+        // Verify config was set
+        assert!(global_vars.config.get().is_some());
+
+        env::remove_var("RUSTY_COMMIT_SAVER_CONFIG");
     }
 }
