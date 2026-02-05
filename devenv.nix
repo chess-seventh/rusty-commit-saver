@@ -32,6 +32,7 @@
     bacon
     gh
 
+    cargo-deny
     cargo-edit # cargo add, cargo rm, cargo upgrade
     cargo-expand # cargo expand for macro debugging
     cargo-outdated # check for outdated dependencies
