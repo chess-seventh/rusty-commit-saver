@@ -30,6 +30,7 @@
     cargo-watch
     rustup
     bacon
+    gh
 
     cargo-edit # cargo add, cargo rm, cargo upgrade
     cargo-expand # cargo expand for macro debugging
@@ -385,6 +386,70 @@
         set -euo pipefail
         echo "📦 Dependency tree:"
         cargo tree
+      '';
+    };
+
+    create-pr = {
+      description = "Create GH PR with first commit as title, rest as body";
+      exec = ''
+        #!/usr/bin/env bash
+        set -euo pipefail
+
+        # Check we're not on master
+        CURRENT_BRANCH=$(git branch --show-current)
+        if [ "$CURRENT_BRANCH" = "master" ]; then
+          echo "❌ Cannot create PR from master branch"
+          exit 1
+        fi
+
+        # Get all commits not in master
+        COMMIT_COUNT=$(git rev-list --count master..HEAD)
+
+        if [ "$COMMIT_COUNT" -eq 0 ]; then
+          echo "❌ No commits to create PR from"
+          exit 1
+        fi
+
+        # First commit (oldest) becomes the title
+        PR_TITLE=$(git log master..HEAD --reverse --pretty=format:'%s' | head -1)
+
+        # Remaining commits become the body (if any)
+        if [ "$COMMIT_COUNT" -gt 1 ]; then
+          PR_BODY=$(cat <<EOF
+        ## Commits
+
+        $(git log master..HEAD --reverse --pretty=format:'- %s' | tail -n +2)
+        EOF
+        )
+        else
+          # Single commit - use full commit message as body
+          PR_BODY=$(git log -1 --pretty=format:'%b')
+
+          # If body is empty, add a placeholder
+          if [ -z "$PR_BODY" ]; then
+            PR_BODY="<!-- Add PR description here -->"
+          fi
+        fi
+
+        echo "📝 Creating PR with title:"
+        echo "   $PR_TITLE"
+        echo ""
+        echo "📋 Body:"
+        echo "$PR_BODY"
+        echo ""
+        echo "🚀 Pushing branch: $CURRENT_BRANCH"
+
+        # Push current branch
+        git push -u origin "$CURRENT_BRANCH"
+
+        # Create PR
+        gh pr create \
+          --title "$PR_TITLE" \
+          --body "$PR_BODY" \
+          --base master
+
+        echo ""
+        echo "✅ PR created successfully!"
       '';
     };
   };

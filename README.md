@@ -8,12 +8,9 @@
 [![codecov](https://codecov.io/github/chess-seventh/rusty-commit-saver/graph/badge.svg?token=4ZK40EALQ8)](https://codecov.io/github/chess-seventh/rusty-commit-saver)
 [![Codecov Test Analytics](https://img.shields.io/badge/Codecov-Test%20Analytics-brightgreen)](https://app.codecov.io/gh/chess-seventh/rusty-commit-saver/analytics/tests)
 
----
-
-- [![Stage 1 - 🔍 Quality Checks](https://github.com/chess-seventh/rusty-commit-saver/actions/workflows/1-quality-checks.yml/badge.svg?branch=master)](https://github.com/chess-seventh/rusty-commit-saver/actions/workflows/1-quality-checks.yml)
-- [![Stage 2 - 📊 Coverage Analysis](https://github.com/chess-seventh/rusty-commit-saver/actions/workflows/2-coverage.yml/badge.svg?branch=master)](https://github.com/chess-seventh/rusty-commit-saver/actions/workflows/2-coverage.yml)
-- [![Stage 3 - 🎯 Release](https://github.com/chess-seventh/rusty-commit-saver/actions/workflows/3-release.yml/badge.svg?branch=master)](https://github.com/chess-seventh/rusty-commit-saver/actions/workflows/3-release.yml)
-- [![Stage 4 - 📚 Documentation](https://github.com/chess-seventh/rusty-commit-saver/actions/workflows/4-documentation.yml/badge.svg?branch=master)](https://github.com/chess-seventh/rusty-commit-saver/actions/workflows/4-documentation.yml)
+[![🔍 CI - Quality & Coverage](https://github.com/chess-seventh/rusty-commit-saver/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/chess-seventh/rusty-commit-saver/actions/workflows/ci.yml)
+[![🎯 Release](https://github.com/chess-seventh/rusty-commit-saver/actions/workflows/release.yml/badge.svg?branch=master)](https://github.com/chess-seventh/rusty-commit-saver/actions/workflows/release.yml)
+[![📚 Documentation](https://github.com/chess-seventh/rusty-commit-saver/actions/workflows/docs.yml/badge.svg?branch=master)](https://github.com/chess-seventh/rusty-commit-saver/actions/workflows/docs.yml)
 
 ---
 
