@@ -1,3 +1,10 @@
+## [4.12.0](https://github.com/chess-seventh/rusty-commit-saver/compare/v4.11.1...v4.12.0) (2026-02-05)
+
+
+### Features
+
+* Integrate security audit for Cargo files ([#40](https://github.com/chess-seventh/rusty-commit-saver/issues/40)) ([9cea05c](https://github.com/chess-seventh/rusty-commit-saver/commit/9cea05c24b631144a1d99ffd4780136ddac14135))
+
 ## [4.11.1](https://github.com/chess-seventh/rusty-commit-saver/compare/v4.11.0...v4.11.1) (2026-02-05)
 
 ## [4.11.0](https://github.com/chess-seventh/rusty-commit-saver/compare/v4.10.1...v4.11.0) (2026-02-05)
