@@ -2137,4 +2137,34 @@ commit_datetime = %Y-%m-%d %H:%M:%S
 
         env::remove_var("RUSTY_COMMIT_SAVER_CONFIG");
     }
+
+    #[test]
+    #[should_panic(expected = "config_path DOES NOT exists")]
+    fn test_retrieve_config_file_path_panics_on_missing_file() {
+        use std::env;
+        use std::panic;
+
+        let var_name = "RUSTY_COMMIT_SAVER_CONFIG";
+        let original = env::var(var_name).ok();
+
+        env::set_var(var_name, "/nonexistent/path/that/does/not/exist/config.ini");
+
+        let result = panic::catch_unwind(|| {
+            let _ = retrieve_config_file_path();
+        });
+
+        // Restore env var
+        match original {
+            Some(val) => env::set_var(var_name, val),
+            None => env::remove_var(var_name),
+        }
+
+        // Re-panic if it panicked (to satisfy #[should_panic])
+        if let Err(e) = result {
+            panic::resume_unwind(e);
+        }
+
+        // If we get here, it didn't panic—fail the test
+        panic!("Expected function to panic but it didn't");
+    }
 }
