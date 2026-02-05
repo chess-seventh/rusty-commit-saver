@@ -557,29 +557,8 @@ in {
         # First commit (oldest) becomes the title
         PR_TITLE=$(git log master..HEAD --reverse --pretty=format:'%s' | head -1)
 
-        # Remaining commits become the body (if any)
-        if [ "$COMMIT_COUNT" -gt 1 ]; then
-          PR_BODY=$(cat <<EOF
-        ## Commits
-
-        $(git log master..HEAD --reverse --pretty=format:'- %s' | tail -n +2)
-        EOF
-        )
-        else
-          # Single commit - use full commit message as body
-          PR_BODY=$(git log -1 --pretty=format:'%b')
-
-          # If body is empty, add a placeholder
-          if [ -z "$PR_BODY" ]; then
-            PR_BODY="<!-- Add PR description here -->"
-          fi
-        fi
-
         echo "📝 Creating PR with title:"
         echo "   $PR_TITLE"
-        echo ""
-        echo "📋 Body:"
-        echo "$PR_BODY"
         echo ""
         echo "🚀 Pushing branch: $CURRENT_BRANCH"
 
@@ -589,7 +568,7 @@ in {
         # Create PR
         gh pr create \
           --title "$PR_TITLE" \
-          --body "$PR_BODY" \
+          --body "" \
           --base master
 
         echo ""
