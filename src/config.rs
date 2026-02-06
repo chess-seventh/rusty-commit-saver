@@ -603,11 +603,12 @@ impl GlobalVars {
             sections
         } else {
             error!(
+                // LCOV_EXCL_START
                 "[GlobalVars::get_sections_from_config()] Sections Len must be 2, we have: {sections_len:?}"
             );
             error!(
                 "[GlobalVars::get_sections_from_config()] These are the sections found: {sections:?}"
-            );
+            ); // LCOV_EXCL_STOP
             panic!(
                 "[GlobalVars::get_sections_from_config()] config has the wrong number of sections."
             )
