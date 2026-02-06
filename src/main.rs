@@ -135,9 +135,9 @@ pub fn run_commit_saver(
     Ok(())
 }
 
+// LCOV_EXCL_START
 #[cfg_attr(coverage_nightly, coverage(off))]
 fn main() {
-    // LCOV_EXCL_START
     env_logger::init();
     info!("[main()]: Instanciating GlobalVars Struct.");
     let global_vars = GlobalVars::new();
@@ -159,8 +159,8 @@ fn main() {
             panic!("[main]: Something went wrong when writing the commit to the file");
         }
     }
-    // LCOV_EXCL_STOP
 }
+// LCOV_EXCL_STOP
 
 #[cfg(test)]
 #[cfg_attr(coverage_nightly, coverage(off))]
