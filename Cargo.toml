@@ -16,6 +16,9 @@ chrono = {version = "0.4.43", features = ["serde"]}
 [lib]
 doctest = false
 
+[lints.rust]
+unexpected_cfgs = {level = "warn", check-cfg = ['cfg(coverage_nightly)', 'cfg(coverage)']}
+
 [package]
 name = "rusty-commit-saver"
 version = "4.12.0"
