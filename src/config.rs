@@ -991,12 +991,10 @@ pub fn retrieve_config_file_path() -> String {
 ///
 /// - [`get_default_ini_path()`] - Constructs the default configuration path
 #[must_use]
-pub fn get_or_default_config_ini_path() -> String {
-    info!("[get_or_default_config_ini_path()]: Parsing CLI inputs.");
-
-    // Check env var first (useful for testing)
-    if let Ok(env_path) = std::env::var("RUSTY_COMMIT_SAVER_CONFIG") {
-        info!("[get_or_default_config_ini_path()]: Using config from env var.");
+pub fn resolve_config_path(cli_arg: Option<String>, env_var: Option<String>) -> String {
+    // Check env var first
+    if let Some(env_path) = env_var {
+        info!("[resolve_config_path]: Using config from env var.");
         return if env_path.contains('~') {
             set_proper_home_dir(&env_path)
         } else {
@@ -1004,28 +1002,43 @@ pub fn get_or_default_config_ini_path() -> String {
         };
     }
 
-    let args = UserInput::parse();
-
-    let config_path = if let Some(cfg_str) = args.config_ini {
+    // Check CLI arg
+    if let Some(cfg_str) = cli_arg {
         if cfg_str.contains('~') {
-            info!(
-                "[get_or_default_config_ini_path()]: Configuration string exists and contains '~'."
-            );
+            info!("[resolve_config_path]: CLI path contains '~'.");
             set_proper_home_dir(&cfg_str)
         } else {
-            info!(
-                "[get_or_default_config_ini_path()]: Configuration string exists but does NOT contain: `~'."
-            );
+            info!("[resolve_config_path]: CLI path without '~'.");
             cfg_str
         }
     } else {
-        info!(
-            "[get_or_default_config_ini_path()]: Configuration string does NOT exist, using default values."
-        );
-
+        info!("[resolve_config_path]: Using default path.");
         get_default_ini_path()
+    }
+}
+
+#[must_use]
+#[cfg_attr(coverage_nightly, coverage(off))]
+pub fn get_or_default_config_ini_path() -> String {
+    get_or_default_config_ini_path_with(std::env::var("RUSTY_COMMIT_SAVER_CONFIG").ok(), || {
+        UserInput::parse().config_ini
+    })
+}
+
+#[must_use]
+fn get_or_default_config_ini_path_with<F>(env_var: Option<String>, cli_parser: F) -> String
+where
+    F: FnOnce() -> Option<String>,
+{
+    info!("[get_or_default_config_ini_path()]: Parsing CLI inputs.");
+
+    let cli_arg = if env_var.is_some() {
+        None // Skip parsing if env var is set
+    } else {
+        cli_parser()
     };
 
+    let config_path = resolve_config_path(cli_arg, env_var);
     info!("[get_or_default_config_ini_path()]: Config path found: {config_path:}");
     config_path
 }
@@ -1179,6 +1192,7 @@ fn set_proper_home_dir(cfg_str: &str) -> String {
 }
 
 #[cfg(test)]
+#[cfg_attr(coverage_nightly, coverage(off))]
 mod global_vars_tests {
     use super::*;
     use std::panic::{self, AssertUnwindSafe};
@@ -1225,20 +1239,20 @@ mod global_vars_tests {
         let global_vars = GlobalVars::new();
         global_vars.config.set(config).unwrap();
 
-        // Use catch_unwind to capture the panic while allowing coverage
         let result =
             panic::catch_unwind(AssertUnwindSafe(|| global_vars.get_sections_from_config()));
 
         assert!(result.is_err(), "Expected panic for invalid section count");
 
-        // Optionally verify the panic message
-        if let Err(panic_info) = result {
-            if let Some(msg) = panic_info.downcast_ref::<&str>() {
-                assert!(msg.contains("wrong number of sections"));
-            } else if let Some(msg) = panic_info.downcast_ref::<String>() {
-                assert!(msg.contains("wrong number of sections"));
-            }
-        }
+        // Verify the panic message (panic! with string literal = &str)
+        let panic_info = result.unwrap_err();
+        let msg = panic_info
+            .downcast_ref::<&str>()
+            .expect("Panic message should be &str");
+        assert!(
+            msg.contains("wrong number of sections"),
+            "Unexpected panic message: {msg}"
+        );
     }
 
     #[test]
@@ -1865,6 +1879,7 @@ mod global_vars_tests {
 }
 
 #[cfg(test)]
+#[cfg_attr(coverage_nightly, coverage(off))]
 mod user_input_tests {
     use super::*;
     use clap::Parser;
@@ -2141,30 +2156,155 @@ commit_datetime = %Y-%m-%d %H:%M:%S
     #[test]
     #[should_panic(expected = "config_path DOES NOT exists")]
     fn test_retrieve_config_file_path_panics_on_missing_file() {
+        std::env::set_var("RUSTY_COMMIT_SAVER_CONFIG", "/nonexistent/path/config.ini");
+        let _ = retrieve_config_file_path();
+    }
+
+    #[test]
+    fn test_get_or_default_config_ini_path_env_var_with_tilde() {
         use std::env;
-        use std::panic;
 
         let var_name = "RUSTY_COMMIT_SAVER_CONFIG";
         let original = env::var(var_name).ok();
 
-        env::set_var(var_name, "/nonexistent/path/that/does/not/exist/config.ini");
+        env::set_var(var_name, "~/some/config/path.ini");
 
-        let result = panic::catch_unwind(|| {
-            let _ = retrieve_config_file_path();
-        });
+        let result = get_or_default_config_ini_path();
 
-        // Restore env var
+        // Restore
         match original {
             Some(val) => env::set_var(var_name, val),
             None => env::remove_var(var_name),
         }
 
-        // Re-panic if it panicked (to satisfy #[should_panic])
-        if let Err(e) = result {
-            panic::resume_unwind(e);
-        }
+        // Should have expanded ~ to home dir
+        assert!(!result.contains('~'), "Tilde should be expanded");
+        assert!(result.ends_with("/some/config/path.ini"));
+    }
 
-        // If we get here, it didn't panic—fail the test
-        panic!("Expected function to panic but it didn't");
+    #[test]
+    fn test_resolve_config_path_cli_with_tilde() {
+        let result = resolve_config_path(Some("~/my/config.ini".to_string()), None);
+        assert!(!result.contains('~'));
+        assert!(result.ends_with("/my/config.ini"));
+    }
+
+    #[test]
+    fn test_resolve_config_path_cli_without_tilde() {
+        let result = resolve_config_path(Some("/absolute/path.ini".to_string()), None);
+        assert_eq!(result, "/absolute/path.ini");
+    }
+
+    #[test]
+    fn test_resolve_config_path_default() {
+        let result = resolve_config_path(None, None);
+        assert!(result.contains("rusty-commit-saver.ini"));
+    }
+
+    #[test]
+    fn test_resolve_config_path_env_takes_precedence() {
+        let result = resolve_config_path(
+            Some("/cli/path.ini".to_string()),
+            Some("/env/path.ini".to_string()),
+        );
+        assert_eq!(result, "/env/path.ini");
+    }
+
+    #[test]
+    fn test_get_or_default_config_ini_path_with_no_env_calls_cli_parser() {
+        let parser_called = std::cell::Cell::new(false);
+
+        let result = get_or_default_config_ini_path_with(None, || {
+            parser_called.set(true);
+            Some("/mock/cli/path.ini".to_string())
+        });
+
+        assert!(
+            parser_called.get(),
+            "CLI parser should be called when no env var"
+        );
+        assert_eq!(result, "/mock/cli/path.ini");
+    }
+
+    #[test]
+    fn test_get_or_default_config_ini_path_with_env_skips_cli_parser() {
+        let parser_called = std::cell::Cell::new(false);
+
+        let result = get_or_default_config_ini_path_with(Some("/env/path.ini".to_string()), || {
+            parser_called.set(true);
+            Some("/should/not/be/used.ini".to_string())
+        });
+
+        assert!(
+            !parser_called.get(),
+            "CLI parser should NOT be called when env var is set"
+        );
+        assert_eq!(result, "/env/path.ini");
+    }
+
+    #[test]
+    fn test_get_or_default_config_ini_path_with_cli_returns_default_when_none() {
+        let result = get_or_default_config_ini_path_with(None, || None);
+
+        // Should fall back to default path
+        assert!(result.contains("rusty-commit-saver.ini"));
+    }
+
+    #[test]
+    fn test_get_or_default_config_ini_path_with_cli_tilde_expansion() {
+        let result =
+            get_or_default_config_ini_path_with(None, || Some("~/custom/config.ini".to_string()));
+
+        assert!(!result.contains('~'), "Tilde should be expanded");
+        assert!(result.ends_with("/custom/config.ini"));
+    }
+
+    #[test]
+    fn test_parse_ini_content_find_invalid_case() {
+        let cases = [
+            "[unclosed",
+            "no_section_key = value", // might actually work (goes to default section)
+            "[section]\nweird line without equals",
+        ];
+
+        for case in cases {
+            let result = parse_ini_content(case);
+            println!("{case:?} => {result:?}");
+        }
+    }
+
+    #[test]
+    fn test_parse_ini_content_invalid_syntax() {
+        let result = parse_ini_content("[unclosed");
+
+        assert!(result.is_err(), "Should fail on unclosed bracket");
+        let err = result.unwrap_err();
+        assert!(
+            err.contains("Failed to parse INI"),
+            "Error should contain expected prefix: {err}"
+        );
+    }
+
+    #[test]
+    #[should_panic(expected = "Should have been able to read the file")]
+    fn test_retrieve_config_file_path_panics_on_unreadable_file() {
+        use std::fs::{self, File};
+        use std::os::unix::fs::PermissionsExt;
+        use tempfile::tempdir;
+
+        let dir = tempdir().unwrap();
+        let file_path = dir.path().join("unreadable.ini");
+
+        // Create file with no read permissions
+        File::create(&file_path).unwrap();
+        fs::set_permissions(&file_path, fs::Permissions::from_mode(0o000)).unwrap();
+
+        std::env::set_var("RUSTY_COMMIT_SAVER_CONFIG", file_path.to_str().unwrap());
+
+        // This should panic because file exists but can't be read
+        let _ = retrieve_config_file_path();
+
+        // Cleanup (won't run due to panic, but good practice)
+        fs::set_permissions(&file_path, fs::Permissions::from_mode(0o644)).unwrap();
     }
 }
