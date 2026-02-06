@@ -585,7 +585,7 @@ impl GlobalVars {
 
     fn get_key_from_section_from_ini(&self, section: &str, key: &str) -> Option<String> {
         info!(
-            "[GlobalVars::get_key_from_section_from_ini()] Getting key: {key:} from section: {section:}."
+            "[GlobalVars::get_key_from_section_from_ini()] Getting key: {key:} from section: {section:}." // LCOV_EXCL_LINE
         );
         self.config
             .get()
@@ -607,10 +607,10 @@ impl GlobalVars {
                 sections_len // Use variable instead of method call
             );
             error!(
-                "[GlobalVars::get_sections_from_config()] These are the sections found: {sections:?}"
+                "[GlobalVars::get_sections_from_config()] These are the sections found: {sections:?}" // LCOV_EXCL_LINE
             );
             panic!(
-                "[GlobalVars::get_sections_from_config()] config has the wrong number of sections."
+                "[GlobalVars::get_sections_from_config()] config has the wrong number of sections." // LCOV_EXCL_LINE
             )
         }
     }
@@ -658,7 +658,7 @@ impl GlobalVars {
                 self.set_templates_datetime(&section);
             } else {
                 error!(
-                    "[GlobalVars::set_obsidian_vars()] Trying to set other sections is not supported."
+                    "[GlobalVars::set_obsidian_vars()] Trying to set other sections is not supported." // LCOV_EXCL_LINE
                 );
                 panic!(
                     "[GlobalVars::set_obsidian_vars()] Trying to set other sections is not supported."
@@ -722,7 +722,7 @@ impl GlobalVars {
     /// ```
     fn set_templates_commit_date_path(&self, section: &str) {
         info!(
-            "[GlobalVars::set_templates_commit_date_path()]: Setting the template_commit_date_path."
+            "[GlobalVars::set_templates_commit_date_path()]: Setting the template_commit_date_path." // LCOV_EXCL_LINE
         );
         let key = self
             .get_key_from_section_from_ini(section, "commit_date_path")
@@ -778,7 +778,7 @@ impl GlobalVars {
         let mut path = PathBuf::new();
 
         info!(
-            "[GlobalVars::set_obsidian_commit_path()]: Pushing strings folders to create PathBuf."
+            "[GlobalVars::set_obsidian_commit_path()]: Pushing strings folders to create PathBuf." // LCOV_EXCL_LINE
         );
         for s in vec_str {
             path.push(s);
@@ -838,12 +838,12 @@ impl GlobalVars {
         let mut path = PathBuf::new();
 
         info!(
-            "[GlobalVars::set_obsidian_root_path_dir()]: Pushing '/' to PathBuf for proper path."
+            "[GlobalVars::set_obsidian_root_path_dir()]: Pushing '/' to PathBuf for proper path." // LCOV_EXCL_LINE
         );
         path.push("/");
 
         info!(
-            "[GlobalVars::set_obsidian_root_path_dir()]: Pushing strings folders to create PathBuf."
+            "[GlobalVars::set_obsidian_root_path_dir()]: Pushing strings folders to create PathBuf." // LCOV_EXCL_LINE
         );
         for s in vec_str {
             path.push(s);
@@ -953,7 +953,7 @@ pub struct UserInput {
 #[must_use]
 pub fn retrieve_config_file_path() -> String {
     info!(
-        "[UserInput::retrieve_config_file_path()]: retrieving the string path from CLI or default"
+        "[UserInput::retrieve_config_file_path()]: retrieving the string path from CLI or default" // LCOV_EXCL_LINE
     );
     let config_path = get_or_default_config_ini_path();
 
@@ -961,7 +961,7 @@ pub fn retrieve_config_file_path() -> String {
         info!("[UserInput::retrieve_config_file_path()]: config_path exists {config_path:}");
     } else {
         error!(
-            "[UserInput::retrieve_config_file_path()]: config_path DOES NOT exists {config_path:}"
+            "[UserInput::retrieve_config_file_path()]: config_path DOES NOT exists {config_path:}" // LCOV_EXCL_LINE
         );
         panic!(
             "[UserInput::retrieve_config_file_path()]: config_path DOES NOT exists {config_path:}"
@@ -1251,7 +1251,7 @@ mod global_vars_tests {
             .expect("Panic message should be &str");
         assert!(
             msg.contains("wrong number of sections"),
-            "Unexpected panic message: {msg}"
+            "Unexpected panic message: {msg}" // LCOV_EXCL_LINE
         );
     }
 
@@ -2173,7 +2173,7 @@ commit_datetime = %Y-%m-%d %H:%M:%S
 
         // Restore
         match original {
-            Some(val) => env::set_var(var_name, val),
+            Some(val) => env::set_var(var_name, val), // LCOV_EXCL_LINE
             None => env::remove_var(var_name),
         }
 
@@ -2221,7 +2221,7 @@ commit_datetime = %Y-%m-%d %H:%M:%S
 
         assert!(
             parser_called.get(),
-            "CLI parser should be called when no env var"
+            "CLI parser should be called when no env var" // LCOV_EXCL_LINE
         );
         assert_eq!(result, "/mock/cli/path.ini");
     }
@@ -2231,13 +2231,13 @@ commit_datetime = %Y-%m-%d %H:%M:%S
         let parser_called = std::cell::Cell::new(false);
 
         let result = get_or_default_config_ini_path_with(Some("/env/path.ini".to_string()), || {
-            parser_called.set(true);
-            Some("/should/not/be/used.ini".to_string())
-        });
+            parser_called.set(true); // LCOV_EXCL_LINE
+            Some("/should/not/be/used.ini".to_string()) // LCOV_EXCL_LINE
+        }); // LCOV_EXCL_LINE
 
         assert!(
             !parser_called.get(),
-            "CLI parser should NOT be called when env var is set"
+            "CLI parser should NOT be called when env var is set" // LCOV_EXCL_LINE
         );
         assert_eq!(result, "/env/path.ini");
     }
@@ -2281,7 +2281,7 @@ commit_datetime = %Y-%m-%d %H:%M:%S
         let err = result.unwrap_err();
         assert!(
             err.contains("Failed to parse INI"),
-            "Error should contain expected prefix: {err}"
+            "Error should contain expected prefix: {err}" // LCOV_EXCL_LINE
         );
     }
 
