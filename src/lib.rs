@@ -1,3 +1,4 @@
+#![cfg_attr(coverage_nightly, feature(coverage_attribute))]
 //! # Rusty Commit Saver
 //!
 //! A Rust tool to automatically log Git commits into Obsidian diary entries.
@@ -61,6 +62,5 @@
 //! - ✅ Customizable storage path with date-based organization
 //! - ✅ Pipe escaping in commit messages for Markdown table safety
 //! - ✅ Thread-safe configuration with `OnceCell`
-
 pub mod config;
 pub mod vim_commit;

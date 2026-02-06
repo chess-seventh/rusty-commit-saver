@@ -1,20 +1,21 @@
 coverage:
   precision: 2
   round: down
-  range: "70...100"
+  range: "80...100"
   status:
     project:
       default:
-        target: auto
-        threshold: 1%
+        target: 95%
+        threshold: 2%
     patch:
       default:
-        target: auto
-        threshold: 1%
+        target: 90%
+        threshold: 5%
 comment:
-  layout: "header, diff, flags, components"
+  layout: "header, diff, flags, files, components"
   behavior: default
   require_changes: true
+  require_base: false
 flags:
   coverage:
     paths:
@@ -27,3 +28,4 @@ flags:
 ignore:
   - "tests/**/*"
   - "benches/**/*"
+  - "src/main.rs"

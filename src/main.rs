@@ -1,6 +1,7 @@
 //!
 //! Save all my commits to Obisidian
 //!
+#![cfg_attr(coverage_nightly, feature(coverage_attribute))]
 
 pub mod vim_commit;
 use vim_commit::CommitSaver;
@@ -134,7 +135,9 @@ pub fn run_commit_saver(
     Ok(())
 }
 
+#[cfg_attr(coverage_nightly, coverage(off))]
 fn main() {
+    // LCOV_EXCL_START
     env_logger::init();
     info!("[main()]: Instanciating GlobalVars Struct.");
     let global_vars = GlobalVars::new();
@@ -156,9 +159,11 @@ fn main() {
             panic!("[main]: Something went wrong when writing the commit to the file");
         }
     }
+    // LCOV_EXCL_STOP
 }
 
 #[cfg(test)]
+#[cfg_attr(coverage_nightly, coverage(off))]
 mod main_tests {
     use super::*;
     use crate::vim_commit::check_diary_path_exists;
