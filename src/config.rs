@@ -603,8 +603,7 @@ impl GlobalVars {
             sections
         } else {
             error!(
-                "[GlobalVars::get_sections_from_config()] Sections Len must be 2, we have: {:}",
-                sections_len // Use variable instead of method call
+                "[GlobalVars::get_sections_from_config()] Sections Len must be 2, we have: {sections_len:?}"
             );
             error!(
                 "[GlobalVars::get_sections_from_config()] These are the sections found: {sections:?}"
