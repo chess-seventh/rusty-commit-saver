@@ -12,9 +12,10 @@ coverage:
         target: 90%
         threshold: 5%
 comment:
-  layout: "header, diff, flags, components"
+  layout: "header, diff, flags, files, components"
   behavior: default
   require_changes: true
+  require_base: false
 flags:
   coverage:
     paths:
