@@ -135,6 +135,7 @@ pub fn run_commit_saver(
     Ok(())
 }
 
+// LCOV_EXCL_START
 #[cfg_attr(coverage_nightly, coverage(off))]
 fn main() {
     env_logger::init();
@@ -159,6 +160,7 @@ fn main() {
         }
     }
 }
+// LCOV_EXCL_STOP
 
 #[cfg(test)]
 #[cfg_attr(coverage_nightly, coverage(off))]
