@@ -21,7 +21,7 @@ unexpected_cfgs = {level = "warn", check-cfg = ['cfg(coverage_nightly)', 'cfg(co
 
 [package]
 name = "rusty-commit-saver"
-version = "4.12.0"
+version = "4.13.0"
 edition = "2021"
 authors = ["chess7th"]
 license = "MIT"

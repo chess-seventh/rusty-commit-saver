@@ -1,3 +1,10 @@
+## [4.13.0](https://github.com/chess-seventh/rusty-commit-saver/compare/v4.12.0...v4.13.0) (2026-02-06)
+
+
+### Features
+
+* Enhance Codecov integration, config management, and testing resilience ([#42](https://github.com/chess-seventh/rusty-commit-saver/issues/42)) ([548c9e8](https://github.com/chess-seventh/rusty-commit-saver/commit/548c9e833ad802afe5d1d826d4eacdb754039884))
+
 ## [4.12.0](https://github.com/chess-seventh/rusty-commit-saver/compare/v4.11.1...v4.12.0) (2026-02-05)
 
 
