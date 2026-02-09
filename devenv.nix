@@ -1,4 +1,10 @@
-{ pkgs, lib, config, inputs, ... }:
+{
+  pkgs,
+  lib,
+  config,
+  inputs,
+  ...
+}:
 
 let
   # Fetch and patch Codecov CLI binary for NixOS
@@ -38,7 +44,8 @@ let
     };
   };
 
-in {
+in
+{
   dotenv.enable = true;
   difftastic.enable = true;
 
@@ -110,10 +117,14 @@ in {
       enable = true;
       name = "🦀 Rusty Commit Saver";
       stages = [ "post-commit" ];
-      after = [ "commitizen" "gitlint" "gptcommit" ];
+      after = [
+        "commitizen"
+        "gitlint"
+        "gptcommit"
+      ];
       entry = "${
-          inputs.rusty-commit-saver.packages.${pkgs.stdenv.hostPlatform.system}.default
-        }/bin/rusty-commit-saver";
+        inputs.rusty-commit-saver.packages.${pkgs.stdenv.hostPlatform.system}.default
+      }/bin/rusty-commit-saver";
       pass_filenames = false;
       language = "system";
       always_run = true;
@@ -159,7 +170,10 @@ in {
       name = "✨ Shell Check";
       enable = true;
       stages = [ "pre-commit" ];
-      excludes = [ "^.envrc$" "^.direnv/.*" ];
+      excludes = [
+        "^.envrc$"
+        "^.direnv/.*"
+      ];
     };
 
     mdsh = {
@@ -172,7 +186,7 @@ in {
       name = "🌲 TreeFMT";
       enable = true;
       settings.formatters = [
-        pkgs.nixfmt-classic
+        pkgs.nixfmt
         pkgs.deadnix
         pkgs.yamlfmt
         pkgs.rustfmt
@@ -184,8 +198,7 @@ in {
     clippy = {
       name = "✂️ Clippy";
       enable = true;
-      entry =
-        "cargo clippy --all-targets -- -W clippy::pedantic -A clippy::must-use-candidate";
+      entry = "cargo clippy --all-targets -- -W clippy::pedantic -A clippy::must-use-candidate";
       language = "system";
       settings.allFeatures = true;
       extraPackages = [ pkgs.openssl ];
@@ -256,8 +269,7 @@ in {
         echo 💡 Helper scripts to ease development process:
         echo
         ${pkgs.gnused}/bin/sed -e 's| |••|g' -e 's|=| |' <<EOF | ${pkgs.util-linuxMinimal}/bin/column -t | ${pkgs.gnused}/bin/sed -e 's|^|• |' -e 's|••| |g'
-        ${lib.generators.toKeyValue { }
-        (lib.mapAttrs (name: value: value.description) config.scripts)}
+        ${lib.generators.toKeyValue { } (lib.mapAttrs (name: value: value.description) config.scripts)}
         EOF
       '';
     };
@@ -591,8 +603,7 @@ in {
     echo 💡 Helper scripts to ease development process:
     echo
     ${pkgs.gnused}/bin/sed -e 's| |••|g' -e 's|=| |' <<EOF | ${pkgs.util-linuxMinimal}/bin/column -t | ${pkgs.gnused}/bin/sed -e 's|^|• |' -e 's|••| |g'
-    ${lib.generators.toKeyValue { }
-    (lib.mapAttrs (name: value: value.description) config.scripts)}
+    ${lib.generators.toKeyValue { } (lib.mapAttrs (name: value: value.description) config.scripts)}
     EOF
     echo
   '';
