@@ -1,3 +1,10 @@
+## [4.14.0](https://github.com/chess-seventh/rusty-commit-saver/compare/v4.13.0...v4.14.0) (2026-02-10)
+
+
+### Features
+
+* update devenv and dependencies ([#43](https://github.com/chess-seventh/rusty-commit-saver/issues/43)) ([a4637a2](https://github.com/chess-seventh/rusty-commit-saver/commit/a4637a21366aa957be34b77af1ce65d8039ad19c))
+
 ## [4.13.0](https://github.com/chess-seventh/rusty-commit-saver/compare/v4.12.0...v4.13.0) (2026-02-06)
 
 
