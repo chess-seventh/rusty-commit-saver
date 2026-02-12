@@ -2126,14 +2126,14 @@ commit_datetime=%Y-%m-%d %H:%M:%S
         use tempfile::NamedTempFile;
 
         let temp_file = NamedTempFile::new().expect("Failed to create temp file");
-        let config_content = r#"[obsidian]
+        let config_content = r"[obsidian]
 root_path_dir = /tmp/test_obsidian
 commit_path = Commits
 
 [templates]
 commit_date_path = %Y/%m/%d.md
 commit_datetime = %Y-%m-%d %H:%M:%S
-"#;
+";
         fs::write(temp_file.path(), config_content).expect("Failed to write temp config");
 
         env::set_var(
@@ -2145,7 +2145,7 @@ commit_datetime = %Y-%m-%d %H:%M:%S
         let result = global_vars.set_all();
 
         // Verify method chaining
-        assert!(std::ptr::eq(result, &global_vars));
+        assert!(std::ptr::eq(result, &raw const global_vars));
 
         // Verify config was set
         assert!(global_vars.config.get().is_some());
