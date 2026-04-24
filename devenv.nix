@@ -57,14 +57,6 @@ in
 
   env.GREET = "Welcome to the Rusty CV Commit Saver";
 
-  starship = {
-    enable = true;
-    config = {
-      enable = false;
-      path = "~/.config/starship.toml";
-    };
-  };
-
   packages = with pkgs; [
     zlib
     sqlite
