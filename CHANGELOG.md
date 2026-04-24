@@ -1,3 +1,10 @@
+## [4.14.2](https://github.com/chess-seventh/rusty-commit-saver/compare/v4.14.1...v4.14.2) (2026-04-24)
+
+
+### Bug Fixes
+
+* Codecov SHA remove from build ([#54](https://github.com/chess-seventh/rusty-commit-saver/issues/54)) ([0e4aef2](https://github.com/chess-seventh/rusty-commit-saver/commit/0e4aef27c9c664de2ba3e2eeb792982437ab0bc5))
+
 ## [4.14.1](https://github.com/chess-seventh/rusty-commit-saver/compare/v4.14.0...v4.14.1) (2026-02-12)
 
 ## [4.14.0](https://github.com/chess-seventh/rusty-commit-saver/compare/v4.13.0...v4.14.0) (2026-02-10)
