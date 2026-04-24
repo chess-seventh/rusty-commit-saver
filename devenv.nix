@@ -14,7 +14,7 @@ let
 
     src = pkgs.fetchurl {
       url = "https://cli.codecov.io/latest/linux/codecov";
-      sha256 = "0v1zmw25f6z8xcn1zrdfx787bsf47v1b545cwd48wwrc5d722d7x";
+      sha256 = "SppNUN8ct5Yinif43MKSv1U4d5zZBoUbN+s2EgKkPc4=";
     };
 
     dontUnpack = true;
@@ -57,14 +57,6 @@ in
 
   env.GREET = "Welcome to the Rusty CV Commit Saver";
 
-  starship = {
-    enable = true;
-    config = {
-      enable = false;
-      path = "~/.config/starship.toml";
-    };
-  };
-
   packages = with pkgs; [
     zlib
     sqlite
@@ -73,7 +65,7 @@ in
     postgresql
 
     # Codecov CLI for local baseline comparison
-    codecov-cli-bin
+    # codecov-cli-bin
   ];
 
   languages = {
@@ -82,17 +74,6 @@ in
   };
 
   scripts = {
-    # install_pre_hooks = {
-    #   description = "Install Pre Hooks, such as gptcommit";
-    #   exec = ''
-    #     #!/usr/bin/env bash
-    #     set -euxo pipefail
-    #     gptcommit install
-    #     gptcommit config set openai.model gpt-4o
-    #     gptcommit config set output.conventional_commit true
-    #   '';
-    # };
-
     pre-check = {
       description = ''
         runs linters, tests, and builds to prepare commit/push (more extensively than pre-commit hook)
