@@ -14,7 +14,7 @@ let
 
     src = pkgs.fetchurl {
       url = "https://cli.codecov.io/latest/linux/codecov";
-      sha256 = "SppNUN8ct5Yinif43MKSv1U4d5zZBoUbN+s2EgKkPc4=";
+      sha256 = "sha256-iTDEuzAlSkLz2MNAcGsb40CIXiDA31Fgok76LgMOZis=";
     };
 
     dontUnpack = true;
