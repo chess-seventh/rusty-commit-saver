@@ -151,14 +151,7 @@ impl Default for CommitSaver {
                 };
                 url
             },
-            commit_branch_name: {
-                // head.shorthand().unwrap().replace('\"', "")
-                let branch = match head.shorthand() {
-                    Some(branch) => branch.replace('\"', ""),
-                    None => "no_branch_set".to_string(),
-                };
-                branch
-            },
+            commit_branch_name: { head.shorthand().unwrap_or("no_branch_set").replace('"', "") },
             commit_hash: { commit.id().to_string() },
             commit_msg: {
                 // Preserve original lines, escape pipes, then join with <br/>
