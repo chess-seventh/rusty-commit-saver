@@ -154,8 +154,8 @@ impl Default for CommitSaver {
             commit_branch_name: {
                 // head.shorthand().unwrap().replace('\"', "")
                 let branch = match head.shorthand() {
-                    Some(branch) => branch.replace('\"', ""),
-                    None => "no_branch_set".to_string(),
+                    Ok(branch) => branch.replace('\"', ""),
+                    _ => "no_branch_set".to_string(),
                 };
                 branch
             },
