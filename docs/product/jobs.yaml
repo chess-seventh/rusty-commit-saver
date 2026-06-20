@@ -1,0 +1,16 @@
+# Jobs registry (SSOT) — rusty-commit-saver
+# Bootstrapped during DISCUSS for feature vim-commit-coverage.
+# Minimal by design: this is a small CLI. Add real jobs when a user-facing
+# feature warrants JTBD analysis.
+schema_version: 1
+jobs:
+  - id: infrastructure-only
+    type: escape-valve
+    title: "Infrastructure / quality work with no direct user job"
+    description: >
+      Reserved job_id for infrastructure, tooling, refactoring, and quality features that do not map to a user-facing Job To Be Done. Stories using this id MUST supply an `infrastructure_rationale` explaining why no user job applies. Enforced as a hard DoR check by nw-product-owner-reviewer.
+
+    applies_to:
+      - "test coverage / measurement-correctness work"
+      - "build/crate-structure refactoring"
+      - "CI gate alignment"
