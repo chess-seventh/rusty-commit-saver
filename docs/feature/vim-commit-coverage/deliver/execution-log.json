@@ -1,0 +1,83 @@
+{
+  "schema_version": "3.0",
+  "feature_id": "vim-commit-coverage",
+  "events": [
+    {
+      "sid": "01-01",
+      "p": "RED",
+      "s": "EXECUTED",
+      "d": "PASS: 9 characterization tests activated and green (coverage feature \u2014 behavior pre-exists)",
+      "t": "2026-06-20T20:47:10Z"
+    },
+    {
+      "sid": "01-01",
+      "p": "GREEN",
+      "s": "EXECUTED",
+      "d": "PASS: unified binary onto library; suite+clippy+release green; vim_commit.rs single copy verified; coverage 59.98% overall (vim_commit.rs 51.89%)",
+      "t": "2026-06-20T20:49:50Z"
+    },
+    {
+      "sid": "01-01",
+      "p": "RED",
+      "s": "EXECUTED",
+      "d": "PASS",
+      "t": "2026-06-20T20:50:45Z"
+    },
+    {
+      "sid": "01-01",
+      "p": "GREEN",
+      "s": "EXECUTED",
+      "d": "PASS",
+      "t": "2026-06-20T20:50:51Z"
+    },
+    {
+      "sid": "01-01",
+      "p": "COMMIT",
+      "s": "SKIPPED",
+      "d": "APPROVED_SKIP: Deferred to orchestrator finalize per lean rigor TDD protocol",
+      "t": "2026-06-20T20:52:07Z"
+    },
+    {
+      "sid": "01-01",
+      "p": "COMMIT",
+      "s": "EXECUTED",
+      "d": "PASS",
+      "t": "2026-06-20T20:56:17Z"
+    },
+    {
+      "sid": "01-02",
+      "p": "RED",
+      "s": "EXECUTED",
+      "d": "baseline vim_commit.rs coverage recorded (54.21% before annotation)",
+      "t": "2026-06-20T21:44:05Z"
+    },
+    {
+      "sid": "01-02",
+      "p": "GREEN",
+      "s": "EXECUTED",
+      "d": "PASS: coverage(off) annotation on test module + try_discover helper + test_try_new_discovery_failure_blocked activated; vim_commit.rs 97.66% (128/131 lines); full suite green (107 tests); clippy clean; release green",
+      "t": "2026-06-20T21:44:07Z"
+    },
+    {
+      "sid": "01-02",
+      "p": "RED",
+      "s": "EXECUTED",
+      "d": "PASS: baseline vim_commit.rs coverage = 54.21% (653 lines, 299 missed)",
+      "t": "2026-06-20T21:44:32Z"
+    },
+    {
+      "sid": "01-02",
+      "p": "GREEN",
+      "s": "EXECUTED",
+      "d": "PASS: vim_commit.rs coverage 97.66% (128/131 lines); annotation + try_discover helper + test activated; 107 tests pass; clippy clean; release green",
+      "t": "2026-06-20T21:44:32Z"
+    },
+    {
+      "sid": "01-02",
+      "p": "COMMIT",
+      "s": "SKIPPED",
+      "d": "DEFERRED: orchestrator finalize handles commit per lean rigor protocol",
+      "t": "2026-06-20T21:44:35Z"
+    }
+  ]
+}

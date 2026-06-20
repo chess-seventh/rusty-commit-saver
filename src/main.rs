@@ -3,14 +3,12 @@
 //!
 #![cfg_attr(coverage_nightly, feature(coverage_attribute))]
 
-pub mod vim_commit;
-use vim_commit::CommitSaver;
-use vim_commit::check_diary_path_exists;
-use vim_commit::create_diary_file;
-use vim_commit::create_directories_for_new_entry;
+use rusty_commit_saver::vim_commit::check_diary_path_exists;
+use rusty_commit_saver::vim_commit::create_diary_file;
+use rusty_commit_saver::vim_commit::create_directories_for_new_entry;
+use rusty_commit_saver::vim_commit::CommitSaver;
 
-pub mod config;
-use config::GlobalVars;
+use rusty_commit_saver::config::GlobalVars;
 
 use log::error;
 use log::info;
@@ -166,12 +164,12 @@ fn main() {
 #[cfg_attr(coverage_nightly, coverage(off))]
 mod main_tests {
     use super::*;
-    use crate::vim_commit::check_diary_path_exists;
-    use crate::vim_commit::create_diary_file;
-    use crate::vim_commit::create_directories_for_new_entry;
-    use crate::vim_commit::get_parent_from_full_path;
     use chrono::{TimeZone, Utc};
     use git2::Repository;
+    use rusty_commit_saver::vim_commit::check_diary_path_exists;
+    use rusty_commit_saver::vim_commit::create_diary_file;
+    use rusty_commit_saver::vim_commit::create_directories_for_new_entry;
+    use rusty_commit_saver::vim_commit::get_parent_from_full_path;
     use std::fs;
     use std::fs::File;
     use std::path::PathBuf;
@@ -410,8 +408,8 @@ mod main_tests {
     }
 
     #[test]
-    fn test_create_directories_for_new_entry_with_existing_dirs()
-    -> Result<(), Box<dyn std::error::Error>> {
+    fn test_create_directories_for_new_entry_with_existing_dirs(
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let temp_dir = tempdir()?;
         let nested_path = temp_dir
             .path()

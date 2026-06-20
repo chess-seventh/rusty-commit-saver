@@ -139,38 +139,88 @@ pub struct CommitSaver {
 /// let saver2 = CommitSaver::new();
 /// ```
 impl Default for CommitSaver {
+    /// Builds a `CommitSaver` from the Git repository discovered in the current
+    /// directory.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the current directory is not inside a Git repository, the
+    /// repository has no resolvable `HEAD`, or `HEAD` cannot be peeled to a
+    /// commit. Use [`CommitSaver::try_new`] for a non-panicking variant.
     fn default() -> CommitSaver {
-        let git_repo = Repository::discover("./").unwrap();
-        let head = git_repo.head().unwrap();
-        let commit = head.peel_to_commit().unwrap();
-        CommitSaver {
-            repository_url: {
-                let url = match git_repo.find_remote("origin") {
-                    Ok(bind) => bind.url().unwrap().replace('\"', ""),
-                    _ => "no_url_set".to_string(),
-                };
-                url
-            },
-            commit_branch_name: { head.shorthand().unwrap_or("no_branch_set").replace('"', "") },
-            commit_hash: { commit.id().to_string() },
-            commit_msg: {
-                // Preserve original lines, escape pipes, then join with <br/>
-                let raw = commit.message().unwrap_or("");
-                raw.lines()
-                    .map(|line| line.trim().replace('|', "\\|"))
-                    .filter(|line| !line.is_empty())
-                    .collect::<Vec<_>>()
-                    .join("<br/>")
-            },
-            commit_datetime: {
-                let commit_date: i64 = commit.time().seconds();
-                DateTime::from_timestamp(commit_date, 0).unwrap()
-            },
-        }
+        CommitSaver::try_new().expect("failed to build CommitSaver from the current Git repository")
     }
 }
 
 impl CommitSaver {
+    /// Builds a `CommitSaver` from an explicit repository handle.
+    ///
+    /// This is the fallible core that [`CommitSaver::try_new`], [`CommitSaver::new`]
+    /// and [`CommitSaver::default`] all delegate to. Taking the repository as a
+    /// parameter — rather than discovering the ambient working directory — keeps
+    /// the metadata extraction pure and testable, with no dependency on
+    /// process-global state such as the current directory.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the repository has no resolvable `HEAD`, if `HEAD`
+    /// cannot be peeled to a commit, or if the commit timestamp is out of the
+    /// representable range.
+    pub fn from_repo(git_repo: &Repository) -> Result<Self, Box<dyn Error>> {
+        let head = git_repo.head()?;
+        let commit = head.peel_to_commit()?;
+        let commit_datetime = DateTime::from_timestamp(commit.time().seconds(), 0)
+            .ok_or("commit timestamp is out of range")?;
+
+        Ok(CommitSaver {
+            repository_url: match git_repo.find_remote("origin") {
+                Ok(remote) => remote.url().unwrap_or("no_url_set").replace('"', ""),
+                _ => "no_url_set".to_string(),
+            },
+            commit_branch_name: head.shorthand().unwrap_or("no_branch_set").replace('"', ""),
+            commit_hash: commit.id().to_string(),
+            // Preserve original lines, escape pipes, then join with <br/>
+            commit_msg: commit
+                .message()
+                .unwrap_or("")
+                .lines()
+                .map(|line| line.trim().replace('|', "\\|"))
+                .filter(|line| !line.is_empty())
+                .collect::<Vec<_>>()
+                .join("<br/>"),
+            commit_datetime,
+        })
+    }
+
+    /// Internal helper for path-injected repository discovery.
+    ///
+    /// Discovers a Git repository at the given path and builds a `CommitSaver`
+    /// from its `HEAD` commit. This function enables testing of error cases
+    /// without mutating the process's current directory.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if no Git repository can be discovered from the given
+    /// path, or if [`CommitSaver::from_repo`] fails for the discovered repo.
+    fn try_discover(path: &Path) -> Result<Self, Box<dyn Error>> {
+        let git_repo = Repository::discover(path)?;
+        CommitSaver::from_repo(&git_repo)
+    }
+
+    /// Discovers the Git repository in the current directory and builds a
+    /// `CommitSaver` from its `HEAD` commit.
+    ///
+    /// This is the non-panicking counterpart to [`CommitSaver::new`] /
+    /// [`CommitSaver::default`].
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if no Git repository can be discovered from the current
+    /// directory, or if [`CommitSaver::from_repo`] fails for the discovered repo.
+    pub fn try_new() -> Result<Self, Box<dyn Error>> {
+        CommitSaver::try_discover(Path::new("./"))
+    }
+
     /// Creates a new `CommitSaver` instance by discovering the current Git repository.
     ///
     /// This function automatically:
@@ -756,6 +806,7 @@ pub fn create_diary_file(
 
 // CommitSaver tests
 #[cfg(test)]
+#[cfg_attr(coverage_nightly, coverage(off))]
 mod commit_saver_tests {
     use super::*;
     use chrono::{TimeZone, Utc};
@@ -875,11 +926,9 @@ mod commit_saver_tests {
         assert!(result.contains("2023"));
         assert!(result.contains("12-December"));
         // assert!(result.ends_with(".md"));
-        assert!(
-            std::path::Path::new(&result)
-                .extension()
-                .is_some_and(|ext| ext.eq_ignore_ascii_case("md"))
-        );
+        assert!(std::path::Path::new(&result)
+            .extension()
+            .is_some_and(|ext| ext.eq_ignore_ascii_case("md")));
     }
 
     #[test]
@@ -1004,9 +1053,6 @@ mod commit_saver_tests {
         use git2::{Repository, Signature};
         use tempfile::tempdir;
 
-        // Save original directory to restore later
-        let original_dir = std::env::current_dir().unwrap();
-
         let temp_dir = tempdir().unwrap();
         let repo = Repository::init(temp_dir.path()).unwrap();
 
@@ -1017,18 +1063,195 @@ mod commit_saver_tests {
         repo.commit(Some("HEAD"), &sig, &sig, "Initial commit", &tree, &[])
             .unwrap();
 
-        // Change to the temp repo directory
-        std::env::set_current_dir(temp_dir.path()).unwrap();
-
-        // This should hit the `_ => "no_url_set"` branch
-        let saver = CommitSaver::default();
-
-        // Restore original directory
-        std::env::set_current_dir(original_dir).unwrap();
+        // Build directly from the repo handle. This deliberately avoids mutating
+        // the process-global current directory, so the test stays isolated and
+        // can run in parallel with others that call `Repository::discover("./")`.
+        // The repo has no "origin" remote, so this exercises the `no_url_set` branch.
+        let saver = CommitSaver::from_repo(&repo).expect("from_repo should succeed");
 
         assert_eq!(saver.repository_url, "no_url_set");
         // Branch name depends on git config; just verify it's not empty
         assert!(!saver.commit_branch_name.is_empty());
         assert!(!saver.commit_hash.is_empty());
+    }
+
+    // US-02: CommitSaver construction error branches
+
+    #[test]
+    fn test_from_repo_no_head_error() {
+        use git2::Repository;
+
+        let temp_dir = tempdir().unwrap();
+        let repo = Repository::init(temp_dir.path()).unwrap();
+
+        // Repository with no commits → no HEAD
+        // from_repo should hit git_repo.head()? error arm
+        let result = CommitSaver::from_repo(&repo);
+
+        assert!(result.is_err(), "from_repo should error on no-HEAD repo");
+    }
+
+    #[test]
+    fn test_from_repo_detached_head_branch_head() {
+        use git2::{Repository, Signature};
+
+        let temp_dir = tempdir().unwrap();
+        let repo = Repository::init(temp_dir.path()).unwrap();
+
+        // Create initial commit
+        let sig = Signature::now("Test User", "test@example.com").unwrap();
+        let tree_id = repo.index().unwrap().write_tree().unwrap();
+        let tree = repo.find_tree(tree_id).unwrap();
+        let commit_oid = repo
+            .commit(Some("HEAD"), &sig, &sig, "Initial commit", &tree, &[])
+            .unwrap();
+
+        // Detach HEAD by pointing directly to the commit
+        repo.set_head_detached(commit_oid).unwrap();
+
+        // from_repo should succeed with detached HEAD and record "HEAD" as branch name
+        // (head.shorthand() returns Some("HEAD") for detached HEAD, not None)
+        let saver =
+            CommitSaver::from_repo(&repo).expect("from_repo should succeed on detached HEAD");
+
+        assert_eq!(
+            saver.commit_branch_name, "HEAD",
+            "detached HEAD should record 'HEAD' as branch name"
+        );
+    }
+
+    #[test]
+    #[ignore = "DISTILL scaffold — documented unreachable"]
+    fn test_from_repo_out_of_range_timestamp_unreachable() {
+        // DOCUMENTED-UNREACHABLE: The error arm for out-of-range timestamps in from_repo
+        // (line 173-174: DateTime::from_timestamp(...).ok_or(...)) cannot be triggered
+        // with representable timestamp values in git2's environment.
+        //
+        // Per upstream-issues.md: libgit2 appears to constrain stored commit times within
+        // chrono's representable range (~±262143 years). The defensive guard remains in
+        // production code; this test documents that it is not practically coverable via
+        // git2-crafted commits.
+        //
+        // This test remains ignored until evidence emerges of a git2-compatible way to
+        // craft a commit with a timestamp beyond chrono's bound.
+    }
+
+    #[test]
+    fn test_try_new_discovery_failure_blocked() {
+        // Tests that try_discover fails when called on a path that is not
+        // inside a Git repository. Uses tempfile::tempdir() to create an
+        // isolated non-repo directory, preventing any discovery walk from
+        // finding a parent repository.
+        let non_repo_dir = tempdir().expect("Failed to create temp dir");
+        let result = CommitSaver::try_discover(non_repo_dir.path());
+
+        assert!(
+            result.is_err(),
+            "try_discover should fail when path is not in a git repository"
+        );
+    }
+
+    // US-03: Filesystem error branches
+
+    #[test]
+    fn test_append_entry_to_diary_parent_not_exists() {
+        let mut commit_saver = create_test_commit_saver();
+
+        // Use a tempdir path but point to a non-existent parent
+        let temp_dir = tempdir().unwrap();
+        let missing_parent_path = temp_dir.path().join("nonexistent").join("diary.md");
+
+        // append_entry_to_diary opens with append mode; file must exist.
+        // Parent doesn't exist, so open should fail.
+        let result = commit_saver.append_entry_to_diary(&missing_parent_path);
+
+        assert!(
+            result.is_err(),
+            "append_entry_to_diary should error on missing parent"
+        );
+    }
+
+    #[test]
+    fn test_create_diary_file_unwritable_location() {
+        let mut commit_saver = create_test_commit_saver();
+
+        // Try to create file in /proc (read-only on Linux)
+        let result = create_diary_file("/proc/invalid_path/file.md", &mut commit_saver);
+
+        assert!(
+            result.is_err(),
+            "create_diary_file should error on unwritable location"
+        );
+    }
+
+    #[test]
+    fn test_create_directories_forbidden_path() {
+        let forbidden_path = std::path::Path::new("/proc/invalid/path/diary.md");
+
+        // create_directories_for_new_entry calls fs::create_dir_all on the parent.
+        // /proc is read-only, so this should fail.
+        let result = create_directories_for_new_entry(forbidden_path);
+
+        assert!(
+            result.is_err(),
+            "create_directories_for_new_entry should error on forbidden path"
+        );
+    }
+
+    // US-04: Path inspection boundary branches
+
+    #[test]
+    fn test_check_diary_path_exists_missing_error() {
+        let temp_dir = tempdir().unwrap();
+        let missing_path = temp_dir.path().join("nonexistent.md");
+
+        let result = check_diary_path_exists(&missing_path);
+
+        assert!(
+            result.is_err(),
+            "check_diary_path_exists should error on missing path"
+        );
+    }
+
+    #[test]
+    fn test_check_diary_path_exists_happy_path() -> Result<(), Box<dyn std::error::Error>> {
+        let temp_dir = tempdir()?;
+        let existing_path = temp_dir.path().join("diary.md");
+
+        // Create the file
+        File::create(&existing_path)?;
+
+        let result = check_diary_path_exists(&existing_path);
+
+        assert!(
+            result.is_ok(),
+            "check_diary_path_exists should succeed on existing path"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn test_get_parent_from_full_path_root_error() {
+        let root = std::path::Path::new("/");
+
+        let result = get_parent_from_full_path(root);
+
+        assert!(
+            result.is_err(),
+            "get_parent_from_full_path should error on root path"
+        );
+    }
+
+    #[test]
+    fn test_get_parent_from_full_path_nested_happy() {
+        let path = std::path::Path::new("/home/user/file.txt");
+
+        let result = get_parent_from_full_path(path);
+
+        assert!(
+            result.is_ok(),
+            "get_parent_from_full_path should succeed on nested path"
+        );
+        assert_eq!(result.unwrap(), std::path::Path::new("/home/user"));
     }
 }
