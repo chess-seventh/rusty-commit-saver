@@ -1,3 +1,10 @@
+## [4.15.0](https://github.com/chess-seventh/rusty-commit-saver/compare/v4.14.5...v4.15.0) (2026-06-21)
+
+
+### Features
+
+* add claude.code devenv hooks (Claude Code integration) ([#63](https://github.com/chess-seventh/rusty-commit-saver/issues/63)) ([c7574bb](https://github.com/chess-seventh/rusty-commit-saver/commit/c7574bbe005d60e7622d0c1bac56ee243910258d)), closes [#62](https://github.com/chess-seventh/rusty-commit-saver/issues/62)
+
 ## [4.14.5](https://github.com/chess-seventh/rusty-commit-saver/compare/v4.14.4...v4.14.5) (2026-06-20)
 
 ## [4.14.4](https://github.com/chess-seventh/rusty-commit-saver/compare/v4.14.3...v4.14.4) (2026-06-06)
