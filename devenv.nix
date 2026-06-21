@@ -58,12 +58,8 @@ in
   env.GREET = "Welcome to the Rusty CV Commit Saver";
 
   packages = with pkgs; [
-    zlib
     sqlite
-    texlive.combined.scheme-small
-    diesel-cli
     postgresql
-
     # Codecov CLI for local baseline comparison
     # codecov-cli-bin
   ];
@@ -71,6 +67,53 @@ in
   languages = {
     nix.enable = true;
     shell.enable = true;
+  };
+
+  claude.code = {
+    enable = true;
+    hooks = {
+      # Protect sensitive files (PreToolUse hook)
+      protect-secrets = {
+        enable = true;
+        name = "Protect sensitive files";
+        hookType = "PreToolUse";
+        matcher = "^(Edit|MultiEdit|Write)$";
+        command = ''
+          # Read the JSON input from stdin
+          json=$(cat)
+          file_path=$(echo "$json" | jq -r '.file_path // empty')
+
+          if [[ "$file_path" =~ \.(env|secret)$ ]]; then
+            echo "Error: Cannot edit sensitive files"
+            exit 1
+          fi
+        '';
+      };
+
+      # Log notifications (Notification hook)
+      log-notifications = {
+        enable = true;
+        name = "Log Claude notifications";
+        hookType = "Notification";
+        command = ''echo "Claude notification received" >> ./claude/claude.log'';
+      };
+
+      # Track completion (Stop hook)
+      track-completion = {
+        enable = true;
+        name = "Track when Claude finishes";
+        hookType = "Stop";
+        command = ''echo "Claude finished at $(date)" >> ./claude/claude-sessions.log'';
+      };
+
+      # Subagent monitoring (SubagentStop hook)
+      subagent-complete = {
+        enable = true;
+        name = "Log subagent completion";
+        hookType = "SubagentStop";
+        command = ''echo "Subagent task completed" >> ./claude/subagent.log'';
+      };
+    };
   };
 
   scripts = {
