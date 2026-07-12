@@ -1,50 +1,9 @@
 {
   pkgs,
-  imports,
   lib,
   config,
-  inputs,
   ...
 }:
-let
-  # Fetch and patch Codecov CLI binary for NixOS
-  codecov-cli-bin = pkgs.stdenv.mkDerivation rec {
-    pname = "codecov-cli";
-    version = "0.7.5";
-
-    src = pkgs.fetchurl {
-      url = "https://cli.codecov.io/latest/linux/codecov";
-      sha256 = "SppNUN8ct5Yinif43MKSv1U4d5zZBoUbN+s2EgKkPc4=";
-    };
-
-    dontUnpack = true;
-
-    nativeBuildInputs = [ pkgs.autoPatchelfHook ];
-
-    # Runtime dependencies the binary needs
-    buildInputs = [
-      pkgs.stdenv.cc.cc.lib # libstdc++
-      pkgs.zlib
-      pkgs.glibc
-    ];
-
-    installPhase = ''
-      runHook preInstall
-      mkdir -p $out/bin
-      cp $src $out/bin/codecov
-      chmod +x $out/bin/codecov
-      runHook postInstall
-    '';
-
-    meta = with lib; {
-      description = "Codecov CLI";
-      homepage = "https://cli.codecov.io";
-      license = licenses.asl20;
-      platforms = platforms.linux;
-    };
-  };
-
-in
 {
   dotenv.enable = true;
   difftastic.enable = true;
@@ -219,7 +178,7 @@ in
     echo 💡 Helper scripts to ease development process:
     echo
     ${pkgs.gnused}/bin/sed -e 's| |••|g' -e 's|=| |' <<EOF | ${pkgs.util-linuxMinimal}/bin/column -t | ${pkgs.gnused}/bin/sed -e 's|^|• |' -e 's|••| |g'
-    ${lib.generators.toKeyValue { } (lib.mapAttrs (name: value: value.description) config.scripts)}
+    ${lib.generators.toKeyValue { } (lib.mapAttrs (_name: value: value.description) config.scripts)}
     EOF
     echo
   '';

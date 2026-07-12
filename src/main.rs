@@ -3,10 +3,10 @@
 //!
 #![cfg_attr(coverage_nightly, feature(coverage_attribute))]
 
+use rusty_commit_saver::vim_commit::CommitSaver;
 use rusty_commit_saver::vim_commit::check_diary_path_exists;
 use rusty_commit_saver::vim_commit::create_diary_file;
 use rusty_commit_saver::vim_commit::create_directories_for_new_entry;
-use rusty_commit_saver::vim_commit::CommitSaver;
 
 use rusty_commit_saver::config::GlobalVars;
 
@@ -408,8 +408,8 @@ mod main_tests {
     }
 
     #[test]
-    fn test_create_directories_for_new_entry_with_existing_dirs(
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    fn test_create_directories_for_new_entry_with_existing_dirs()
+    -> Result<(), Box<dyn std::error::Error>> {
         let temp_dir = tempdir()?;
         let nested_path = temp_dir
             .path()
