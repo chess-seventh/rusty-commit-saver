@@ -1,27 +1,121 @@
+# ==========================================================================
+# treefmt config - derived from the DevBoostrapper fleet canon
+# (treefmt.canonical.toml), kept verbatim.
+#
+# One file fits all: `allow-missing-formatter = true` means only the formatter
+# BINARIES for the languages this repo uses need to be present (via the devShell
+# / git-hooks); the rest are silently skipped. Tables stay alphabetically named
+# so treefmt / toml-sort keep this file stable.
+#
+# See DevBoostrapper TREEFMT_STANDARD.md for the fleet rationale and wiring.
+# ==========================================================================
+
+# Only walk git-tracked files (respects .gitignore).
+walk = "git"
+# Never hard-fail when a formatter binary is missing - keeps this one canonical
+# file usable across repos with different toolchains.
 allow-missing-formatter = true
 verbose = 1
-walk = "git"
+# Safe excludes, baked into the canon so every downstream repo inherits them.
+# These matter for TRACKED-but-vendored paths (e.g. career-ops commits a
+# vendored node_modules) that `walk = "git"` would otherwise still format.
+excludes = [
+  "**/node_modules/**",
+  "**/vendor/**",
+  "result",
+  "result-*",
+  "**/target/**",
+  ".direnv/**",
+  ".devenv/**",
+  "**/.git/**",
+  "**/*.min.js",
+  "**/*.min.css",
+  "**/copier.yaml",
+  "**/copier.yml"
+]
 
-[formatter.nixfmt-classic]
-command = "nixfmt"
-excludes = []
+# Nix: deadnix strips dead bindings first (priority 1), then nixfmt formats.
+[formatter.deadnix]
+command = "deadnix"
+options = ["--edit"]
 includes = ["*.nix"]
-options = []
+priority = 1
 
+# Go: gofumpt is a strict superset of gofmt.
+[formatter.gofumpt]
+command = "gofumpt"
+options = ["-w"]
+includes = ["*.go"]
+
+# Go: goimports fixes import grouping/ordering.
+[formatter.goimports]
+command = "goimports"
+options = ["-w"]
+includes = ["*.go"]
+
+# Markdown: MD013 (line length) disabled - prose wrapping is the author's call.
+[formatter.markdownlint]
+command = "markdownlint"
+options = ["--fix", "--disable", "MD013"]
+includes = ["*.md"]
+
+# Nix: the settled fleet nix formatter (alejandra is out).
+[formatter.nixfmt]
+command = "nixfmt"
+options = ["--width=100"]
+includes = ["*.nix"]
+
+# JavaScript / TypeScript / web.
+[formatter.prettier]
+command = "prettier"
+options = ["--write"]
+includes = [
+  "*.js",
+  "*.jsx",
+  "*.ts",
+  "*.tsx",
+  "*.json",
+  "*.css",
+  "*.scss",
+  "*.html"
+]
+
+# Python: ruff lint-fix. No black - ruff format (below) supersedes it.
+[formatter.ruff-check]
+command = "ruff"
+options = ["check", "--fix"]
+includes = ["*.py", "*.pyi"]
+
+# Python: ruff formatter.
+[formatter.ruff-format]
+command = "ruff"
+options = ["format"]
+includes = ["*.py", "*.pyi"]
+
+# Rust.
 [formatter.rustfmt]
 command = "rustfmt"
-excludes = []
+options = ["--edition", "2024", "--config", "skip_children=true"]
 includes = ["*.rs"]
-options = ["--config", "skip_children=true", "--edition", "2024"]
 
+# Shell: 2-space indent.
+[formatter.shfmt]
+command = "shfmt"
+options = ["-i", "2", "-w"]
+includes = ["*.sh"]
+
+# LaTeX.
+[formatter.tex-fmt]
+command = "tex-fmt"
+includes = ["*.tex", "*.bib", "*.cls", "*.sty"]
+
+# TOML.
 [formatter.toml-sort]
 command = "toml-sort"
-excludes = []
-includes = ["*.toml"]
 options = ["-i"]
+includes = ["*.toml"]
 
+# YAML.
 [formatter.yamlfmt]
 command = "yamlfmt"
-excludes = []
 includes = ["*.yaml", "*.yml"]
-options = []

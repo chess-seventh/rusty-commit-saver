@@ -926,9 +926,11 @@ mod commit_saver_tests {
         assert!(result.contains("2023"));
         assert!(result.contains("12-December"));
         // assert!(result.ends_with(".md"));
-        assert!(std::path::Path::new(&result)
-            .extension()
-            .is_some_and(|ext| ext.eq_ignore_ascii_case("md")));
+        assert!(
+            std::path::Path::new(&result)
+                .extension()
+                .is_some_and(|ext| ext.eq_ignore_ascii_case("md"))
+        );
     }
 
     #[test]
