@@ -1,3 +1,10 @@
+## [4.16.0](https://github.com/chess-seventh/rusty-commit-saver/compare/v4.15.1...v4.16.0) (2026-07-12)
+
+
+### Features
+
+* **treefmt:** reconcile to fleet canon + nix fmt via treefmt ([#67](https://github.com/chess-seventh/rusty-commit-saver/issues/67)) ([f603e51](https://github.com/chess-seventh/rusty-commit-saver/commit/f603e518938bc518005f93bc3bbf5523c6f61579))
+
 ## [4.15.1](https://github.com/chess-seventh/rusty-commit-saver/compare/v4.15.0...v4.15.1) (2026-06-22)
 
 ## [4.15.0](https://github.com/chess-seventh/rusty-commit-saver/compare/v4.14.5...v4.15.0) (2026-06-21)
