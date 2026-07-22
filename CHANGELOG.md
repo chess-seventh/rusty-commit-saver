@@ -1,3 +1,10 @@
+## [4.16.4](https://github.com/chess-seventh/rusty-commit-saver/compare/v4.16.3...v4.16.4) (2026-07-22)
+
+
+### Bug Fixes
+
+* **devenv:** write claude hook logs to .claude dir ([#70](https://github.com/chess-seventh/rusty-commit-saver/issues/70)) ([6ecbb0f](https://github.com/chess-seventh/rusty-commit-saver/commit/6ecbb0f4884b54246072c4dabc8f1202d425400b))
+
 ## [4.16.3](https://github.com/chess-seventh/rusty-commit-saver/compare/v4.16.2...v4.16.3) (2026-07-22)
 
 
