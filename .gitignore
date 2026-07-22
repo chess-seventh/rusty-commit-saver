@@ -1,7 +1,7 @@
 /target
 
 # nWave / Claude Code: local logs, coverage output, transient DES session state
-claude/*.log
+.claude/*.log
 lcov.info
 **/.develop-progress.json
 
