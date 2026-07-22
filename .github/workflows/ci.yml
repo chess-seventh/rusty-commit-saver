@@ -63,6 +63,8 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           flags: coverage
           name: Code Coverage
+          fail_ci_if_error: false
+          verbose: true
       - name: 📊 Upload test results to Codecov
         if: always() && hashFiles('junit.xml') != ''
         uses: codecov/codecov-action@v5
@@ -72,3 +74,5 @@ jobs:
           flags: unittests
           name: Unit Tests
           report_type: test_results
+          fail_ci_if_error: false
+          verbose: true
