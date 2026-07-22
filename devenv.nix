@@ -54,7 +54,7 @@
         enable = true;
         name = "Log Claude notifications";
         hookType = "Notification";
-        command = ''echo "Claude notification received" >> ./claude/claude.log'';
+        command = ''mkdir -p .claude && echo "Claude notification received" >> .claude/claude.log'';
       };
 
       # Track completion (Stop hook)
@@ -62,7 +62,7 @@
         enable = true;
         name = "Track when Claude finishes";
         hookType = "Stop";
-        command = ''echo "Claude finished at $(date)" >> ./claude/claude-sessions.log'';
+        command = ''mkdir -p .claude && echo "Claude finished at $(date)" >> .claude/claude-sessions.log'';
       };
 
       # Subagent monitoring (SubagentStop hook)
@@ -70,7 +70,7 @@
         enable = true;
         name = "Log subagent completion";
         hookType = "SubagentStop";
-        command = ''echo "Subagent task completed" >> ./claude/subagent.log'';
+        command = ''mkdir -p .claude && echo "Subagent task completed" >> .claude/subagent.log'';
       };
     };
   };
