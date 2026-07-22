@@ -1,3 +1,10 @@
+## [4.16.3](https://github.com/chess-seventh/rusty-commit-saver/compare/v4.16.2...v4.16.3) (2026-07-22)
+
+
+### Bug Fixes
+
+* **ci:** deploy docs on Release workflow_run not release tag ([#69](https://github.com/chess-seventh/rusty-commit-saver/issues/69)) ([75c4fee](https://github.com/chess-seventh/rusty-commit-saver/commit/75c4feef90e7014b4d827a6f4ac7bb8d2c3a5de2))
+
 ## [4.16.2](https://github.com/chess-seventh/rusty-commit-saver/compare/v4.16.1...v4.16.2) (2026-07-22)
 
 ## [4.16.1](https://github.com/chess-seventh/rusty-commit-saver/compare/v4.16.0...v4.16.1) (2026-07-22)
