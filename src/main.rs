@@ -7,6 +7,8 @@ use rusty_commit_saver::vim_commit::CommitSaver;
 use rusty_commit_saver::vim_commit::check_diary_path_exists;
 use rusty_commit_saver::vim_commit::create_diary_file;
 use rusty_commit_saver::vim_commit::create_directories_for_new_entry;
+use rusty_commit_saver::vim_commit::current_repo_workdir_name;
+use rusty_commit_saver::vim_commit::is_repo_excluded;
 
 use rusty_commit_saver::config::GlobalVars;
 
@@ -31,6 +33,8 @@ use std::path::PathBuf;
 /// * `obsidian_root_path_dir` - Base directory for Obsidian vault (e.g., `/home/user/Obsidian`)
 /// * `obsidian_commit_path` - Subdirectory for commits (e.g., `Diaries/Commits`)
 /// * `template_commit_date_path` - Chrono format for date hierarchy (e.g., `%Y/%m-%B/%F.md`)
+/// * `excluded_repos` - Repository names to skip; when the current repo's
+///   working-directory name matches, the run returns `Ok(())` without writing
 ///
 /// # Returns
 ///
@@ -56,7 +60,9 @@ use std::path::PathBuf;
 /// let commit_path = PathBuf::from("Diaries/Commits");
 /// let date_template = "%Y/%m-%B/%F.md"; // YYYY/MM-MonthName/YYYY-MM-DD.md
 ///
-/// match run_commit_saver(obsidian_root, &commit_path, date_template) {
+/// let excluded_repos: Vec<String> = vec![]; // e.g. vec!["claude-src".to_string()]
+///
+/// match run_commit_saver(obsidian_root, &commit_path, date_template, &excluded_repos) {
 ///     Ok(()) => println!("✓ Commit successfully logged!"),
 ///     Err(e) => eprintln!("✗ Failed to log commit: {}", e),
 /// }
@@ -96,7 +102,17 @@ pub fn run_commit_saver(
     obsidian_root_path_dir: PathBuf,
     obsidian_commit_path: &Path,
     template_commit_date_path: &str,
+    excluded_repos: &[String],
 ) -> Result<(), Box<dyn Error>> {
+    if let Some(repo_name) = current_repo_workdir_name() {
+        if is_repo_excluded(&repo_name, excluded_repos) {
+            info!(
+                "[run_commit_saver()]: repo '{repo_name}' is in the exclude list; skipping commit capture."
+            );
+            return Ok(());
+        }
+    }
+
     info!("[run_commit_saver()]: Instanciating CommitSaver Struct");
     let mut commit_saver_struct = CommitSaver::new();
 
@@ -145,11 +161,13 @@ fn main() {
     let obsidian_root_path_dir = global_vars.get_obsidian_root_path_dir();
     let obsidian_commit_path = global_vars.get_obsidian_commit_path();
     let template_commit_date_path = global_vars.get_template_commit_date_path();
+    let excluded_repos = global_vars.get_excluded_repos();
 
     match run_commit_saver(
         obsidian_root_path_dir,
         &obsidian_commit_path,
         &template_commit_date_path,
+        &excluded_repos,
     ) {
         Ok(()) => (),
         Err(e) => {
@@ -276,7 +294,7 @@ mod main_tests {
 
         // This assumes we're in a git repo for CommitSaver::new() to work
         if Repository::discover("./").is_ok() {
-            let result = run_commit_saver(obsidian_root.clone(), &commit_path, date_template);
+            let result = run_commit_saver(obsidian_root.clone(), &commit_path, date_template, &[]);
 
             // Should succeed and create diary file
             assert!(result.is_ok());
@@ -300,7 +318,7 @@ mod main_tests {
 
         // Only run if we're in a git repo
         if Repository::discover("./").is_ok() {
-            let result = run_commit_saver(obsidian_root.clone(), &commit_path, date_template);
+            let result = run_commit_saver(obsidian_root.clone(), &commit_path, date_template, &[]);
 
             // Should succeed and create the missing directories
             assert!(result.is_ok());
@@ -321,10 +339,10 @@ mod main_tests {
         // Only run if in a git repo
         if Repository::discover("./").is_ok() {
             // First run - creates the file
-            run_commit_saver(obsidian_root.clone(), &commit_path, date_template)?;
+            run_commit_saver(obsidian_root.clone(), &commit_path, date_template, &[])?;
 
             // Second run - should append to existing file
-            let result = run_commit_saver(obsidian_root.clone(), &commit_path, date_template);
+            let result = run_commit_saver(obsidian_root.clone(), &commit_path, date_template, &[]);
             assert!(result.is_ok());
 
             // Verify file exists and has multiple entries
@@ -349,7 +367,7 @@ mod main_tests {
         // Only run if in a git repo
         if Repository::discover("./").is_ok() {
             // Create directory structure first
-            let result = run_commit_saver(obsidian_root.clone(), &commit_path, date_template);
+            let result = run_commit_saver(obsidian_root.clone(), &commit_path, date_template, &[]);
             assert!(result.is_ok());
 
             // Now make the directory read-only to trigger write errors on second run
@@ -439,7 +457,8 @@ mod main_tests {
         if Repository::discover("./").is_ok() {
             // Run three times - should be idempotent
             for _ in 0..3 {
-                let result = run_commit_saver(obsidian_root.clone(), &commit_path, date_template);
+                let result =
+                    run_commit_saver(obsidian_root.clone(), &commit_path, date_template, &[]);
                 assert!(result.is_ok());
             }
         }
@@ -467,11 +486,43 @@ mod main_tests {
         let date_template = "%Y/%m-%B/%d/%F.md";
 
         if Repository::discover("./").is_ok() {
-            let result = run_commit_saver(complex_root.clone(), &commit_path, date_template);
+            let result = run_commit_saver(complex_root.clone(), &commit_path, date_template, &[]);
             assert!(result.is_ok());
 
             // Verify deep directory structure was created
             assert!(complex_root.exists() || temp_dir.path().join("level1").exists());
+        }
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_run_commit_saver_skips_excluded_repo() -> Result<(), Box<dyn std::error::Error>> {
+        use git2::Repository;
+
+        let temp_dir = tempdir()?;
+        let obsidian_root = temp_dir.path().to_path_buf();
+        let commit_path = PathBuf::from("Diaries/Commits");
+        let date_template = "%Y/%m-%B/%F.md";
+
+        // Exclude the repository the test suite itself runs in: the gate must
+        // short-circuit and write nothing to the Obsidian root.
+        if let Some(current_repo) = current_repo_workdir_name() {
+            if Repository::discover("./").is_ok() {
+                let excluded = vec![current_repo];
+                let result = run_commit_saver(
+                    obsidian_root.clone(),
+                    &commit_path,
+                    date_template,
+                    &excluded,
+                );
+
+                assert!(result.is_ok(), "excluded repo should skip cleanly");
+                assert!(
+                    !obsidian_root.join("Diaries").exists(),
+                    "excluded repo must not create any diary output"
+                );
+            }
         }
 
         Ok(())

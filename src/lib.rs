@@ -28,9 +28,10 @@
 //! let obsidian_root = global_vars.get_obsidian_root_path_dir();
 //! let commit_path = global_vars.get_obsidian_commit_path();
 //! let date_template = global_vars.get_template_commit_date_path();
+//! let excluded_repos = global_vars.get_excluded_repos();
 //!
-//! // Save the commit
-//! run_commit_saver(obsidian_root, &commit_path, &date_template).unwrap();
+//! // Save the commit (skips cleanly if this repo is excluded)
+//! run_commit_saver(obsidian_root, &commit_path, &date_template, &excluded_repos).unwrap();
 //! ```
 //!
 //! ## Configuration
@@ -48,6 +49,10 @@
 //! [templates]
 //! commit_date_path = %Y/%m-%B/%F.md
 //! commit_datetime = %Y-%m-%d %H:%M:%S
+//!
+//! # Optional: repos to skip (comma-separated working-directory names)
+//! [exclude]
+//! repos = claude-src
 //! ```
 //!
 //! ## Modules
