@@ -1,3 +1,10 @@
+## [4.17.0](https://github.com/chess-seventh/rusty-commit-saver/compare/v4.16.4...v4.17.0) (2026-07-25)
+
+
+### Features
+
+* **config:** add per-repo exclude list to skip commit capture ([#71](https://github.com/chess-seventh/rusty-commit-saver/issues/71)) ([86bab0b](https://github.com/chess-seventh/rusty-commit-saver/commit/86bab0b4215c0f1904913d7abc19c684adcf6c14))
+
 ## [4.16.4](https://github.com/chess-seventh/rusty-commit-saver/compare/v4.16.3...v4.16.4) (2026-07-22)
 
 
