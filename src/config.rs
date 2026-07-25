@@ -242,6 +242,22 @@ pub struct GlobalVars {
     /// commit_datetime = %Y-%m-%d %H:%M:%S
     /// ```
     template_commit_datetime: OnceCell<String>,
+
+    /// Repository names to exclude from commit capture.
+    ///
+    /// When the current repository's working-directory name matches an entry in
+    /// this list, the post-commit run skips cleanly and writes nothing to the
+    /// diary. Populated from the optional `[exclude]` section; empty when that
+    /// section is absent.
+    ///
+    /// # Configuration
+    ///
+    /// Loaded from the INI file (comma-separated, optional):
+    /// ```text
+    /// [exclude]
+    /// repos = claude-src, some-other-repo
+    /// ```
+    excluded_repos: OnceCell<Vec<String>>,
 }
 
 impl GlobalVars {
@@ -289,6 +305,8 @@ impl GlobalVars {
 
             template_commit_date_path: OnceCell::new(),
             template_commit_datetime: OnceCell::new(),
+
+            excluded_repos: OnceCell::new(),
         }
     }
 
@@ -596,21 +614,24 @@ impl GlobalVars {
     fn get_sections_from_config(&self) -> Vec<String> {
         info!("[GlobalVars::get_sections_from_config()] Getting sections from config");
         let sections = self.get_config().sections();
-        let sections_len = sections.len(); // Extract to variable
 
-        info!("[GlobalVars::get_sections_from_config()] Checking validity of number of sections.");
-        if sections_len == 2 {
+        info!("[GlobalVars::get_sections_from_config()] Checking validity of config sections.");
+        let has_required = ["obsidian", "templates"]
+            .iter()
+            .all(|required| sections.iter().any(|s| s == required));
+        let all_known = sections
+            .iter()
+            .all(|s| ["obsidian", "templates", "exclude"].contains(&s.as_str()));
+
+        if has_required && all_known {
             sections
         } else {
             error!(
                 // LCOV_EXCL_START
-                "[GlobalVars::get_sections_from_config()] Sections Len must be 2, we have: {sections_len:?}"
-            );
-            error!(
                 "[GlobalVars::get_sections_from_config()] These are the sections found: {sections:?}"
             ); // LCOV_EXCL_STOP
             panic!(
-                "[GlobalVars::get_sections_from_config()] config has the wrong number of sections."
+                "[GlobalVars::get_sections_from_config()] config must have [obsidian] and [templates], plus an optional [exclude]."
             )
         }
     }
@@ -656,14 +677,12 @@ impl GlobalVars {
                 info!("[GlobalVars::set_obsidian_vars()] Setting 'templates' section variables.");
                 self.set_templates_commit_date_path(&section);
                 self.set_templates_datetime(&section);
-            } else {
-                error!(
-                    "[GlobalVars::set_obsidian_vars()] Trying to set other sections is not supported."
-                );
-                panic!(
-                    "[GlobalVars::set_obsidian_vars()] Trying to set other sections is not supported."
-                )
+            } else if section == "exclude" {
+                info!("[GlobalVars::set_obsidian_vars()] Setting 'exclude' section variables.");
+                self.set_excluded_repos(&section);
             }
+            // No `else`: `get_sections_from_config()` is the single validation
+            // point and has already rejected any unknown section.
         }
     }
 
@@ -697,6 +716,55 @@ impl GlobalVars {
         self.template_commit_datetime
             .set(key)
             .expect("Could not set the template_commit_datetime GlobalVars");
+    }
+
+    /// Sets the `excluded_repos` field from the optional `[exclude]` section.
+    ///
+    /// Reads the `repos` key, parses it as a comma-separated list of repository
+    /// names, and stores the result. A missing `repos` key yields an empty list.
+    ///
+    /// # Arguments
+    ///
+    /// * `section` - Should be `"exclude"` (validated by caller)
+    ///
+    /// # Expected INI Key
+    ///
+    /// ```text
+    /// [exclude]
+    /// repos = claude-src, some-other-repo
+    /// ```
+    fn set_excluded_repos(&self, section: &str) {
+        info!("[GlobalVars::set_excluded_repos()]: Setting the excluded repos list.");
+        let raw = self
+            .get_key_from_section_from_ini(section, "repos")
+            .unwrap_or_default();
+
+        self.excluded_repos
+            .set(parse_exclude_repos(&raw))
+            .expect("Could not set the excluded_repos in GlobalVars");
+    }
+
+    /// Returns the list of repository names excluded from commit capture.
+    ///
+    /// Reads the value populated from the optional `[exclude]` section. When that
+    /// section (or its `repos` key) is absent, returns an empty list — meaning no
+    /// repository is excluded.
+    ///
+    /// # Returns
+    ///
+    /// A `Vec<String>` of excluded repository names (working-directory names).
+    ///
+    /// # Configuration Source
+    ///
+    /// Read from the INI file:
+    /// ```text
+    /// [exclude]
+    /// repos = claude-src
+    /// ```
+    #[must_use]
+    pub fn get_excluded_repos(&self) -> Vec<String> {
+        info!("[GlobalVars::get_excluded_repos()]: Getting excluded repos list.");
+        self.excluded_repos.get().cloned().unwrap_or_default()
     }
 
     /// Sets the `template_commit_date_path` field from the `[templates]` section.
@@ -1191,6 +1259,36 @@ fn set_proper_home_dir(cfg_str: &str) -> String {
     cfg_str.replace('~', &home_dir)
 }
 
+/// Parses a comma-separated list of repository names into a clean vector.
+///
+/// Each entry is trimmed of surrounding whitespace and empty entries are
+/// dropped, so trailing commas and stray spaces are tolerated.
+///
+/// # Arguments
+///
+/// * `raw` - The raw comma-separated value (e.g. `"claude-src, other-repo"`)
+///
+/// # Returns
+///
+/// A `Vec<String>` with one entry per non-empty, trimmed repository name.
+///
+/// # Examples
+///
+/// ```ignore
+/// use rusty_commit_saver::config::parse_exclude_repos;
+///
+/// assert_eq!(parse_exclude_repos("claude-src, foo"), vec!["claude-src", "foo"]);
+/// assert_eq!(parse_exclude_repos("  "), Vec::<String>::new());
+/// ```
+#[must_use]
+pub fn parse_exclude_repos(raw: &str) -> Vec<String> {
+    raw.split(',')
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(String::from)
+        .collect()
+}
+
 #[cfg(test)]
 #[cfg_attr(coverage_nightly, coverage(off))]
 mod global_vars_tests {
@@ -1250,7 +1348,7 @@ mod global_vars_tests {
             .downcast_ref::<&str>()
             .expect("Panic message should be &str");
         assert!(
-            msg.contains("wrong number of sections"),
+            msg.contains("must have [obsidian] and [templates]"),
             "Unexpected panic message: {msg}"
         );
     }
@@ -1518,7 +1616,7 @@ mod global_vars_tests {
     }
 
     #[test]
-    #[should_panic(expected = "Trying to set other sections is not supported")]
+    #[should_panic(expected = "must have [obsidian] and [templates]")]
     fn test_set_obsidian_vars_invalid_section() {
         let mut config = Ini::new();
         // Add correct number of sections (2) but with wrong name
@@ -2306,5 +2404,132 @@ commit_datetime = %Y-%m-%d %H:%M:%S
 
         // Cleanup (won't run due to panic, but good practice)
         fs::set_permissions(&file_path, fs::Permissions::from_mode(0o644)).unwrap();
+    }
+
+    #[test]
+    fn test_parse_exclude_repos_basic() {
+        assert_eq!(
+            parse_exclude_repos("claude-src, other-repo"),
+            vec!["claude-src".to_string(), "other-repo".to_string()]
+        );
+    }
+
+    #[test]
+    fn test_parse_exclude_repos_trims_and_drops_empties() {
+        // Extra spaces, trailing comma, and an empty middle entry are all cleaned.
+        assert_eq!(
+            parse_exclude_repos("  claude-src , , foo,"),
+            vec!["claude-src".to_string(), "foo".to_string()]
+        );
+    }
+
+    #[test]
+    fn test_parse_exclude_repos_empty_input() {
+        assert!(parse_exclude_repos("   ").is_empty());
+        assert!(parse_exclude_repos("").is_empty());
+    }
+
+    #[test]
+    fn test_parse_exclude_repos_single_entry() {
+        assert_eq!(
+            parse_exclude_repos("claude-src"),
+            vec!["claude-src".to_string()]
+        );
+    }
+
+    #[test]
+    fn test_get_excluded_repos_defaults_empty_when_unset() {
+        // No [exclude] section set: getter yields an empty list, not a panic.
+        let global_vars = GlobalVars::new();
+        assert!(global_vars.get_excluded_repos().is_empty());
+    }
+
+    #[test]
+    fn test_set_and_get_excluded_repos() {
+        let mut config = Ini::new();
+        config.set("exclude", "repos", Some("claude-src, foo".to_string()));
+
+        let global_vars = GlobalVars::new();
+        global_vars.config.set(config).unwrap();
+        global_vars.set_excluded_repos("exclude");
+
+        assert_eq!(
+            global_vars.get_excluded_repos(),
+            vec!["claude-src".to_string(), "foo".to_string()]
+        );
+    }
+
+    #[test]
+    fn test_set_excluded_repos_missing_key_is_empty() {
+        // [exclude] present but no `repos` key -> empty list, no panic.
+        let mut config = Ini::new();
+        config.set("exclude", "unrelated", Some("value".to_string()));
+
+        let global_vars = GlobalVars::new();
+        global_vars.config.set(config).unwrap();
+        global_vars.set_excluded_repos("exclude");
+
+        assert!(global_vars.get_excluded_repos().is_empty());
+    }
+
+    #[test]
+    fn test_get_sections_accepts_optional_exclude_section() {
+        // obsidian + templates + exclude is now valid (exclude is optional).
+        let mut config = Ini::new();
+        config.set("obsidian", "root_path_dir", Some("/tmp/test".to_string()));
+        config.set("templates", "commit_date_path", Some("%Y.md".to_string()));
+        config.set("exclude", "repos", Some("claude-src".to_string()));
+
+        let global_vars = GlobalVars::new();
+        global_vars.config.set(config).unwrap();
+
+        let sections = global_vars.get_sections_from_config();
+        assert_eq!(sections.len(), 3);
+        assert!(sections.contains(&"exclude".to_string()));
+    }
+
+    #[test]
+    fn test_set_obsidian_vars_populates_exclude_section() {
+        // Full set_obsidian_vars path with all three sections present.
+        let mut config = Ini::new();
+        config.set(
+            "obsidian",
+            "root_path_dir",
+            Some("/home/user/Obsidian".to_string()),
+        );
+        config.set(
+            "obsidian",
+            "commit_path",
+            Some("Diaries/Commits".to_string()),
+        );
+        config.set(
+            "templates",
+            "commit_date_path",
+            Some("%Y-%m-%d.md".to_string()),
+        );
+        config.set("templates", "commit_datetime", Some("%H:%M:%S".to_string()));
+        config.set("exclude", "repos", Some("claude-src".to_string()));
+
+        let global_vars = GlobalVars::new();
+        global_vars.config.set(config).unwrap();
+        global_vars.set_obsidian_vars();
+
+        assert_eq!(
+            global_vars.get_excluded_repos(),
+            vec!["claude-src".to_string()]
+        );
+    }
+
+    #[test]
+    #[should_panic(expected = "must have [obsidian] and [templates]")]
+    fn test_get_sections_rejects_missing_required_section() {
+        // exclude alone (no obsidian/templates) is still invalid.
+        let mut config = Ini::new();
+        config.set("exclude", "repos", Some("claude-src".to_string()));
+        config.set("templates", "commit_date_path", Some("%Y.md".to_string()));
+
+        let global_vars = GlobalVars::new();
+        global_vars.config.set(config).unwrap();
+        let _ = global_vars.get_sections_from_config();
     }
 }

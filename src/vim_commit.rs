@@ -544,6 +544,59 @@ tags:\n"
     }
 }
 
+/// Returns the working-directory name of a Git repository.
+///
+/// This is the basename of the repository's work tree (e.g. `claude-src` for a
+/// repo checked out at `/home/user/src/claude-src`). It is the stable identity
+/// used for the exclude list, independent of which subdirectory a commit is made
+/// from.
+///
+/// # Returns
+///
+/// - `Some(name)` - The repository's working-directory basename
+/// - `None` - The repository is bare (no work tree) or the path has no basename
+#[must_use]
+pub fn repo_workdir_name(repo: &Repository) -> Option<String> {
+    repo.workdir()
+        .and_then(Path::file_name)
+        .map(|name| name.to_string_lossy().into_owned())
+}
+
+/// Returns the working-directory name of the Git repository at the current path.
+///
+/// Discovers the repository from the current directory (`./`) and returns its
+/// working-directory basename via [`repo_workdir_name`]. Returns `None` when no
+/// repository can be discovered.
+#[must_use]
+pub fn current_repo_workdir_name() -> Option<String> {
+    let repo = Repository::discover("./").ok()?;
+    repo_workdir_name(&repo)
+}
+
+/// Reports whether a repository name is present in the exclude list.
+///
+/// Matching is an exact, case-sensitive comparison of the repository's
+/// working-directory name against each configured entry.
+///
+/// # Arguments
+///
+/// * `repo_name` - The repository's working-directory name (see [`repo_workdir_name`])
+/// * `exclude_list` - The configured repository names to skip
+///
+/// # Examples
+///
+/// ```ignore
+/// use rusty_commit_saver::vim_commit::is_repo_excluded;
+///
+/// let list = vec!["claude-src".to_string()];
+/// assert!(is_repo_excluded("claude-src", &list));
+/// assert!(!is_repo_excluded("other-repo", &list));
+/// ```
+#[must_use]
+pub fn is_repo_excluded(repo_name: &str, exclude_list: &[String]) -> bool {
+    exclude_list.iter().any(|excluded| excluded == repo_name)
+}
+
 /// Extracts the parent directory from a file path.
 ///
 /// Returns a reference to the parent directory component of the given path.
@@ -1255,5 +1308,43 @@ mod commit_saver_tests {
             "get_parent_from_full_path should succeed on nested path"
         );
         assert_eq!(result.unwrap(), std::path::Path::new("/home/user"));
+    }
+
+    #[test]
+    fn test_repo_workdir_name_returns_basename() {
+        // A repo checked out at .../claude-src reports its name as "claude-src",
+        // no ambient current-directory dependency.
+        let temp_dir = tempdir().unwrap();
+        let repo_path = temp_dir.path().join("claude-src");
+        fs::create_dir(&repo_path).unwrap();
+        let repo = Repository::init(&repo_path).unwrap();
+
+        assert_eq!(repo_workdir_name(&repo).as_deref(), Some("claude-src"));
+    }
+
+    #[test]
+    fn test_is_repo_excluded_matches_exact_name() {
+        let list = vec!["claude-src".to_string(), "foo".to_string()];
+        assert!(is_repo_excluded("claude-src", &list));
+        assert!(is_repo_excluded("foo", &list));
+    }
+
+    #[test]
+    fn test_is_repo_excluded_rejects_non_member() {
+        let list = vec!["claude-src".to_string()];
+        assert!(!is_repo_excluded("rusty-commit-saver", &list));
+        // No partial / prefix matching.
+        assert!(!is_repo_excluded("claude-src-2", &list));
+    }
+
+    #[test]
+    fn test_is_repo_excluded_empty_list_excludes_nothing() {
+        assert!(!is_repo_excluded("claude-src", &[]));
+    }
+
+    #[test]
+    fn test_is_repo_excluded_is_case_sensitive() {
+        let list = vec!["claude-src".to_string()];
+        assert!(!is_repo_excluded("Claude-Src", &list));
     }
 }

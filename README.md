@@ -105,6 +105,31 @@ Your commit will be appended to, where Obsidian should be:
 - **`.pre-commit-config.yaml`** defines all pre-commit checks
 - **`treefmt.toml`** configures `treefmt` and formatters
 
+### Runtime config (INI)
+
+Runtime settings live in an INI file at
+`~/.config/rusty-commit-saver/rusty-commit-saver.ini`:
+
+```ini
+[obsidian]
+root_path_dir = ~/Documents/Obsidian
+commit_path = Diaries/Commits
+
+[templates]
+commit_date_path = %Y/%m-%B/%F.md
+commit_datetime = %H:%M:%S
+
+# Optional: repositories to skip, by working-directory name (comma-separated).
+# A commit made in one of these repos writes nothing to the diary.
+[exclude]
+repos = claude-src
+```
+
+The `[exclude]` section is optional. Each entry is matched, case-sensitively,
+against the committing repository's working-directory name (e.g. `claude-src`
+for a repo checked out at `~/src/claude-src`) — so it holds no matter which
+subdirectory the commit is made from.
+
 ---
 
 ## Roadmap & Improvements 📈
