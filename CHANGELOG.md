@@ -1,3 +1,10 @@
+## [4.17.1](https://github.com/chess-seventh/rusty-commit-saver/compare/v4.17.0...v4.17.1) (2026-07-26)
+
+
+### Bug Fixes
+
+* **exclude:** match repo by origin remote name not worktree basename ([#72](https://github.com/chess-seventh/rusty-commit-saver/issues/72)) ([876aa41](https://github.com/chess-seventh/rusty-commit-saver/commit/876aa41b11b9db6bd176e426ce139be582d132ea))
+
 ## [4.17.0](https://github.com/chess-seventh/rusty-commit-saver/compare/v4.16.4...v4.17.0) (2026-07-25)
 
 
