@@ -7,7 +7,7 @@ use rusty_commit_saver::vim_commit::CommitSaver;
 use rusty_commit_saver::vim_commit::check_diary_path_exists;
 use rusty_commit_saver::vim_commit::create_diary_file;
 use rusty_commit_saver::vim_commit::create_directories_for_new_entry;
-use rusty_commit_saver::vim_commit::current_repo_workdir_name;
+use rusty_commit_saver::vim_commit::current_repo_canonical_name;
 use rusty_commit_saver::vim_commit::is_repo_excluded;
 
 use rusty_commit_saver::config::GlobalVars;
@@ -104,7 +104,7 @@ pub fn run_commit_saver(
     template_commit_date_path: &str,
     excluded_repos: &[String],
 ) -> Result<(), Box<dyn Error>> {
-    if let Some(repo_name) = current_repo_workdir_name() {
+    if let Some(repo_name) = current_repo_canonical_name() {
         if is_repo_excluded(&repo_name, excluded_repos) {
             info!(
                 "[run_commit_saver()]: repo '{repo_name}' is in the exclude list; skipping commit capture."
@@ -505,9 +505,10 @@ mod main_tests {
         let commit_path = PathBuf::from("Diaries/Commits");
         let date_template = "%Y/%m-%B/%F.md";
 
-        // Exclude the repository the test suite itself runs in: the gate must
-        // short-circuit and write nothing to the Obsidian root.
-        if let Some(current_repo) = current_repo_workdir_name() {
+        // Exclude the repository the test suite itself runs in (by canonical
+        // name, so this holds in a worktree too): the gate must short-circuit
+        // and write nothing to the Obsidian root.
+        if let Some(current_repo) = current_repo_canonical_name() {
             if Repository::discover("./").is_ok() {
                 let excluded = vec![current_repo];
                 let result = run_commit_saver(

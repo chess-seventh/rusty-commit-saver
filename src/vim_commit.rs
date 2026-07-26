@@ -573,14 +573,67 @@ pub fn current_repo_workdir_name() -> Option<String> {
     repo_workdir_name(&repo)
 }
 
+/// Extracts the repository name from a Git remote URL.
+///
+/// Handles the common remote forms — scp-style (`git@host:org/repo.git`),
+/// https (`https://host/org/repo.git`), ssh (`ssh://git@host/org/repo.git`),
+/// and bare local paths — by dropping a trailing `.git` and taking the final
+/// path segment (splitting on both `/` and `:`). Returns `None` for an empty
+/// input or the `no_url_set` sentinel that [`CommitSaver::from_repo`] uses when
+/// no `origin` remote exists.
+#[must_use]
+pub fn repo_name_from_url(url: &str) -> Option<String> {
+    let url = url.trim();
+    if url.is_empty() || url == "no_url_set" {
+        return None;
+    }
+    let stem = url.trim_end_matches('/');
+    let stem = stem.strip_suffix(".git").unwrap_or(stem);
+    stem.rsplit(['/', ':'])
+        .next()
+        .filter(|segment| !segment.is_empty())
+        .map(str::to_owned)
+}
+
+/// Returns the repository's canonical identity for exclusion matching.
+///
+/// The name is taken from the `origin` remote URL (see [`repo_name_from_url`]),
+/// which is stable across every worktree of the same repository — so a single
+/// exclude entry covers a repo no matter what its worktree directories are
+/// named. Falls back to the working-directory basename ([`repo_workdir_name`])
+/// when there is no usable `origin` remote (e.g. a local-only repository).
+#[must_use]
+pub fn canonical_repo_name(repo: &Repository) -> Option<String> {
+    if let Ok(remote) = repo.find_remote("origin") {
+        if let Ok(url) = remote.url() {
+            if let Some(name) = repo_name_from_url(url) {
+                return Some(name);
+            }
+        }
+    }
+    repo_workdir_name(repo)
+}
+
+/// Returns the canonical name of the repository discovered from the current path.
+///
+/// Like [`current_repo_workdir_name`], but resolves the repository's canonical
+/// identity via [`canonical_repo_name`] (its `origin` remote name) rather than
+/// the ambient worktree basename. Returns `None` when no repository can be
+/// discovered.
+#[must_use]
+pub fn current_repo_canonical_name() -> Option<String> {
+    let repo = Repository::discover("./").ok()?;
+    canonical_repo_name(&repo)
+}
+
 /// Reports whether a repository name is present in the exclude list.
 ///
 /// Matching is an exact, case-sensitive comparison of the repository's
-/// working-directory name against each configured entry.
+/// canonical name against each configured entry.
 ///
 /// # Arguments
 ///
-/// * `repo_name` - The repository's working-directory name (see [`repo_workdir_name`])
+/// * `repo_name` - The repository's canonical name (see [`canonical_repo_name`])
 /// * `exclude_list` - The configured repository names to skip
 ///
 /// # Examples
@@ -1346,5 +1399,59 @@ mod commit_saver_tests {
     fn test_is_repo_excluded_is_case_sensitive() {
         let list = vec!["claude-src".to_string()];
         assert!(!is_repo_excluded("Claude-Src", &list));
+    }
+
+    #[test]
+    fn test_repo_name_from_url_variants() {
+        // Every common remote form for the same repo resolves to "claude-src".
+        for url in [
+            "git@github.com:chess-seventh/claude-src.git",
+            "https://github.com/chess-seventh/claude-src.git",
+            "ssh://git@github.com/chess-seventh/claude-src.git",
+            "https://github.com/chess-seventh/claude-src",
+            "git@github.com:claude-src.git",
+            "/home/seventh/src/claude-src",
+            "/home/seventh/src/claude-src/",
+        ] {
+            assert_eq!(
+                repo_name_from_url(url).as_deref(),
+                Some("claude-src"),
+                "wrong repo name for url: {url}"
+            );
+        }
+    }
+
+    #[test]
+    fn test_repo_name_from_url_rejects_empty_and_sentinel() {
+        assert_eq!(repo_name_from_url(""), None);
+        assert_eq!(repo_name_from_url("   "), None);
+        assert_eq!(repo_name_from_url("no_url_set"), None);
+    }
+
+    #[test]
+    fn test_canonical_repo_name_prefers_origin_over_workdir() {
+        // The regression this lane fixes: a repo checked out in a directory
+        // whose basename is NOT the repo name (e.g. a git worktree named after
+        // the lane) must still resolve to its canonical origin name, so one
+        // exclude entry covers every worktree.
+        let temp_dir = tempdir().unwrap();
+        let repo_path = temp_dir.path().join("some-lane-worktree");
+        fs::create_dir(&repo_path).unwrap();
+        let repo = Repository::init(&repo_path).unwrap();
+        repo.remote("origin", "git@github.com:chess-seventh/claude-src.git")
+            .unwrap();
+
+        assert_eq!(canonical_repo_name(&repo).as_deref(), Some("claude-src"));
+    }
+
+    #[test]
+    fn test_canonical_repo_name_falls_back_to_workdir_without_origin() {
+        // No origin remote (local-only repo): fall back to the workdir basename.
+        let temp_dir = tempdir().unwrap();
+        let repo_path = temp_dir.path().join("claude-src");
+        fs::create_dir(&repo_path).unwrap();
+        let repo = Repository::init(&repo_path).unwrap();
+
+        assert_eq!(canonical_repo_name(&repo).as_deref(), Some("claude-src"));
     }
 }
