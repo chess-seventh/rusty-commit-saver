@@ -1,4 +1,4 @@
-use log::{error, info};
+use log::{error, info, warn};
 
 use std::{
     fs,
@@ -611,6 +611,11 @@ impl GlobalVars {
             .get(section, key)
     }
 
+    /// The sections this binary understands. Adding a section to
+    /// `set_obsidian_vars`' dispatch means adding it here too, or the section
+    /// gets applied *and* reported as unrecognised.
+    const KNOWN_SECTIONS: [&'static str; 3] = ["obsidian", "templates", "exclude"];
+
     fn get_sections_from_config(&self) -> Vec<String> {
         info!("[GlobalVars::get_sections_from_config()] Getting sections from config");
         let sections = self.get_config().sections();
@@ -619,21 +624,39 @@ impl GlobalVars {
         let has_required = ["obsidian", "templates"]
             .iter()
             .all(|required| sections.iter().any(|s| s == required));
-        let all_known = sections
-            .iter()
-            .all(|s| ["obsidian", "templates", "exclude"].contains(&s.as_str()));
 
-        if has_required && all_known {
-            sections
-        } else {
+        if !has_required {
             error!(
                 // LCOV_EXCL_START
                 "[GlobalVars::get_sections_from_config()] These are the sections found: {sections:?}"
             ); // LCOV_EXCL_STOP
             panic!(
-                "[GlobalVars::get_sections_from_config()] config must have [obsidian] and [templates], plus an optional [exclude]."
+                "[GlobalVars::get_sections_from_config()] config must have [obsidian] and [templates]."
             )
         }
+
+        // An unrecognised section is ignored, never fatal: the config is shared
+        // by every checkout on the machine, so a section added for a newer
+        // release must not brick a binary that predates it. Adding [exclude]
+        // is exactly what killed every checkout older than 4.17.0.
+        let unknown: Vec<&String> = sections
+            .iter()
+            .filter(|s| !Self::KNOWN_SECTIONS.contains(&s.as_str()))
+            .collect();
+        if !unknown.is_empty() {
+            warn!(
+                "[GlobalVars::get_sections_from_config()] ignoring unrecognised config sections {unknown:?}; this binary may be older than the config"
+            );
+            // Also on stderr: the git hook runs without RUST_LOG, where
+            // env_logger caps the level at Error and would swallow the warning
+            // entirely. A misspelt section must never be silent - that is how
+            // an [excludes] typo would quietly journal the repos you excluded.
+            eprintln!(
+                "rusty-commit-saver: ignoring unrecognised config sections {unknown:?}; this binary may be older than the config"
+            );
+        }
+
+        sections
     }
 
     /// Loads all configuration variables from the "obsidian" and "templates" sections.
@@ -644,15 +667,19 @@ impl GlobalVars {
     ///
     /// - For the **"obsidian"** section: calls `set_obsidian_root_path_dir` and `set_obsidian_commit_path`.
     /// - For the **"templates"** section: calls `set_templates_commit_date_path` and `set_templates_datetime`.
+    /// - For the **"exclude"** section: calls `set_excluded_repos`.
+    ///
+    /// Any other section is skipped.
     ///
     /// # Panics
     ///
-    /// Panics if the INI file contains a section other than "obsidian" or "templates", as only these two sections are supported.
+    /// Panics if the INI file is missing `[obsidian]` or `[templates]`; both are
+    /// required. An unrecognised section is not fatal.
     ///
     /// # Logging
     ///
     /// - Logs an info message when applying each section.
-    /// - Logs an error right before panicking on unsupported sections.
+    /// - Logs an error right before panicking on a missing required section.
     ///
     /// # Examples
     ///
@@ -681,8 +708,9 @@ impl GlobalVars {
                 info!("[GlobalVars::set_obsidian_vars()] Setting 'exclude' section variables.");
                 self.set_excluded_repos(&section);
             }
-            // No `else`: `get_sections_from_config()` is the single validation
-            // point and has already rejected any unknown section.
+            // No `else`: an unrecognised section is deliberately skipped here.
+            // `get_sections_from_config()` returns it after warning about it,
+            // because a config written for a newer release must not be fatal.
         }
     }
 
@@ -1330,7 +1358,7 @@ mod global_vars_tests {
     }
 
     #[test]
-    fn test_get_sections_from_config_invalid_count() {
+    fn test_get_sections_from_config_rejects_a_lone_unknown_section() {
         let mut config = Ini::new();
         config.set("only_one_section", "key", Some("value".to_string()));
 
@@ -1367,7 +1395,7 @@ mod global_vars_tests {
     }
 
     #[test]
-    fn test_get_sections_from_config_panics_with_three_sections() {
+    fn test_get_sections_from_config_keeps_an_extra_section() {
         let mut config = Ini::new();
         config.set("obsidian", "root_path_dir", Some("/tmp/test".to_string()));
         config.set("templates", "commit_date_path", Some("%Y.md".to_string()));
@@ -1379,7 +1407,11 @@ mod global_vars_tests {
         let result =
             panic::catch_unwind(AssertUnwindSafe(|| global_vars.get_sections_from_config()));
 
-        assert!(result.is_err(), "Expected panic for three sections");
+        assert!(
+            result.is_ok(),
+            "An unrecognised section must be ignored, not fatal"
+        );
+        assert_eq!(result.unwrap().len(), 3);
     }
 
     #[test]
@@ -1617,9 +1649,10 @@ mod global_vars_tests {
 
     #[test]
     #[should_panic(expected = "must have [obsidian] and [templates]")]
-    fn test_set_obsidian_vars_invalid_section() {
+    fn test_set_obsidian_vars_without_the_obsidian_section() {
         let mut config = Ini::new();
-        // Add correct number of sections (2) but with wrong name
+        // [templates] is present but [obsidian] is not, which is fatal. The
+        // unrecognised section is incidental - it is not what makes this panic.
         config.set("invalid_section", "key", Some("value".to_string()));
         config.set(
             "templates",
@@ -1635,7 +1668,7 @@ mod global_vars_tests {
         let global_vars = GlobalVars::new();
         global_vars.config.set(config).unwrap();
 
-        // Should panic because "invalid_section" is not "obsidian" or "templates"
+        // Panics: [obsidian] is required and missing.
         global_vars.set_obsidian_vars();
     }
 
@@ -2203,7 +2236,7 @@ commit_datetime=%Y-%m-%d %H:%M:%S
     // }
 
     #[test]
-    fn test_line_606_explicit_coverage() {
+    fn test_missing_required_sections_panic_message() {
         use std::panic;
 
         let mut config = Ini::new();
@@ -2518,6 +2551,36 @@ commit_datetime = %Y-%m-%d %H:%M:%S
             global_vars.get_excluded_repos(),
             vec!["claude-src".to_string()]
         );
+    }
+
+    #[test]
+    fn test_get_sections_tolerates_an_unknown_section() {
+        // A config written for a newer release must not brick an older binary:
+        // an unrecognised section is ignored, not fatal. This is what made the
+        // 4.14.x pins panic once [exclude] was added to the shared ini.
+        let mut config = Ini::new();
+        config.set("obsidian", "root_path_dir", Some("/tmp/test".to_string()));
+        config.set("templates", "commit_date_path", Some("%Y.md".to_string()));
+        config.set("from_a_future_release", "key", Some("value".to_string()));
+
+        let global_vars = GlobalVars::new();
+        global_vars.config.set(config).unwrap();
+
+        let sections = global_vars.get_sections_from_config();
+        assert!(sections.contains(&"obsidian".to_string()));
+        assert!(sections.contains(&"templates".to_string()));
+    }
+
+    #[test]
+    #[should_panic(expected = "must have [obsidian] and [templates]")]
+    fn test_get_sections_rejects_obsidian_without_templates() {
+        // The mirror of the case below: [obsidian] alone is just as fatal.
+        let mut config = Ini::new();
+        config.set("obsidian", "root_path_dir", Some("/tmp/test".to_string()));
+
+        let global_vars = GlobalVars::new();
+        global_vars.config.set(config).unwrap();
+        let _ = global_vars.get_sections_from_config();
     }
 
     #[test]

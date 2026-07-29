@@ -37,3 +37,66 @@ fn test_global_vars_full_integration_workflow() {
     assert_eq!(date_path, "%Y-%m-%d.md");
     assert_eq!(datetime, "%Y-%m-%d %H:%M");
 }
+
+/// An unrecognised config section must be reported on stderr, not swallowed.
+///
+/// The git hook runs the binary with no `RUST_LOG`, where `env_logger` caps the
+/// level at Error, so `log::warn!` alone is invisible. Without a visible
+/// report, a misspelt section (`[excludes]`) silently disables exclusion and
+/// the repos meant to be skipped get journalled.
+#[test]
+fn unknown_config_section_is_reported_on_stderr() {
+    let dir = tempfile::tempdir().unwrap();
+    let ini = dir.path().join("rusty-commit-saver.ini");
+    fs::write(
+        &ini,
+        "[obsidian]\nroot_path_dir=/tmp/rcs-test\ncommit_path=Commits\n\
+         [templates]\ncommit_date_path=%Y-%m-%d.md\ncommit_datetime=%H:%M\n\
+         [excludes]\nrepos=claude-src\n",
+    )
+    .unwrap();
+
+    let output = std::process::Command::new(env!("CARGO_BIN_EXE_rusty-commit-saver"))
+        .env("RUSTY_COMMIT_SAVER_CONFIG", &ini)
+        .env_remove("RUST_LOG")
+        .current_dir(dir.path())
+        .output()
+        .expect("the binary should run");
+
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(
+        stderr.contains("ignoring unrecognised config sections"),
+        "the unknown section was not reported; stderr was: {stderr}"
+    );
+    assert!(
+        stderr.contains("excludes"),
+        "the report did not name the section; stderr was: {stderr}"
+    );
+}
+
+/// The counterpart: a config with only known sections reports nothing.
+#[test]
+fn known_config_sections_are_reported_silently() {
+    let dir = tempfile::tempdir().unwrap();
+    let ini = dir.path().join("rusty-commit-saver.ini");
+    fs::write(
+        &ini,
+        "[obsidian]\nroot_path_dir=/tmp/rcs-test\ncommit_path=Commits\n\
+         [templates]\ncommit_date_path=%Y-%m-%d.md\ncommit_datetime=%H:%M\n\
+         [exclude]\nrepos=claude-src\n",
+    )
+    .unwrap();
+
+    let output = std::process::Command::new(env!("CARGO_BIN_EXE_rusty-commit-saver"))
+        .env("RUSTY_COMMIT_SAVER_CONFIG", &ini)
+        .env_remove("RUST_LOG")
+        .current_dir(dir.path())
+        .output()
+        .expect("the binary should run");
+
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(
+        !stderr.contains("ignoring unrecognised config sections"),
+        "a fully known config must not report anything; stderr was: {stderr}"
+    );
+}
