@@ -1368,7 +1368,10 @@ mod global_vars_tests {
         let result =
             panic::catch_unwind(AssertUnwindSafe(|| global_vars.get_sections_from_config()));
 
-        assert!(result.is_err(), "Expected panic for invalid section count");
+        assert!(
+            result.is_err(),
+            "Expected panic: the required sections are missing"
+        );
 
         // Verify the panic message (panic! with string literal = &str)
         let panic_info = result.unwrap_err();
@@ -1882,7 +1885,7 @@ mod global_vars_tests {
     }
 
     #[test]
-    #[should_panic(expected = "Could not get")]
+    #[should_panic(expected = "Could not get root_path_dir")]
     fn test_set_obsidian_root_path_dir_missing_key() {
         let mut config = Ini::new();
         config.set("obsidian", "commit_path", Some("commits".to_string()));
@@ -2557,7 +2560,7 @@ commit_datetime = %Y-%m-%d %H:%M:%S
     fn test_get_sections_tolerates_an_unknown_section() {
         // A config written for a newer release must not brick an older binary:
         // an unrecognised section is ignored, not fatal. This is what made the
-        // 4.14.x pins panic once [exclude] was added to the shared ini.
+        // pre-4.17.0 binaries panic once [exclude] was added to the shared ini.
         let mut config = Ini::new();
         config.set("obsidian", "root_path_dir", Some("/tmp/test".to_string()));
         config.set("templates", "commit_date_path", Some("%Y.md".to_string()));

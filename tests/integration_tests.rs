@@ -48,13 +48,7 @@ fn test_global_vars_full_integration_workflow() {
 fn unknown_config_section_is_reported_on_stderr() {
     let dir = tempfile::tempdir().unwrap();
     let ini = dir.path().join("rusty-commit-saver.ini");
-    fs::write(
-        &ini,
-        "[obsidian]\nroot_path_dir=/tmp/rcs-test\ncommit_path=Commits\n\
-         [templates]\ncommit_date_path=%Y-%m-%d.md\ncommit_datetime=%H:%M\n\
-         [excludes]\nrepos=claude-src\n",
-    )
-    .unwrap();
+    fs::write(&ini, ini_with_section(dir.path(), "excludes")).unwrap();
 
     let output = std::process::Command::new(env!("CARGO_BIN_EXE_rusty-commit-saver"))
         .env("RUSTY_COMMIT_SAVER_CONFIG", &ini)
@@ -79,13 +73,7 @@ fn unknown_config_section_is_reported_on_stderr() {
 fn known_config_sections_are_reported_silently() {
     let dir = tempfile::tempdir().unwrap();
     let ini = dir.path().join("rusty-commit-saver.ini");
-    fs::write(
-        &ini,
-        "[obsidian]\nroot_path_dir=/tmp/rcs-test\ncommit_path=Commits\n\
-         [templates]\ncommit_date_path=%Y-%m-%d.md\ncommit_datetime=%H:%M\n\
-         [exclude]\nrepos=claude-src\n",
-    )
-    .unwrap();
+    fs::write(&ini, ini_with_section(dir.path(), "exclude")).unwrap();
 
     let output = std::process::Command::new(env!("CARGO_BIN_EXE_rusty-commit-saver"))
         .env("RUSTY_COMMIT_SAVER_CONFIG", &ini)
@@ -95,8 +83,28 @@ fn known_config_sections_are_reported_silently() {
         .expect("the binary should run");
 
     let stderr = String::from_utf8_lossy(&output.stderr);
+    // Positive control first: the run must actually reach past config loading,
+    // otherwise the assertion below would pass vacuously. There is no git repo
+    // in the temp cwd, so the run dies right after the config is read.
+    assert!(
+        stderr.contains("panicked"),
+        "the run did not get past config loading; stderr was: {stderr}"
+    );
     assert!(
         !stderr.contains("ignoring unrecognised config sections"),
         "a fully known config must not report anything; stderr was: {stderr}"
     );
+}
+
+/// A minimal valid config whose vault lives inside `dir`, plus one extra
+/// section under `extra` - `exclude` for the known case, anything else for the
+/// unknown one. The vault path stays inside the temp dir so a run that gets
+/// further than expected cannot write outside it.
+fn ini_with_section(dir: &std::path::Path, extra: &str) -> String {
+    format!(
+        "[obsidian]\nroot_path_dir={}\ncommit_path=Commits\n\
+         [templates]\ncommit_date_path=%Y-%m-%d.md\ncommit_datetime=%H:%M\n\
+         [{extra}]\nrepos=claude-src\n",
+        dir.join("vault").display()
+    )
 }
