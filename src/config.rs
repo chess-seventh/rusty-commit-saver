@@ -920,7 +920,7 @@ impl GlobalVars {
     fn set_obsidian_root_path_dir(&self, section: &str) {
         let string_path = self
             .get_key_from_section_from_ini(section, "root_path_dir")
-            .expect("Could not get commit_path from config");
+            .expect("Could not get root_path_dir from config");
 
         let fixed_home = if string_path.contains('~') {
             info!("[GlobalVars::set_obsidian_root_path_dir()]: Does contain ~");
