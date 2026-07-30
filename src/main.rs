@@ -33,6 +33,7 @@ use std::path::PathBuf;
 /// * `obsidian_root_path_dir` - Base directory for Obsidian vault (e.g., `/home/user/Obsidian`)
 /// * `obsidian_commit_path` - Subdirectory for commits (e.g., `Diaries/Commits`)
 /// * `template_commit_date_path` - Chrono format for date hierarchy (e.g., `%Y/%m-%B/%F.md`)
+/// * `template_commit_datetime` - Chrono format for the row's TIME column (e.g., `%H:%M:%S`)
 /// * `excluded_repos` - Repository names to skip; when the current repo's
 ///   working-directory name matches, the run returns `Ok(())` without writing
 ///
@@ -59,10 +60,11 @@ use std::path::PathBuf;
 /// let obsidian_root = PathBuf::from("/home/user/Obsidian");
 /// let commit_path = PathBuf::from("Diaries/Commits");
 /// let date_template = "%Y/%m-%B/%F.md"; // YYYY/MM-MonthName/YYYY-MM-DD.md
+/// let time_template = "%H:%M:%S";       // the row's TIME column
 ///
 /// let excluded_repos: Vec<String> = vec![]; // e.g. vec!["claude-src".to_string()]
 ///
-/// match run_commit_saver(obsidian_root, &commit_path, date_template, &excluded_repos) {
+/// match run_commit_saver(obsidian_root, &commit_path, date_template, time_template, &excluded_repos) {
 ///     Ok(()) => println!("✓ Commit successfully logged!"),
 ///     Err(e) => eprintln!("✗ Failed to log commit: {}", e),
 /// }
@@ -102,6 +104,7 @@ pub fn run_commit_saver(
     obsidian_root_path_dir: PathBuf,
     obsidian_commit_path: &Path,
     template_commit_date_path: &str,
+    template_commit_datetime: &str,
     excluded_repos: &[String],
 ) -> Result<(), Box<dyn Error>> {
     if let Some(repo_name) = current_repo_canonical_name() {
@@ -143,7 +146,7 @@ pub fn run_commit_saver(
     }
 
     info!("[run_commit_saver()]: Writing the commit in the file.");
-    commit_saver_struct.append_entry_to_diary(&full_path)?;
+    commit_saver_struct.append_entry_to_diary(&full_path, template_commit_datetime)?;
     info!("[run_commit_saver]: Commit logged in ");
 
     Ok(())
@@ -161,12 +164,14 @@ fn main() {
     let obsidian_root_path_dir = global_vars.get_obsidian_root_path_dir();
     let obsidian_commit_path = global_vars.get_obsidian_commit_path();
     let template_commit_date_path = global_vars.get_template_commit_date_path();
+    let template_commit_datetime = global_vars.get_template_commit_datetime();
     let excluded_repos = global_vars.get_excluded_repos();
 
     match run_commit_saver(
         obsidian_root_path_dir,
         &obsidian_commit_path,
         &template_commit_date_path,
+        &template_commit_datetime,
         &excluded_repos,
     ) {
         Ok(()) => (),
@@ -294,7 +299,13 @@ mod main_tests {
 
         // This assumes we're in a git repo for CommitSaver::new() to work
         if Repository::discover("./").is_ok() {
-            let result = run_commit_saver(obsidian_root.clone(), &commit_path, date_template, &[]);
+            let result = run_commit_saver(
+                obsidian_root.clone(),
+                &commit_path,
+                date_template,
+                "%H:%M:%S",
+                &[],
+            );
 
             // Should succeed and create diary file
             assert!(result.is_ok());
@@ -318,7 +329,13 @@ mod main_tests {
 
         // Only run if we're in a git repo
         if Repository::discover("./").is_ok() {
-            let result = run_commit_saver(obsidian_root.clone(), &commit_path, date_template, &[]);
+            let result = run_commit_saver(
+                obsidian_root.clone(),
+                &commit_path,
+                date_template,
+                "%H:%M:%S",
+                &[],
+            );
 
             // Should succeed and create the missing directories
             assert!(result.is_ok());
@@ -339,10 +356,22 @@ mod main_tests {
         // Only run if in a git repo
         if Repository::discover("./").is_ok() {
             // First run - creates the file
-            run_commit_saver(obsidian_root.clone(), &commit_path, date_template, &[])?;
+            run_commit_saver(
+                obsidian_root.clone(),
+                &commit_path,
+                date_template,
+                "%H:%M:%S",
+                &[],
+            )?;
 
             // Second run - should append to existing file
-            let result = run_commit_saver(obsidian_root.clone(), &commit_path, date_template, &[]);
+            let result = run_commit_saver(
+                obsidian_root.clone(),
+                &commit_path,
+                date_template,
+                "%H:%M:%S",
+                &[],
+            );
             assert!(result.is_ok());
 
             // Verify file exists and has multiple entries
@@ -367,7 +396,13 @@ mod main_tests {
         // Only run if in a git repo
         if Repository::discover("./").is_ok() {
             // Create directory structure first
-            let result = run_commit_saver(obsidian_root.clone(), &commit_path, date_template, &[]);
+            let result = run_commit_saver(
+                obsidian_root.clone(),
+                &commit_path,
+                date_template,
+                "%H:%M:%S",
+                &[],
+            );
             assert!(result.is_ok());
 
             // Now make the directory read-only to trigger write errors on second run
@@ -457,8 +492,13 @@ mod main_tests {
         if Repository::discover("./").is_ok() {
             // Run three times - should be idempotent
             for _ in 0..3 {
-                let result =
-                    run_commit_saver(obsidian_root.clone(), &commit_path, date_template, &[]);
+                let result = run_commit_saver(
+                    obsidian_root.clone(),
+                    &commit_path,
+                    date_template,
+                    "%H:%M:%S",
+                    &[],
+                );
                 assert!(result.is_ok());
             }
         }
@@ -486,7 +526,13 @@ mod main_tests {
         let date_template = "%Y/%m-%B/%d/%F.md";
 
         if Repository::discover("./").is_ok() {
-            let result = run_commit_saver(complex_root.clone(), &commit_path, date_template, &[]);
+            let result = run_commit_saver(
+                complex_root.clone(),
+                &commit_path,
+                date_template,
+                "%H:%M:%S",
+                &[],
+            );
             assert!(result.is_ok());
 
             // Verify deep directory structure was created
@@ -515,6 +561,7 @@ mod main_tests {
                     obsidian_root.clone(),
                     &commit_path,
                     date_template,
+                    "%H:%M:%S",
                     &excluded,
                 );
 

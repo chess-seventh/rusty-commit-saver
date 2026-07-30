@@ -28,10 +28,11 @@
 //! let obsidian_root = global_vars.get_obsidian_root_path_dir();
 //! let commit_path = global_vars.get_obsidian_commit_path();
 //! let date_template = global_vars.get_template_commit_date_path();
+//! let time_template = global_vars.get_template_commit_datetime();
 //! let excluded_repos = global_vars.get_excluded_repos();
 //!
 //! // Save the commit (skips cleanly if this repo is excluded)
-//! run_commit_saver(obsidian_root, &commit_path, &date_template, &excluded_repos).unwrap();
+//! run_commit_saver(obsidian_root, &commit_path, &date_template, &time_template, &excluded_repos).unwrap();
 //! ```
 //!
 //! ## Configuration

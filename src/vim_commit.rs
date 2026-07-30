@@ -279,11 +279,11 @@ impl CommitSaver {
     /// This is a private helper method called by [`append_entry_to_diary()`](Self::append_entry_to_diary).
     /// The commit message has already been formatted with escaped pipes and `<br/>` separators
     /// during struct initialization.
-    fn prepare_commit_entry_as_string(&mut self, path: &Path) -> String {
+    fn prepare_commit_entry_as_string(&mut self, path: &Path, time_format: &str) -> String {
         format!(
             "| {:} | {:} | {:} | {:} | {:} | {:} |\n",
             path.display(),
-            self.commit_datetime.format("%H:%M:%S"),
+            self.commit_datetime.format(time_format),
             self.commit_msg,
             self.repository_url,
             self.commit_branch_name,
@@ -496,12 +496,16 @@ impl CommitSaver {
     ///     Err(e) => eprintln!("Failed to log commit: {}", e),
     /// }
     /// ```
-    pub fn append_entry_to_diary(&mut self, wiki: &PathBuf) -> Result<(), Box<dyn Error>> {
+    pub fn append_entry_to_diary(
+        &mut self,
+        wiki: &PathBuf,
+        time_format: &str,
+    ) -> Result<(), Box<dyn Error>> {
         info!("[CommitSaver::append_entry_to_diary()]: Getting current directory.");
         let path = env::current_dir()?;
 
         info!("[CommitSaver::append_entry_to_diary()]: Preparing the commit_entry_as_string.");
-        let new_commit_str = self.prepare_commit_entry_as_string(&path);
+        let new_commit_str = self.prepare_commit_entry_as_string(&path, time_format);
 
         debug!("[CommitSaver::append_entry_to_diary()]: Commit String: {new_commit_str:}");
         debug!(
@@ -949,7 +953,7 @@ mod commit_saver_tests {
         let mut commit_saver = create_test_commit_saver();
         let test_path = PathBuf::from("/test/path");
 
-        let result = commit_saver.prepare_commit_entry_as_string(&test_path);
+        let result = commit_saver.prepare_commit_entry_as_string(&test_path, "%H:%M:%S");
 
         assert!(result.contains("/test/path"));
         assert!(result.contains("10:30:00"));
@@ -958,6 +962,26 @@ mod commit_saver_tests {
         assert!(result.contains("main"));
         assert!(result.contains("abc123def456"));
         assert!(result.ends_with("|\n"));
+    }
+
+    #[test]
+    fn test_prepare_commit_entry_honours_the_configured_time_format() {
+        // `[templates] commit_datetime` was read from the config, required on
+        // pain of a fatal error, and then never consumed: the TIME column was
+        // hardcoded. The key now means what it says.
+        let mut commit_saver = create_test_commit_saver();
+        let test_path = PathBuf::from("/test/path");
+
+        let result = commit_saver.prepare_commit_entry_as_string(&test_path, "%H%Mh");
+
+        assert!(
+            result.contains("1030h"),
+            "the configured format must reach the row: {result}"
+        );
+        assert!(
+            !result.contains("10:30:00"),
+            "the hardcoded format must no longer win: {result}"
+        );
     }
 
     #[test]
@@ -971,7 +995,7 @@ mod commit_saver_tests {
         };
         let test_path = PathBuf::from("/test/path");
 
-        let result = commit_saver.prepare_commit_entry_as_string(&test_path);
+        let result = commit_saver.prepare_commit_entry_as_string(&test_path, "%H:%M:%S");
 
         // The commit message should have pipes escaped
         assert!(result.contains("Test | commit | with | pipes"));
@@ -997,7 +1021,7 @@ mod commit_saver_tests {
         // Create the file first
         File::create(&file_path)?;
 
-        let result = commit_saver.append_entry_to_diary(&file_path);
+        let result = commit_saver.append_entry_to_diary(&file_path, "%H:%M:%S");
 
         assert!(result.is_ok());
 
@@ -1014,7 +1038,7 @@ mod commit_saver_tests {
         let mut commit_saver = create_test_commit_saver();
         let non_existent_path = PathBuf::from("/non/existent/file.md");
 
-        let result = commit_saver.append_entry_to_diary(&non_existent_path);
+        let result = commit_saver.append_entry_to_diary(&non_existent_path, "%H:%M:%S");
 
         assert!(result.is_err());
     }
@@ -1271,7 +1295,7 @@ mod commit_saver_tests {
 
         // append_entry_to_diary opens with append mode; file must exist.
         // Parent doesn't exist, so open should fail.
-        let result = commit_saver.append_entry_to_diary(&missing_parent_path);
+        let result = commit_saver.append_entry_to_diary(&missing_parent_path, "%H:%M:%S");
 
         assert!(
             result.is_err(),
