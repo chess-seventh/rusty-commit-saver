@@ -1,3 +1,10 @@
+## [4.17.4](https://github.com/chess-seventh/rusty-commit-saver/compare/v4.17.3...v4.17.4) (2026-07-30)
+
+
+### Bug Fixes
+
+* **config:** tolerate unrecognised ini keys and name config faults ([8c2af0f](https://github.com/chess-seventh/rusty-commit-saver/commit/8c2af0f81671828961268475a9dbc4a07d6f70a0))
+
 ## [4.17.3](https://github.com/chess-seventh/rusty-commit-saver/compare/v4.17.2...v4.17.3) (2026-07-30)
 
 
