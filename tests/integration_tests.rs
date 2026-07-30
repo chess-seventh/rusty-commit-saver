@@ -200,19 +200,27 @@ fn missing_required_key_names_the_file_and_the_key() {
 /// This one used to surface from inside the writer as `a formatting trait
 /// implementation returned an error`, naming neither file nor key - and only
 /// after an empty diary file had been created.
+///
+/// Runs inside a **real git repository**, unlike its neighbours here. The
+/// others can die in repo discovery and still prove their point; this one
+/// cannot, because "wrote nothing" is only meaningful if the run could have
+/// got far enough to write. In a bare temp directory that assertion passes
+/// even with the config check deleted.
 #[test]
-fn unrenderable_time_format_names_the_file_and_the_key() {
+fn unrenderable_time_format_names_the_key_and_writes_nothing() {
     let dir = tempfile::tempdir().unwrap();
+    let vault = dir.path().join("vault");
     let ini = dir.path().join("rusty-commit-saver.ini");
     fs::write(
         &ini,
         format!(
             "[obsidian]\nroot_path_dir={}\ncommit_path=Commits\n\
              [templates]\ncommit_date_path=%Y-%m-%d.md\ncommit_datetime=%Q\n",
-            dir.path().join("vault").display()
+            vault.display()
         ),
     )
     .unwrap();
+    commit_once_in(dir.path());
 
     let output = std::process::Command::new(env!("CARGO_BIN_EXE_rusty-commit-saver"))
         .env("RUSTY_COMMIT_SAVER_CONFIG", &ini)
@@ -235,9 +243,57 @@ fn unrenderable_time_format_names_the_file_and_the_key() {
         "the message must quote the value that fails; stderr was: {stderr}"
     );
     assert!(
-        !dir.path().join("vault").exists(),
-        "the run must stop before writing anything"
+        !vault.exists(),
+        "the run must stop before creating anything; the empty diary file this \
+         used to leave behind is half the reason the check exists"
     );
+}
+
+/// The control for the test above: the same run, with a format `chrono` can
+/// render, must reach the vault and write. Without this, "wrote nothing" could
+/// pass for a reason that has nothing to do with the config check.
+#[test]
+fn a_renderable_time_format_reaches_the_vault() {
+    let dir = tempfile::tempdir().unwrap();
+    let vault = dir.path().join("vault");
+    let ini = dir.path().join("rusty-commit-saver.ini");
+    fs::write(
+        &ini,
+        format!(
+            "[obsidian]\nroot_path_dir={}\ncommit_path=Commits\n\
+             [templates]\ncommit_date_path=%Y-%m-%d.md\ncommit_datetime=%H:%M\n",
+            vault.display()
+        ),
+    )
+    .unwrap();
+    commit_once_in(dir.path());
+
+    let output = std::process::Command::new(env!("CARGO_BIN_EXE_rusty-commit-saver"))
+        .env("RUSTY_COMMIT_SAVER_CONFIG", &ini)
+        .env_remove("RUST_LOG")
+        .current_dir(dir.path())
+        .output()
+        .expect("the binary should run");
+
+    assert!(
+        vault.exists(),
+        "a good config must journal; stderr was: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
+
+/// Initialises a git repository at `path` with one commit, so a run started
+/// there gets past repository discovery.
+fn commit_once_in(path: &std::path::Path) {
+    use git2::{Repository, Signature};
+
+    let repo = Repository::init(path).unwrap();
+    let sig = Signature::now("Test User", "test@example.com").unwrap();
+    let tree_id = repo.index().unwrap().write_tree().unwrap();
+    let tree = repo.find_tree(tree_id).unwrap();
+
+    repo.commit(Some("HEAD"), &sig, &sig, "Initial commit", &tree, &[])
+        .unwrap();
 }
 
 /// A minimal valid config whose vault lives inside `dir`, plus one extra
