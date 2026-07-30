@@ -130,6 +130,15 @@ against the committing repository's working-directory name (e.g. `claude-src`
 for a repo checked out at `~/src/claude-src`) — so it holds no matter which
 subdirectory the commit is made from.
 
+`[obsidian]` and `[templates]` are required; a config missing either one is
+fatal. Any **other** section is ignored, with a line on stderr naming it, never
+fatal. One INI file is shared by every checkout on the machine, so a section
+written for a newer release must not break a binary that predates it — which is
+exactly what adding `[exclude]` did to every checkout older than 4.17.0.
+
+The stderr line matters: a misspelt section (`[excludes]`) is ignored too, so
+without it your exclusions would silently stop applying.
+
 ---
 
 ## Roadmap & Improvements 📈
