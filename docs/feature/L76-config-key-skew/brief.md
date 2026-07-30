@@ -64,6 +64,21 @@ Given that, the policy is:
 Decided by Franci, 2026-07-30, over "never fatal, always degrade" and "fatal
 only when there is no destination".
 
+Two findings from the root-cause pass widened that decision, both reproduced
+before acting on them:
+
+- **A blank value defeats a presence check.** `commit_path =` satisfied
+  `Option::is_some`, exited 0, and journalled into the vault *root* instead of
+  the configured folder - a wrong-location write with no error at all. An
+  empty or whitespace value therefore counts as missing. A test that blessed
+  the same hole for `root_path_dir` (empty vault root resolving to `/`) is
+  withdrawn deliberately rather than worked around.
+- **`commit_datetime` was required and never read.** The TIME column was
+  hardcoded to `%H:%M:%S`, so a typo in that key could abort a run over a
+  value nothing consumed - fatal-and-ignored, which no policy can defend.
+  Franci's call: wire it up, so the key means what it says. The live config
+  already carries `%H:%M:%S`, so no diary output changes.
+
 ## Fix
 
 - New `KNOWN_KEYS` table beside `KNOWN_SECTIONS` (`src/config.rs`), listing what
@@ -76,7 +91,11 @@ only when there is no destination".
   split out for that; `get_ini_file()` and `retrieve_config_file_path()` keep
   their signatures and behaviour.
 - New `require_key()` replaces the four `.expect()` calls with one fatal path
-  whose message names the file and the key.
+  whose message names the file, the key, and the unrecognised keys of that same
+  section; it rejects a blank value as missing.
+- `[templates] commit_datetime` is threaded from `main()` through
+  `run_commit_saver()` and `append_entry_to_diary()` to the row builder in
+  `src/vim_commit.rs`, which had the format hardcoded.
 
 ## Gate (acceptance scenarios)
 
@@ -88,6 +107,10 @@ only when there is no destination".
 3. An unrecognised **section** -> still warns and continues (4.17.3 behaviour
    must not regress).
 4. A good config -> no warning at all on stderr, entry journalled as before.
+5. A required key present but **blank** -> treated as missing, same message,
+   nothing journalled. Previously: exit 0 and a diary in the wrong directory.
+6. The configured time format reaches the diary row, instead of the hardcoded
+   one.
 
 Verified by unit tests in `src/config.rs`, plus - and this is the point of the
 lane - the real-hook gate: a genuine `git commit` in a throwaway repo whose
