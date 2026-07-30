@@ -712,6 +712,31 @@ impl GlobalVars {
     /// # Panics
     ///
     /// Panics if the key is absent, or its value is empty or whitespace.
+    fn require_key(&self, section: &str, key: &str) -> String {
+        let value = self
+            .get_key_from_section_from_ini(section, key)
+            .filter(|value| !value.trim().is_empty());
+
+        if let Some(value) = value {
+            return value;
+        }
+
+        let file = self.config_file_label();
+        let typos = self.unrecognised_keys_in(section);
+        let hint = if typos.is_empty() {
+            String::new()
+        } else {
+            format!("; unrecognised in [{section}]: {}", typos.join(", "))
+        };
+
+        error!(
+            "[GlobalVars::require_key()] {file}: missing required key '{key}' in section [{section}]{hint}"
+        );
+        panic!(
+            "rusty-commit-saver: {file}: missing required key '{key}' in section [{section}]{hint}"
+        )
+    }
+
     /// Reads a required key whose value must be a `chrono` format string.
     ///
     /// A format `chrono` cannot render is config skew like any other, but it
@@ -735,35 +760,10 @@ impl GlobalVars {
 
         let file = self.config_file_label();
         error!(
-            "[GlobalVars::require_time_format()] {file}: key '{key}' in section [{section}] is not a time format chrono can render: '{format}'"
+            "[GlobalVars::require_time_format()] {file}: key '{key}' in section [{section}] is not a format chrono can render: '{format}'"
         );
         panic!(
-            "rusty-commit-saver: {file}: key '{key}' in section [{section}] is not a time format chrono can render: '{format}'"
-        )
-    }
-
-    fn require_key(&self, section: &str, key: &str) -> String {
-        let value = self
-            .get_key_from_section_from_ini(section, key)
-            .filter(|value| !value.trim().is_empty());
-
-        if let Some(value) = value {
-            return value;
-        }
-
-        let file = self.config_file_label();
-        let typos = self.unrecognised_keys_in(section);
-        let hint = if typos.is_empty() {
-            String::new()
-        } else {
-            format!("; unrecognised in [{section}]: {}", typos.join(", "))
-        };
-
-        error!(
-            "[GlobalVars::require_key()] {file}: missing required key '{key}' in section [{section}]{hint}"
-        );
-        panic!(
-            "rusty-commit-saver: {file}: missing required key '{key}' in section [{section}]{hint}"
+            "rusty-commit-saver: {file}: key '{key}' in section [{section}] is not a format chrono can render: '{format}'"
         )
     }
 
@@ -2381,6 +2381,35 @@ mod global_vars_tests {
         assert!(
             msg.contains("'%Q'"),
             "the message must quote the value that cannot be rendered: {msg}"
+        );
+    }
+
+    #[test]
+    fn test_require_time_format_guards_the_date_path_too() {
+        // Both format keys go through the same check. Without this, reverting
+        // the date-path call site alone would leave every test green.
+        let mut config = Ini::new();
+        config.set(
+            "templates",
+            "commit_date_path",
+            Some("%Y/%Q.md".to_string()),
+        );
+
+        let global_vars = GlobalVars::new();
+        global_vars.config.set(config).unwrap();
+
+        let result = panic::catch_unwind(AssertUnwindSafe(|| {
+            global_vars.set_templates_commit_date_path("templates")
+        }));
+
+        let panic_info = result.expect_err("a format chrono cannot render must be fatal");
+        let msg = panic_info
+            .downcast_ref::<String>()
+            .expect("panic message should be a formatted String");
+
+        assert!(
+            msg.contains("key 'commit_date_path' in section [templates]"),
+            "the message must name the key and its section: {msg}"
         );
     }
 
