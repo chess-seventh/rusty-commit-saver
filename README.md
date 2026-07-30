@@ -126,9 +126,11 @@ repos = claude-src
 ```
 
 The `[exclude]` section is optional. Each entry is matched, case-sensitively,
-against the committing repository's working-directory name (e.g. `claude-src`
-for a repo checked out at `~/src/claude-src`) — so it holds no matter which
-subdirectory the commit is made from.
+against the committing repository's **canonical name** — taken from its `origin`
+remote URL (`…/claude-src.git` → `claude-src`), falling back to the
+working-directory name for a repo with no usable `origin`. Because the origin is
+the same from every checkout, one entry covers the main clone and every git
+worktree of that repo, from any subdirectory.
 
 `[obsidian]` and `[templates]` are required; a config missing either one is
 fatal. Any **other** section is ignored, with a line on stderr naming it, never
