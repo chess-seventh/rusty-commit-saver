@@ -1,3 +1,4 @@
+use chrono::DateTime;
 use log::{error, info, warn};
 
 use std::{
@@ -711,6 +712,36 @@ impl GlobalVars {
     /// # Panics
     ///
     /// Panics if the key is absent, or its value is empty or whitespace.
+    /// Reads a required key whose value must be a `chrono` format string.
+    ///
+    /// A format `chrono` cannot render is config skew like any other, but it
+    /// used to surface from deep inside the writer as `a formatting trait
+    /// implementation returned an error when the underlying stream did not`,
+    /// naming neither the file nor the key - and only after an empty diary
+    /// file had already been created. Checking it where the rest of the config
+    /// is checked keeps the message the same shape as every other config
+    /// fault, and stops the run before it writes anything.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the key is missing (see [`require_key()`](Self::require_key)),
+    /// or if `chrono` cannot render its value.
+    fn require_time_format(&self, section: &str, key: &str) -> String {
+        let format = self.require_key(section, key);
+
+        if is_renderable_time_format(&format) {
+            return format;
+        }
+
+        let file = self.config_file_label();
+        error!(
+            "[GlobalVars::require_time_format()] {file}: key '{key}' in section [{section}] is not a time format chrono can render: '{format}'"
+        );
+        panic!(
+            "rusty-commit-saver: {file}: key '{key}' in section [{section}] is not a time format chrono can render: '{format}'"
+        )
+    }
+
     fn require_key(&self, section: &str, key: &str) -> String {
         let value = self
             .get_key_from_section_from_ini(section, key)
@@ -886,7 +917,7 @@ impl GlobalVars {
     /// ```
     fn set_templates_datetime(&self, section: &str) {
         info!("[GlobalVars::set_templates_datetime()]: Setting the templates_datetime.");
-        let key = self.require_key(section, "commit_datetime");
+        let key = self.require_time_format(section, "commit_datetime");
 
         self.template_commit_datetime
             .set(key)
@@ -967,7 +998,7 @@ impl GlobalVars {
         info!(
             "[GlobalVars::set_templates_commit_date_path()]: Setting the template_commit_date_path."
         );
-        let key = self.require_key(section, "commit_date_path");
+        let key = self.require_time_format(section, "commit_date_path");
 
         self.template_commit_date_path
             .set(key)
@@ -1453,6 +1484,20 @@ fn set_proper_home_dir(cfg_str: &str) -> String {
         .expect("Could not convert home_dir from OsString to String");
 
     cfg_str.replace('~', &home_dir)
+}
+
+/// Whether `chrono` can render this format string.
+///
+/// `DateTime::format()` defers the work, and `to_string()` turns an invalid
+/// specifier into a panic; writing into a `String` returns the error instead,
+/// which is what makes the format checkable at all.
+fn is_renderable_time_format(format: &str) -> bool {
+    use std::fmt::Write;
+
+    let probe = DateTime::from_timestamp(0, 0).expect("the epoch is a valid timestamp");
+    let mut rendered = String::new();
+
+    write!(rendered, "{}", probe.format(format)).is_ok()
 }
 
 /// Parses a comma-separated list of repository names into a clean vector.
@@ -2300,6 +2345,52 @@ mod global_vars_tests {
             msg.contains("unrecognised in [obsidian]: commit_paths"),
             "the message must name the typo that explains the absence: {msg}"
         );
+    }
+
+    #[test]
+    fn test_require_time_format_rejects_what_chrono_cannot_render() {
+        let mut config = Ini::new();
+        config.set("templates", "commit_datetime", Some("%Q".to_string()));
+
+        let global_vars = GlobalVars::new();
+        global_vars.config.set(config).unwrap();
+        global_vars
+            .config_path
+            .set("/tmp/some/rusty-commit-saver.ini".to_string())
+            .unwrap();
+
+        let result = panic::catch_unwind(AssertUnwindSafe(|| {
+            global_vars.set_templates_datetime("templates")
+        }));
+
+        let panic_info = result.expect_err("a format chrono cannot render must be fatal");
+        let msg = panic_info
+            .downcast_ref::<String>()
+            .expect("panic message should be a formatted String");
+
+        assert!(
+            msg.contains("/tmp/some/rusty-commit-saver.ini"),
+            "the message must name the file to edit: {msg}"
+        );
+        assert!(
+            msg.contains("key 'commit_datetime' in section [templates]"),
+            "the message must name the key and its section: {msg}"
+        );
+        assert!(
+            msg.contains("'%Q'"),
+            "the message must quote the value that cannot be rendered: {msg}"
+        );
+    }
+
+    #[test]
+    fn test_is_renderable_time_format_accepts_the_shipped_defaults() {
+        assert!(is_renderable_time_format("%H:%M:%S"));
+        assert!(is_renderable_time_format("%Y/%m-%B/%F.md"));
+        assert!(
+            is_renderable_time_format("Commits"),
+            "a format with no specifier at all is still renderable"
+        );
+        assert!(!is_renderable_time_format("%Q"));
     }
 
     #[test]
