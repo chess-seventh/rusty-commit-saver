@@ -79,10 +79,11 @@ and appends it to a dated diary entry in your Wiki directory.
 
 ## Usage 🛞
 
-Simply commit as usual. The pre-commit hook will:
+Simply commit as usual. The hooks will:
 
-1. Run linters (`clippy`, `rustfmt`, etc.) inside the Nix shell
-2. Invoke Rusty Commit Saver to log the commit
+1. Run linters (`clippy`, `rustfmt`, etc.) inside the Nix shell — **pre-commit**
+2. Invoke Rusty Commit Saver to log the commit — **post-commit**, once the
+   commit exists, which is why nothing this tool does can cost you a commit
 
 If you prefer manual invocation:
 
