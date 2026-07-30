@@ -120,7 +120,7 @@ commit_path = Diaries/Commits
 commit_date_path = %Y/%m-%B/%F.md
 commit_datetime = %H:%M:%S
 
-# Optional: repositories to skip, by working-directory name (comma-separated).
+# Optional: repositories to skip, by canonical repo name (comma-separated).
 # A commit made in one of these repos writes nothing to the diary.
 [exclude]
 repos = claude-src
@@ -147,10 +147,11 @@ Keys work the same way, for the same reason:
 - A key this binary does not understand is **ignored and named on stderr**
   (`ignoring unrecognised config keys [templates] commit_datetimes`). It used to
   be ignored in complete silence, so a typo applied nothing and said nothing.
-- The five keys above are **required**, and so is a non-empty value for each —
-  `commit_path =` counts as missing. Without them there is no destination to
-  write to, and a hook that quietly journals nothing looks exactly like a quiet
-  day, so this one stays fatal.
+- The four keys in `[obsidian]` and `[templates]` are **required**, and so is a
+  non-empty value for each — `commit_path =` counts as missing. Without them
+  there is no destination to write to, and a hook that quietly journals nothing
+  looks exactly like a quiet day, so this one stays fatal. (`[exclude] repos` is
+  optional, like its section.)
 - The fatal message names the config file, the key and its section, plus any
   unrecognised key in that same section, since a misspelt `commit_paths` is the
   usual reason `commit_path` is missing:
@@ -175,6 +176,7 @@ cargo build
 ./tests/hook-gate.sh good             # journals, says nothing
 ./tests/hook-gate.sh unknown-key      # journals, names the key on stderr
 ./tests/hook-gate.sh missing-key      # journals nothing, names file + key
+./tests/hook-gate.sh blank-key        # same, for a key with an empty value
 ./tests/hook-gate.sh unknown-section  # journals, names the section
 ```
 
