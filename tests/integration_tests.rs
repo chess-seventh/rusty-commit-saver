@@ -250,8 +250,10 @@ fn unrenderable_time_format_names_the_key_and_writes_nothing() {
 }
 
 /// The control for the test above: the same run, with a format `chrono` can
-/// render, must reach the vault and write. Without this, "wrote nothing" could
-/// pass for a reason that has nothing to do with the config check.
+/// render, must get as far as creating the vault. Without this, "wrote
+/// nothing" could pass for a reason that has nothing to do with the config
+/// check. What lands *in* the file is covered by the row tests in
+/// `src/vim_commit.rs`.
 #[test]
 fn a_renderable_time_format_reaches_the_vault() {
     let dir = tempfile::tempdir().unwrap();
