@@ -96,6 +96,105 @@ fn known_config_sections_are_reported_silently() {
     );
 }
 
+/// An unrecognised config key must be reported on stderr too.
+///
+/// The key twin of `unknown_config_section_is_reported_on_stderr`. A misspelt
+/// key used to apply nothing and say nothing at all: the binary only ever asks
+/// for the keys it knows, so one nobody asks for is invisible.
+#[test]
+fn unknown_config_key_is_reported_on_stderr() {
+    let dir = tempfile::tempdir().unwrap();
+    let ini = dir.path().join("rusty-commit-saver.ini");
+    fs::write(&ini, ini_with_extra_key(dir.path(), "commit_datetimes=%T")).unwrap();
+
+    let output = std::process::Command::new(env!("CARGO_BIN_EXE_rusty-commit-saver"))
+        .env("RUSTY_COMMIT_SAVER_CONFIG", &ini)
+        .env_remove("RUST_LOG")
+        .current_dir(dir.path())
+        .output()
+        .expect("the binary should run");
+
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(
+        stderr.contains("ignoring unrecognised config keys"),
+        "the unknown key was not reported; stderr was: {stderr}"
+    );
+    assert!(
+        stderr.contains("[templates] commit_datetimes"),
+        "the report did not name the key and its section; stderr was: {stderr}"
+    );
+}
+
+/// The counterpart: a config whose keys are all known reports nothing.
+#[test]
+fn known_config_keys_are_reported_silently() {
+    let dir = tempfile::tempdir().unwrap();
+    let ini = dir.path().join("rusty-commit-saver.ini");
+    fs::write(&ini, ini_with_extra_key(dir.path(), "")).unwrap();
+
+    let output = std::process::Command::new(env!("CARGO_BIN_EXE_rusty-commit-saver"))
+        .env("RUSTY_COMMIT_SAVER_CONFIG", &ini)
+        .env_remove("RUST_LOG")
+        .current_dir(dir.path())
+        .output()
+        .expect("the binary should run");
+
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    // Positive control: the run must have read the config and got past it,
+    // otherwise "reported nothing" would pass vacuously. There is no git repo
+    // in the temp cwd, so it dies in repo discovery - after config loading,
+    // and with a message no config fault produces.
+    assert!(
+        stderr.contains("failed to build CommitSaver"),
+        "the run did not get past config loading; stderr was: {stderr}"
+    );
+    assert!(
+        !stderr.contains("ignoring unrecognised config keys"),
+        "a fully known config must not report anything; stderr was: {stderr}"
+    );
+}
+
+/// A missing required key must name the file to edit and the key itself.
+///
+/// The message is the whole deliverable here: the old one named a key and a
+/// source line, so diagnosing it meant reading the source.
+#[test]
+fn missing_required_key_names_the_file_and_the_key() {
+    let dir = tempfile::tempdir().unwrap();
+    let ini = dir.path().join("rusty-commit-saver.ini");
+    // The rename in full: the new key is present, the old one is gone.
+    fs::write(
+        &ini,
+        format!(
+            "[obsidian]\nroot_path_dir={}\ncommit_paths=Commits\n\
+             [templates]\ncommit_date_path=%Y-%m-%d.md\ncommit_datetime=%H:%M\n",
+            dir.path().join("vault").display()
+        ),
+    )
+    .unwrap();
+
+    let output = std::process::Command::new(env!("CARGO_BIN_EXE_rusty-commit-saver"))
+        .env("RUSTY_COMMIT_SAVER_CONFIG", &ini)
+        .env_remove("RUST_LOG")
+        .current_dir(dir.path())
+        .output()
+        .expect("the binary should run");
+
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(
+        stderr.contains(&ini.display().to_string()),
+        "the message must name the config file to edit; stderr was: {stderr}"
+    );
+    assert!(
+        stderr.contains("missing required key 'commit_path' in section [obsidian]"),
+        "the message must name the key and its section; stderr was: {stderr}"
+    );
+    assert!(
+        stderr.contains("unrecognised in [obsidian]: commit_paths"),
+        "the message must name the typo that explains the absence; stderr was: {stderr}"
+    );
+}
+
 /// A minimal valid config whose vault lives inside `dir`, plus one extra
 /// section under `extra` - `exclude` for the known case, anything else for the
 /// unknown one. The vault path stays inside the temp dir so a run that gets
@@ -105,6 +204,16 @@ fn ini_with_section(dir: &std::path::Path, extra: &str) -> String {
         "[obsidian]\nroot_path_dir={}\ncommit_path=Commits\n\
          [templates]\ncommit_date_path=%Y-%m-%d.md\ncommit_datetime=%H:%M\n\
          [{extra}]\nrepos=claude-src\n",
+        dir.join("vault").display()
+    )
+}
+
+/// The same minimal config, with one extra line appended to `[templates]` -
+/// an unrecognised key for the unknown case, empty for the known one.
+fn ini_with_extra_key(dir: &std::path::Path, extra: &str) -> String {
+    format!(
+        "[obsidian]\nroot_path_dir={}\ncommit_path=Commits\n\
+         [templates]\ncommit_date_path=%Y-%m-%d.md\ncommit_datetime=%H:%M\n{extra}\n",
         dir.join("vault").display()
     )
 }
