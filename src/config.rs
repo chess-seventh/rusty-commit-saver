@@ -647,23 +647,93 @@ impl GlobalVars {
     /// Sorted because the parser holds keys in a hash map, whose iteration
     /// order would otherwise vary from run to run.
     fn unrecognised_keys(&self) -> Vec<String> {
-        let config = self.get_config();
-        let map = config.get_map_ref();
         let mut unknown = Vec::new();
 
-        for (section, known) in Self::KNOWN_KEYS {
-            let Some(present) = map.get(section) else {
-                continue;
-            };
-            for key in present.keys() {
-                if !known.contains(&key.as_str()) {
-                    unknown.push(format!("[{section}] {key}"));
-                }
+        for (section, _) in Self::KNOWN_KEYS {
+            for key in self.unrecognised_keys_in(section) {
+                unknown.push(format!("[{section}] {key}"));
             }
         }
 
         unknown.sort();
         unknown
+    }
+
+    /// The unrecognised keys of one known section, sorted, without the
+    /// `[section]` prefix. An unknown section has none by definition: the
+    /// binary has no idea what it should contain.
+    fn unrecognised_keys_in(&self, section: &str) -> Vec<String> {
+        let Some((_, known)) = Self::KNOWN_KEYS.iter().find(|(name, _)| *name == section) else {
+            return Vec::new();
+        };
+
+        let config = self.get_config();
+        let Some(present) = config.get_map_ref().get(section) else {
+            return Vec::new();
+        };
+
+        let mut unknown: Vec<String> = present
+            .keys()
+            .filter(|key| !known.contains(&key.as_str()))
+            .cloned()
+            .collect();
+
+        unknown.sort();
+        unknown
+    }
+
+    /// Names the configuration file for an error message.
+    ///
+    /// Falls back to a plain description rather than a guessed path when the
+    /// config was handed in directly instead of read from disk.
+    fn config_file_label(&self) -> String {
+        self.config_path
+            .get()
+            .cloned()
+            .unwrap_or_else(|| "the rusty-commit-saver config".to_string())
+    }
+
+    /// Reads a key the binary cannot work without.
+    ///
+    /// Fatal by design. Without it there is no destination to write to, and a
+    /// hook that quietly journals nothing is indistinguishable from a quiet
+    /// day - the diary would stop for weeks before anyone noticed. What the
+    /// fatal path owes the user is a message they can act on: it names the
+    /// resolved config file, the `[section] key`, and any unrecognised key in
+    /// that same section, because a misspelt `commit_paths` is the usual
+    /// reason `commit_path` is missing and naming both at once saves reading
+    /// the source.
+    ///
+    /// A present-but-blank value counts as missing: `commit_path =` used to
+    /// satisfy the old presence check and silently journal into the vault
+    /// root instead of the configured folder.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the key is absent, or its value is empty or whitespace.
+    fn require_key(&self, section: &str, key: &str) -> String {
+        let value = self
+            .get_key_from_section_from_ini(section, key)
+            .filter(|value| !value.trim().is_empty());
+
+        if let Some(value) = value {
+            return value;
+        }
+
+        let file = self.config_file_label();
+        let typos = self.unrecognised_keys_in(section);
+        let hint = if typos.is_empty() {
+            String::new()
+        } else {
+            format!("; unrecognised in [{section}]: {}", typos.join(", "))
+        };
+
+        error!(
+            "[GlobalVars::require_key()] {file}: missing required key '{key}' in section [{section}]{hint}"
+        );
+        panic!(
+            "rusty-commit-saver: {file}: missing required key '{key}' in section [{section}]{hint}"
+        )
     }
 
     /// Reports every unrecognised key, then carries on.
@@ -816,9 +886,7 @@ impl GlobalVars {
     /// ```
     fn set_templates_datetime(&self, section: &str) {
         info!("[GlobalVars::set_templates_datetime()]: Setting the templates_datetime.");
-        let key = self
-            .get_key_from_section_from_ini(section, "commit_datetime")
-            .expect("Could not get the commit_datetime from INI");
+        let key = self.require_key(section, "commit_datetime");
 
         self.template_commit_datetime
             .set(key)
@@ -899,9 +967,7 @@ impl GlobalVars {
         info!(
             "[GlobalVars::set_templates_commit_date_path()]: Setting the template_commit_date_path."
         );
-        let key = self
-            .get_key_from_section_from_ini(section, "commit_date_path")
-            .expect("Could not get the commit_date_path from INI");
+        let key = self.require_key(section, "commit_date_path");
 
         self.template_commit_date_path
             .set(key)
@@ -936,9 +1002,7 @@ impl GlobalVars {
     /// commit_path = ~/Documents/Obsidian/Diaries/Commits
     /// ```
     fn set_obsidian_commit_path(&self, section: &str) {
-        let string_path = self
-            .get_key_from_section_from_ini(section, "commit_path")
-            .expect("Could not get commit_path from config");
+        let string_path = self.require_key(section, "commit_path");
 
         let fixed_home = if string_path.contains('~') {
             info!("[GlobalVars::set_obsidian_commit_path()]: Path does contain: '~'.");
@@ -997,9 +1061,7 @@ impl GlobalVars {
     /// root_path_dir = ~/Documents/Obsidian
     /// ```
     fn set_obsidian_root_path_dir(&self, section: &str) {
-        let string_path = self
-            .get_key_from_section_from_ini(section, "root_path_dir")
-            .expect("Could not get root_path_dir from config");
+        let string_path = self.require_key(section, "root_path_dir");
 
         let fixed_home = if string_path.contains('~') {
             info!("[GlobalVars::set_obsidian_root_path_dir()]: Does contain ~");
@@ -2057,6 +2119,11 @@ mod global_vars_tests {
 
     #[test]
     fn test_set_obsidian_root_path_dir_empty_string() {
+        // This used to assert the opposite - that an empty root_path_dir still
+        // produced a usable PathBuf. It did: `/`. The vault root silently
+        // became the filesystem root, and the run carried on at exit 0. A
+        // blank value now counts as a missing key, which is the whole point of
+        // the check; the old contract is deliberately withdrawn.
         let mut config = Ini::new();
         config.set("obsidian", "root_path_dir", Some(String::new()));
         config.set(
@@ -2068,16 +2135,24 @@ mod global_vars_tests {
 
         let global_vars = GlobalVars::new();
         global_vars.config.set(config).unwrap();
-        global_vars.set_obsidian_root_path_dir("obsidian");
 
-        let result = global_vars.get_obsidian_root_path_dir();
+        let result = panic::catch_unwind(AssertUnwindSafe(|| {
+            global_vars.set_obsidian_root_path_dir("obsidian")
+        }));
 
-        // Should at least create a PathBuf (even if empty or just "/")
-        assert!(!result.to_string_lossy().is_empty());
+        let panic_info = result.expect_err("a blank root_path_dir must be fatal");
+        let msg = panic_info
+            .downcast_ref::<String>()
+            .expect("panic message should be a formatted String");
+
+        assert!(
+            msg.contains("missing required key 'root_path_dir' in section [obsidian]"),
+            "a blank value must be reported as the missing key it is: {msg}"
+        );
     }
 
     #[test]
-    #[should_panic(expected = "Could not get commit_path from config")]
+    #[should_panic(expected = "missing required key 'commit_path' in section [obsidian]")]
     fn test_set_obsidian_commit_path_missing_key() {
         let mut config = Ini::new();
         config.set("obsidian", "root_path_dir", Some("/tmp/test".to_string()));
@@ -2095,7 +2170,7 @@ mod global_vars_tests {
     }
 
     #[test]
-    #[should_panic(expected = "Could not get root_path_dir")]
+    #[should_panic(expected = "missing required key 'root_path_dir' in section [obsidian]")]
     fn test_set_obsidian_root_path_dir_missing_key() {
         let mut config = Ini::new();
         config.set("obsidian", "commit_path", Some("commits".to_string()));
@@ -2113,7 +2188,7 @@ mod global_vars_tests {
     }
 
     #[test]
-    #[should_panic(expected = "Could not get the commit_date_path from INI")]
+    #[should_panic(expected = "missing required key 'commit_date_path' in section [templates]")]
     fn test_set_templates_commit_date_path_missing_key() {
         let mut config = Ini::new();
         config.set("templates", "commit_datetime", Some("%Y-%m-%d".to_string()));
@@ -2127,7 +2202,7 @@ mod global_vars_tests {
     }
 
     #[test]
-    #[should_panic(expected = "Could not get the commit_datetime from INI")]
+    #[should_panic(expected = "missing required key 'commit_datetime' in section [templates]")]
     fn test_set_templates_datetime_missing_key() {
         let mut config = Ini::new();
         config.set(
@@ -2142,6 +2217,82 @@ mod global_vars_tests {
         global_vars.config.set(config).unwrap();
 
         global_vars.set_templates_datetime("templates");
+    }
+
+    #[test]
+    #[should_panic(expected = "missing required key 'commit_path' in section [obsidian]")]
+    fn test_require_key_treats_a_blank_value_as_missing() {
+        // `commit_path =` used to satisfy the presence check and journal into
+        // the vault root instead of the configured folder, at exit 0.
+        let mut config = Ini::new();
+        config.set("obsidian", "root_path_dir", Some("/tmp/test".to_string()));
+        config.set("obsidian", "commit_path", Some("   ".to_string()));
+
+        let global_vars = GlobalVars::new();
+        global_vars.config.set(config).unwrap();
+
+        global_vars.set_obsidian_commit_path("obsidian");
+    }
+
+    #[test]
+    fn test_require_key_names_the_config_file_and_the_typo() {
+        let mut config = Ini::new();
+        config.set("obsidian", "root_path_dir", Some("/tmp/test".to_string()));
+        // The whole point: the missing key and the reason it is missing get
+        // named together, so nobody has to read the source to connect them.
+        config.set("obsidian", "commit_paths", Some("commits".to_string()));
+
+        let global_vars = GlobalVars::new();
+        global_vars.config.set(config).unwrap();
+        global_vars
+            .config_path
+            .set("/tmp/some/rusty-commit-saver.ini".to_string())
+            .unwrap();
+
+        let result = panic::catch_unwind(AssertUnwindSafe(|| {
+            global_vars.set_obsidian_commit_path("obsidian")
+        }));
+
+        let panic_info = result.expect_err("a missing required key must be fatal");
+        let msg = panic_info
+            .downcast_ref::<String>()
+            .expect("panic message should be a formatted String");
+
+        assert!(
+            msg.contains("/tmp/some/rusty-commit-saver.ini"),
+            "the message must name the file to edit: {msg}"
+        );
+        assert!(
+            msg.contains("missing required key 'commit_path' in section [obsidian]"),
+            "the message must name the key and its section: {msg}"
+        );
+        assert!(
+            msg.contains("unrecognised in [obsidian]: commit_paths"),
+            "the message must name the typo that explains the absence: {msg}"
+        );
+    }
+
+    #[test]
+    fn test_require_key_says_which_config_when_none_was_read() {
+        let mut config = Ini::new();
+        config.set("obsidian", "commit_path", Some("commits".to_string()));
+
+        let global_vars = GlobalVars::new();
+        global_vars.config.set(config).unwrap();
+
+        let result = panic::catch_unwind(AssertUnwindSafe(|| {
+            global_vars.set_obsidian_root_path_dir("obsidian")
+        }));
+
+        let panic_info = result.expect_err("a missing required key must be fatal");
+        let msg = panic_info
+            .downcast_ref::<String>()
+            .expect("panic message should be a formatted String");
+
+        assert!(
+            msg.contains("the rusty-commit-saver config"),
+            "with no file read, the message must say so rather than guess a path: {msg}"
+        );
     }
 
     #[test]
