@@ -906,7 +906,8 @@ impl GlobalVars {
     /// # Panics
     ///
     /// Panics if:
-    /// - The `commit_datetime` key is missing from the INI section
+    /// - The `commit_datetime` key is missing, or its value is blank, or it is
+    ///   not a format `chrono` can render
     /// - The `OnceCell` has already been set (called multiple times)
     ///
     /// # Expected INI Key
@@ -985,7 +986,8 @@ impl GlobalVars {
     /// # Panics
     ///
     /// Panics if:
-    /// - The `commit_date_path` key is missing from the INI section
+    /// - The `commit_date_path` key is missing, or its value is blank, or it is
+    ///   not a format `chrono` can render
     /// - The `OnceCell` has already been set (called multiple times)
     ///
     /// # Expected INI Key
@@ -1022,7 +1024,7 @@ impl GlobalVars {
     /// # Panics
     ///
     /// Panics if:
-    /// - The `commit_path` key is missing from the INI section
+    /// - The `commit_path` key is missing, or its value is blank
     /// - Home directory cannot be determined (when `~` is used)
     /// - The `OnceCell` has already been set
     ///
@@ -1081,7 +1083,7 @@ impl GlobalVars {
     /// # Panics
     ///
     /// Panics if:
-    /// - The `root_path_dir` key is missing from the INI section
+    /// - The `root_path_dir` key is missing, or its value is blank
     /// - Home directory cannot be determined (when `~` is used)
     /// - The `OnceCell` has already been set
     ///
