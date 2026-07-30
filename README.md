@@ -152,6 +152,10 @@ Keys work the same way, for the same reason:
   there is no destination to write to, and a hook that quietly journals nothing
   looks exactly like a quiet day, so this one stays fatal. (`[exclude] repos` is
   optional, like its section.)
+- The two `[templates]` values must be formats `chrono` can actually render,
+  and that is checked when the config is read. A bad specifier used to surface
+  from inside the writer as `a formatting trait implementation returned an
+  error`, naming nothing, after an empty diary file had already been created.
 - The fatal message names the config file, the key and its section, plus any
   unrecognised key in that same section, since a misspelt `commit_paths` is the
   usual reason `commit_path` is missing:
@@ -177,6 +181,7 @@ cargo build
 ./tests/hook-gate.sh unknown-key      # journals, names the key on stderr
 ./tests/hook-gate.sh missing-key      # journals nothing, names file + key
 ./tests/hook-gate.sh blank-key        # same, for a key with an empty value
+./tests/hook-gate.sh bad-format       # same, for a format chrono cannot render
 ./tests/hook-gate.sh unknown-section  # journals, names the section
 ```
 
