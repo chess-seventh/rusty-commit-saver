@@ -616,6 +616,69 @@ impl GlobalVars {
     /// gets applied *and* reported as unrecognised.
     const KNOWN_SECTIONS: [&'static str; 3] = ["obsidian", "templates", "exclude"];
 
+    /// The keys each known section understands. Adding a key to a setter means
+    /// adding it here too, or the key gets applied *and* reported as
+    /// unrecognised.
+    const KNOWN_KEYS: [(&'static str, &'static [&'static str]); 3] = [
+        ("obsidian", &["root_path_dir", "commit_path"]),
+        ("templates", &["commit_date_path", "commit_datetime"]),
+        ("exclude", &["repos"]),
+    ];
+
+    /// Lists the keys this binary does not understand, as sorted
+    /// `[section] key` labels.
+    ///
+    /// Only keys in a *known* section are listed: an unrecognised section is
+    /// already reported whole by [`get_sections_from_config()`](Self::get_sections_from_config),
+    /// and listing its keys as well would charge one mistake twice.
+    ///
+    /// Sorted because the parser holds keys in a hash map, whose iteration
+    /// order would otherwise vary from run to run.
+    fn unrecognised_keys(&self) -> Vec<String> {
+        let config = self.get_config();
+        let map = config.get_map_ref();
+        let mut unknown = Vec::new();
+
+        for (section, known) in Self::KNOWN_KEYS {
+            let Some(present) = map.get(section) else {
+                continue;
+            };
+            for key in present.keys() {
+                if !known.contains(&key.as_str()) {
+                    unknown.push(format!("[{section}] {key}"));
+                }
+            }
+        }
+
+        unknown.sort();
+        unknown
+    }
+
+    /// Reports every unrecognised key, then carries on.
+    ///
+    /// An unknown key is never fatal, for the reason an unknown section is not:
+    /// one INI file is shared by every checkout on the machine, so a key
+    /// written for a newer release must not brick a binary that predates it.
+    /// Reporting it is what a silent skip failed to do - a misspelt
+    /// `commit_datetimes` used to apply nothing and say nothing.
+    fn report_unrecognised_keys(&self) {
+        let unknown = self.unrecognised_keys();
+        if unknown.is_empty() {
+            return;
+        }
+
+        let list = unknown.join(", ");
+        warn!(
+            "[GlobalVars::report_unrecognised_keys()] ignoring unrecognised config keys {list}; this binary may be older than the config"
+        );
+        // Also on stderr, for the same reason the section warning is: the git
+        // hook runs without RUST_LOG, where env_logger caps the level at Error
+        // and would swallow the warning entirely.
+        eprintln!(
+            "rusty-commit-saver: ignoring unrecognised config keys {list}; this binary may be older than the config"
+        );
+    }
+
     fn get_sections_from_config(&self) -> Vec<String> {
         info!("[GlobalVars::get_sections_from_config()] Getting sections from config");
         let sections = self.get_config().sections();
@@ -669,12 +732,13 @@ impl GlobalVars {
     /// - For the **"templates"** section: calls `set_templates_commit_date_path` and `set_templates_datetime`.
     /// - For the **"exclude"** section: calls `set_excluded_repos`.
     ///
-    /// Any other section is skipped.
+    /// Any other section is skipped. Keys the binary does not understand are
+    /// reported on stderr and skipped too.
     ///
     /// # Panics
     ///
     /// Panics if the INI file is missing `[obsidian]` or `[templates]`; both are
-    /// required. An unrecognised section is not fatal.
+    /// required. An unrecognised section or key is not fatal.
     ///
     /// # Logging
     ///
@@ -695,7 +759,10 @@ impl GlobalVars {
     /// global_vars.set_obsidian_vars();
     /// ```
     pub fn set_obsidian_vars(&self) {
-        for section in self.get_sections_from_config() {
+        let sections = self.get_sections_from_config();
+        self.report_unrecognised_keys();
+
+        for section in sections {
             if section == "obsidian" {
                 info!("[GlobalVars::set_obsidian_vars()] Setting 'obsidian' section variables.");
                 self.set_obsidian_root_path_dir(&section);
@@ -1415,6 +1482,110 @@ mod global_vars_tests {
             "An unrecognised section must be ignored, not fatal"
         );
         assert_eq!(result.unwrap().len(), 3);
+    }
+
+    #[test]
+    fn test_unrecognised_keys_names_a_typo_in_a_known_section() {
+        let mut config = Ini::new();
+        config.set("obsidian", "root_path_dir", Some("/tmp/test".to_string()));
+        config.set("obsidian", "commit_path", Some("commits".to_string()));
+        config.set("templates", "commit_date_path", Some("%F.md".to_string()));
+        // The rename/typo case: the real key is still there, so nothing breaks
+        // - which is exactly why this used to pass unnoticed.
+        config.set("templates", "commit_datetime", Some("%T".to_string()));
+        config.set("templates", "commit_datetimes", Some("%T".to_string()));
+
+        let global_vars = GlobalVars::new();
+        global_vars.config.set(config).unwrap();
+
+        assert_eq!(
+            global_vars.unrecognised_keys(),
+            vec!["[templates] commit_datetimes".to_string()],
+            "an unknown key must be named, not swallowed"
+        );
+    }
+
+    #[test]
+    fn test_unrecognised_keys_is_empty_for_a_known_config() {
+        let mut config = Ini::new();
+        config.set("obsidian", "root_path_dir", Some("/tmp/test".to_string()));
+        config.set("obsidian", "commit_path", Some("commits".to_string()));
+        config.set("templates", "commit_date_path", Some("%F.md".to_string()));
+        config.set("templates", "commit_datetime", Some("%T".to_string()));
+        config.set("exclude", "repos", Some("claude-src".to_string()));
+
+        let global_vars = GlobalVars::new();
+        global_vars.config.set(config).unwrap();
+
+        assert!(
+            global_vars.unrecognised_keys().is_empty(),
+            "a config this binary fully understands must warn about nothing"
+        );
+    }
+
+    #[test]
+    fn test_unrecognised_keys_leaves_an_unknown_section_to_the_section_check() {
+        let mut config = Ini::new();
+        config.set("obsidian", "root_path_dir", Some("/tmp/test".to_string()));
+        config.set("obsidian", "commit_path", Some("commits".to_string()));
+        config.set("templates", "commit_date_path", Some("%F.md".to_string()));
+        config.set("templates", "commit_datetime", Some("%T".to_string()));
+        config.set("future_release", "whatever", Some("value".to_string()));
+
+        let global_vars = GlobalVars::new();
+        global_vars.config.set(config).unwrap();
+
+        assert!(
+            global_vars.unrecognised_keys().is_empty(),
+            "the section is already reported whole; its keys must not double the noise"
+        );
+    }
+
+    #[test]
+    fn test_unrecognised_keys_are_sorted_and_name_every_section() {
+        let mut config = Ini::new();
+        config.set("obsidian", "root_path_dir", Some("/tmp/test".to_string()));
+        config.set("obsidian", "commit_path", Some("commits".to_string()));
+        config.set("obsidian", "vault", Some("stale".to_string()));
+        config.set("templates", "commit_date_path", Some("%F.md".to_string()));
+        config.set("templates", "commit_datetime", Some("%T".to_string()));
+        config.set("templates", "author", Some("stale".to_string()));
+        config.set("exclude", "repos", Some("claude-src".to_string()));
+        config.set("exclude", "branches", Some("stale".to_string()));
+
+        let global_vars = GlobalVars::new();
+        global_vars.config.set(config).unwrap();
+
+        assert_eq!(
+            global_vars.unrecognised_keys(),
+            vec![
+                "[exclude] branches".to_string(),
+                "[obsidian] vault".to_string(),
+                "[templates] author".to_string(),
+            ],
+            "hash-map order must not leak into the reported list"
+        );
+    }
+
+    #[test]
+    fn test_set_obsidian_vars_survives_an_unrecognised_key() {
+        let mut config = Ini::new();
+        config.set("obsidian", "root_path_dir", Some("/tmp/test".to_string()));
+        config.set("obsidian", "commit_path", Some("commits".to_string()));
+        config.set("templates", "commit_date_path", Some("%F.md".to_string()));
+        config.set("templates", "commit_datetime", Some("%T".to_string()));
+        config.set("templates", "commit_datetimes", Some("%T".to_string()));
+
+        let global_vars = GlobalVars::new();
+        global_vars.config.set(config).unwrap();
+
+        let result = panic::catch_unwind(AssertUnwindSafe(|| global_vars.set_obsidian_vars()));
+
+        assert!(
+            result.is_ok(),
+            "an unrecognised key must be reported, never fatal"
+        );
+        assert_eq!(global_vars.get_template_commit_datetime(), "%T");
     }
 
     #[test]
