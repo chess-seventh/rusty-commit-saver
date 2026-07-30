@@ -139,6 +139,42 @@ exactly what adding `[exclude]` did to every checkout older than 4.17.0.
 The stderr line matters: a misspelt section (`[excludes]`) is ignored too, so
 without it your exclusions would silently stop applying.
 
+Keys work the same way, for the same reason:
+
+- A key this binary does not understand is **ignored and named on stderr**
+  (`ignoring unrecognised config keys [templates] commit_datetimes`). It used to
+  be ignored in complete silence, so a typo applied nothing and said nothing.
+- The five keys above are **required**, and so is a non-empty value for each —
+  `commit_path =` counts as missing. Without them there is no destination to
+  write to, and a hook that quietly journals nothing looks exactly like a quiet
+  day, so this one stays fatal.
+- The fatal message names the config file, the key and its section, plus any
+  unrecognised key in that same section, since a misspelt `commit_paths` is the
+  usual reason `commit_path` is missing:
+
+  ```text
+  rusty-commit-saver: /home/you/.config/rusty-commit-saver/rusty-commit-saver.ini:
+  missing required key 'commit_path' in section [obsidian];
+  unrecognised in [obsidian]: commit_paths
+  ```
+
+None of this can cost you a commit: the tool runs as a **post-commit** hook, and
+git ignores that hook's exit status. A config fault costs you the diary entry
+and prints on stderr; the commit itself always stands.
+
+### Checking hook behaviour by hand
+
+`tests/hook-gate.sh` drives a real commit through a real post-commit hook, in a
+throwaway repo and vault, and prints what a human would see:
+
+```bash
+cargo build
+./tests/hook-gate.sh good             # journals, says nothing
+./tests/hook-gate.sh unknown-key      # journals, names the key on stderr
+./tests/hook-gate.sh missing-key      # journals nothing, names file + key
+./tests/hook-gate.sh unknown-section  # journals, names the section
+```
+
 ---
 
 ## Roadmap & Improvements 📈
