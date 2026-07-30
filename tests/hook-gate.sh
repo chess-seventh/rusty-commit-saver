@@ -12,8 +12,8 @@
 # Usage:
 #   tests/hook-gate.sh [config-kind] [path-to-binary]
 #
-# config-kind: good | unknown-key | blank-key | missing-key | unknown-section
-#              (default: good)
+# config-kind: good | unknown-key | blank-key | missing-key | bad-format |
+#              unknown-section (default: good)
 # binary:      default target/debug/rusty-commit-saver
 #
 # Prints the git commit exit status, the hook's stderr, and what was
@@ -50,7 +50,10 @@ mkdir -p "$vault" "$hooks" "$repo"
   echo
   echo '[templates]'
   echo 'commit_date_path = %Y/%m-%B/%F.md'
-  echo 'commit_datetime = %H:%M:%S'
+  case "$kind" in
+  bad-format) echo 'commit_datetime = %Q' ;; # not a specifier chrono knows
+  *) echo 'commit_datetime = %H:%M:%S' ;;
+  esac
   case "$kind" in
   unknown-key) echo 'commit_datetimes = %H:%M' ;;
   esac

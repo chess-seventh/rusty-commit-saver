@@ -195,6 +195,51 @@ fn missing_required_key_names_the_file_and_the_key() {
     );
 }
 
+/// A format `chrono` cannot render must fail the same way, and before writing.
+///
+/// This one used to surface from inside the writer as `a formatting trait
+/// implementation returned an error`, naming neither file nor key - and only
+/// after an empty diary file had been created.
+#[test]
+fn unrenderable_time_format_names_the_file_and_the_key() {
+    let dir = tempfile::tempdir().unwrap();
+    let ini = dir.path().join("rusty-commit-saver.ini");
+    fs::write(
+        &ini,
+        format!(
+            "[obsidian]\nroot_path_dir={}\ncommit_path=Commits\n\
+             [templates]\ncommit_date_path=%Y-%m-%d.md\ncommit_datetime=%Q\n",
+            dir.path().join("vault").display()
+        ),
+    )
+    .unwrap();
+
+    let output = std::process::Command::new(env!("CARGO_BIN_EXE_rusty-commit-saver"))
+        .env("RUSTY_COMMIT_SAVER_CONFIG", &ini)
+        .env_remove("RUST_LOG")
+        .current_dir(dir.path())
+        .output()
+        .expect("the binary should run");
+
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(
+        stderr.contains(&ini.display().to_string()),
+        "the message must name the config file to edit; stderr was: {stderr}"
+    );
+    assert!(
+        stderr.contains("key 'commit_datetime' in section [templates]"),
+        "the message must name the key and its section; stderr was: {stderr}"
+    );
+    assert!(
+        stderr.contains("'%Q'"),
+        "the message must quote the value that fails; stderr was: {stderr}"
+    );
+    assert!(
+        !dir.path().join("vault").exists(),
+        "the run must stop before writing anything"
+    );
+}
+
 /// A minimal valid config whose vault lives inside `dir`, plus one extra
 /// section under `extra` - `exclude` for the known case, anything else for the
 /// unknown one. The vault path stays inside the temp dir so a run that gets
