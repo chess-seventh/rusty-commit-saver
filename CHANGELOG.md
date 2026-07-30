@@ -1,3 +1,10 @@
+## [4.17.3](https://github.com/chess-seventh/rusty-commit-saver/compare/v4.17.2...v4.17.3) (2026-07-30)
+
+
+### Bug Fixes
+
+* **config:** ignore unknown ini sections instead of panicking ([#74](https://github.com/chess-seventh/rusty-commit-saver/issues/74)) ([a6f02c5](https://github.com/chess-seventh/rusty-commit-saver/commit/a6f02c552d46066e758a49082ba6c348ec65e4a3))
+
 ## [4.17.2](https://github.com/chess-seventh/rusty-commit-saver/compare/v4.17.1...v4.17.2) (2026-07-28)
 
 ## [4.17.1](https://github.com/chess-seventh/rusty-commit-saver/compare/v4.17.0...v4.17.1) (2026-07-26)
