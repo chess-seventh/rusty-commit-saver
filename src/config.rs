@@ -1643,6 +1643,36 @@ mod global_vars_tests {
     }
 
     #[test]
+    fn test_unrecognised_keys_in_an_unknown_section_is_empty() {
+        let mut config = Ini::new();
+        config.set("future_release", "whatever", Some("value".to_string()));
+
+        let global_vars = GlobalVars::new();
+        global_vars.config.set(config).unwrap();
+
+        assert!(
+            global_vars
+                .unrecognised_keys_in("future_release")
+                .is_empty(),
+            "the binary cannot know what an unknown section should contain"
+        );
+    }
+
+    #[test]
+    fn test_unrecognised_keys_in_a_section_the_config_lacks_is_empty() {
+        let mut config = Ini::new();
+        config.set("obsidian", "root_path_dir", Some("/tmp/test".to_string()));
+
+        let global_vars = GlobalVars::new();
+        global_vars.config.set(config).unwrap();
+
+        assert!(
+            global_vars.unrecognised_keys_in("exclude").is_empty(),
+            "a section that is not in the config has no keys to report"
+        );
+    }
+
+    #[test]
     fn test_unrecognised_keys_are_sorted_and_name_every_section() {
         let mut config = Ini::new();
         config.set("obsidian", "root_path_dir", Some("/tmp/test".to_string()));
@@ -2801,6 +2831,34 @@ commit_datetime = %Y-%m-%d %H:%M:%S
 
         // Cleanup (won't run due to panic, but good practice)
         fs::set_permissions(&file_path, fs::Permissions::from_mode(0o644)).unwrap();
+    }
+
+    #[test]
+    fn test_get_ini_file_reads_the_configured_path() {
+        use std::io::Write;
+        use tempfile::NamedTempFile;
+
+        let mut temp_file = NamedTempFile::new().unwrap();
+        writeln!(temp_file, "[obsidian]").unwrap();
+        writeln!(temp_file, "root_path_dir=/tmp/test").unwrap();
+        writeln!(temp_file, "commit_path=commits").unwrap();
+        writeln!(temp_file, "[templates]").unwrap();
+        writeln!(temp_file, "commit_date_path=%Y-%m-%d.md").unwrap();
+        writeln!(temp_file, "commit_datetime=%H:%M:%S").unwrap();
+        temp_file.flush().unwrap();
+
+        std::env::set_var("RUSTY_COMMIT_SAVER_CONFIG", temp_file.path());
+
+        // The convenience wrapper must resolve the path the same way
+        // set_all() does, now that set_all() resolves it itself.
+        let config = get_ini_file();
+
+        std::env::remove_var("RUSTY_COMMIT_SAVER_CONFIG");
+
+        assert_eq!(
+            config.get("obsidian", "commit_path"),
+            Some("commits".to_string())
+        );
     }
 
     #[test]
