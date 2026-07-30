@@ -2530,6 +2530,20 @@ mod global_vars_tests {
 mod user_input_tests {
     use super::*;
     use clap::Parser;
+    use std::sync::{Mutex, MutexGuard, PoisonError};
+
+    /// `RUSTY_COMMIT_SAVER_CONFIG` is process-global, and several tests here
+    /// both write and read it. Under `cargo test` they share one process and
+    /// race: a test reading the var can see the value another test just set.
+    /// (`cargo nextest`, which the gate uses, runs each test in its own
+    /// process and never sees this.)
+    static CONFIG_ENV: Mutex<()> = Mutex::new(());
+
+    /// Takes the lock above, ignoring poisoning - several of these tests panic
+    /// deliberately, and a poisoned lock is not a reason to fail the rest.
+    fn lock_config_env() -> MutexGuard<'static, ()> {
+        CONFIG_ENV.lock().unwrap_or_else(PoisonError::into_inner)
+    }
 
     #[test]
     fn test_user_input_parse_with_config() {
@@ -2783,6 +2797,7 @@ commit_datetime = %Y-%m-%d %H:%M:%S
 ";
         fs::write(temp_file.path(), config_content).expect("Failed to write temp config");
 
+        let _guard = lock_config_env();
         env::set_var(
             "RUSTY_COMMIT_SAVER_CONFIG",
             temp_file.path().to_str().unwrap(),
@@ -2803,6 +2818,7 @@ commit_datetime = %Y-%m-%d %H:%M:%S
     #[test]
     #[should_panic(expected = "config_path DOES NOT exists")]
     fn test_retrieve_config_file_path_panics_on_missing_file() {
+        let _guard = lock_config_env();
         std::env::set_var("RUSTY_COMMIT_SAVER_CONFIG", "/nonexistent/path/config.ini");
         let _ = retrieve_config_file_path();
     }
@@ -2811,6 +2827,7 @@ commit_datetime = %Y-%m-%d %H:%M:%S
     fn test_get_or_default_config_ini_path_env_var_with_tilde() {
         use std::env;
 
+        let _guard = lock_config_env();
         let var_name = "RUSTY_COMMIT_SAVER_CONFIG";
         let original = env::var(var_name).ok();
 
@@ -2946,6 +2963,7 @@ commit_datetime = %Y-%m-%d %H:%M:%S
         File::create(&file_path).unwrap();
         fs::set_permissions(&file_path, fs::Permissions::from_mode(0o000)).unwrap();
 
+        let _guard = lock_config_env();
         std::env::set_var("RUSTY_COMMIT_SAVER_CONFIG", file_path.to_str().unwrap());
 
         // This should panic because file exists but can't be read
@@ -2969,6 +2987,7 @@ commit_datetime = %Y-%m-%d %H:%M:%S
         writeln!(temp_file, "commit_datetime=%H:%M:%S").unwrap();
         temp_file.flush().unwrap();
 
+        let _guard = lock_config_env();
         std::env::set_var("RUSTY_COMMIT_SAVER_CONFIG", temp_file.path());
 
         // The convenience wrapper must resolve the path the same way
