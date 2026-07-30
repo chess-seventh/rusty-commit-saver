@@ -132,6 +132,13 @@ pub struct GlobalVars {
     /// accessed from multiple threads.
     pub config: OnceCell<Ini>,
 
+    /// Path of the INI the configuration was read from.
+    ///
+    /// Retained so a configuration error can name the file to edit. Set by
+    /// [`set_all()`](Self::set_all); a `GlobalVars` handed a config directly
+    /// (as the tests do) leaves it unset.
+    pub config_path: OnceCell<String>,
+
     /// Root directory of the Obsidian vault.
     ///
     /// The base directory where all Obsidian files are stored.
@@ -299,6 +306,7 @@ impl GlobalVars {
         info!("[GlobalVars::new()] Creating new GlobalVars with OnceCell default values.");
         GlobalVars {
             config: OnceCell::new(),
+            config_path: OnceCell::new(),
 
             obsidian_root_path_dir: OnceCell::new(),
             obsidian_commit_path: OnceCell::new(),
@@ -360,9 +368,13 @@ impl GlobalVars {
     /// ```
     pub fn set_all(&self) -> &Self {
         info!("[GlobalVars::set_all()] Setting all variables for GlobalVars");
-        let config = get_ini_file();
+        let config_path = get_or_default_config_ini_path();
+        let config = get_ini_file_at(&config_path);
 
         info!("[GlobalVars::set_all()]: Setting Config Ini file.");
+        self.config_path
+            .set(config_path)
+            .expect("Couldn't set config_path in GlobalVars");
         self.config
             .set(config)
             .expect("Coulnd't set config in GlobalVars");
@@ -1118,9 +1130,21 @@ pub fn retrieve_config_file_path() -> String {
     info!(
         "[UserInput::retrieve_config_file_path()]: retrieving the string path from CLI or default"
     );
-    let config_path = get_or_default_config_ini_path();
+    read_config_file(&get_or_default_config_ini_path())
+}
 
-    if Path::new(&config_path).exists() {
+/// Reads the configuration file at `config_path` and returns its contents.
+///
+/// Split from [`retrieve_config_file_path()`] so a caller that needs the path
+/// itself - to name the file in an error - resolves it once and passes it in,
+/// rather than resolving it a second time behind the caller's back.
+///
+/// # Panics
+///
+/// Panics if the file does not exist, or cannot be read.
+#[must_use]
+fn read_config_file(config_path: &str) -> String {
+    if Path::new(config_path).exists() {
         info!("[UserInput::retrieve_config_file_path()]: config_path exists {config_path:}");
     } else {
         error!(
@@ -1131,7 +1155,7 @@ pub fn retrieve_config_file_path() -> String {
         );
     }
     info!("[UserInput::retrieve_config_file_path()] retrieved config path: {config_path:}");
-    fs::read_to_string(config_path.clone())
+    fs::read_to_string(config_path)
         .unwrap_or_else(|_| panic!("Should have been able to read the file: {config_path:}"))
 }
 
@@ -1292,8 +1316,23 @@ pub fn get_default_ini_path() -> String {
 /// - [`parse_ini_content()`] - Parses INI text into `Ini` struct
 #[must_use]
 pub fn get_ini_file() -> Ini {
+    get_ini_file_at(&get_or_default_config_ini_path())
+}
+
+/// Loads and parses the INI configuration file at `config_path`.
+///
+/// The path-taking half of [`get_ini_file()`], for a caller that has already
+/// resolved the path and wants to keep it - [`GlobalVars::set_all()`] retains
+/// it so a configuration error can name the file to edit.
+///
+/// # Panics
+///
+/// Panics under the same conditions as [`get_ini_file()`]: the file is
+/// missing, unreadable, or not valid INI.
+#[must_use]
+pub fn get_ini_file_at(config_path: &str) -> Ini {
     info!("[get_ini_file()]: Retrieving the INI File");
-    let content_ini = retrieve_config_file_path();
+    let content_ini = read_config_file(config_path);
     let mut config = Ini::new();
     config
         .read(content_ini)
