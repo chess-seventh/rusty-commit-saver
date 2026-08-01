@@ -11,6 +11,22 @@ permissions:
 env:
   CARGO_TERM_COLOR: always
 jobs:
+  # Formatting gate. Runs the SAME treefmt.toml the pre-commit hook uses, via the
+  # flake's `formatter` output - self-contained, unlike devenv.nix, which imports
+  # from ~/devenv_shared and therefore cannot evaluate on a CI runner.
+  # `--ci` = --no-cache + --fail-on-change, so any unformatted tracked file is red.
+  formatting:
+    name: 🎨 Formatting (treefmt)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: ❄️ Install Nix
+        uses: cachix/install-nix-action@v27
+        with:
+          extra_nix_config: |
+            accept-flake-config = true
+      - name: 🎨 treefmt (fail on change)
+        run: nix fmt -- --ci
   quality-checks:
     name: 🛠️ Quality Checks
     runs-on: ubuntu-latest
