@@ -33,6 +33,13 @@
         # pre-commit hook uses. The toolchain comes from this flake's single
         # nixpkgs (unstable) so nix fmt is internally consistent (the L23 fleet
         # mitigation: pin the fmt toolchain to one nixpkgs source).
+        #
+        # INVARIANT: runtimeInputs must supply a binary for EVERY treefmt.toml
+        # formatter that matches a tracked file here. treefmt.toml sets
+        # `allow-missing-formatter = true` (fleet canon, one file fits all), so a
+        # missing binary is skipped silently - and the CI gate below would then
+        # pass without ever checking those files. Add a file type, add its
+        # formatter here.
         formatter = pkgs.writeShellApplication {
           name = "treefmt-fmt";
           runtimeInputs = [
@@ -43,6 +50,8 @@
             pkgs.rustfmt
             pkgs.toml-sort
             pkgs.yamlfmt
+            pkgs.markdownlint-cli # *.md
+            pkgs.shfmt # *.sh
           ];
           text = "exec treefmt \"$@\"";
         };
