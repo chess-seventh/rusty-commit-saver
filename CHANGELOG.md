@@ -1,3 +1,10 @@
+## [4.18.0](https://github.com/chess-seventh/rusty-commit-saver/compare/v4.17.5...v4.18.0) (2026-08-25)
+
+
+### Features
+
+* **L171:** journal commits made where no vault is mounted ([dc0edb4](https://github.com/chess-seventh/rusty-commit-saver/commit/dc0edb4d26b953be3ecf4cf61b96a70487f39498))
+
 ## [4.17.5](https://github.com/chess-seventh/rusty-commit-saver/compare/v4.17.4...v4.17.5) (2026-08-01)
 
 ## [4.17.4](https://github.com/chess-seventh/rusty-commit-saver/compare/v4.17.3...v4.17.4) (2026-07-30)
