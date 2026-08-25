@@ -169,6 +169,29 @@ impl CommitSaver {
     pub fn from_repo(git_repo: &Repository) -> Result<Self, Box<dyn Error>> {
         let head = git_repo.head()?;
         let commit = head.peel_to_commit()?;
+        let branch = head.shorthand().unwrap_or("no_branch_set");
+
+        CommitSaver::from_commit(git_repo, &commit, branch)
+    }
+
+    /// Builds a `CommitSaver` from any commit in a repository, not only `HEAD`.
+    ///
+    /// The hook path only ever describes the commit that just happened, so
+    /// [`from_repo`](Self::from_repo) reads `HEAD` and is done. The reconciler
+    /// walks history, where every commit it visits needs the same row built for
+    /// it — hence the branch arrives as an argument rather than being read off
+    /// `HEAD`, because a commit made months ago has no branch of its own to
+    /// report.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the commit timestamp is out of the range `chrono`
+    /// can represent.
+    pub fn from_commit(
+        git_repo: &Repository,
+        commit: &git2::Commit<'_>,
+        branch: &str,
+    ) -> Result<Self, Box<dyn Error>> {
         let commit_datetime = DateTime::from_timestamp(commit.time().seconds(), 0)
             .ok_or("commit timestamp is out of range")?;
 
@@ -177,7 +200,7 @@ impl CommitSaver {
                 Ok(remote) => remote.url().unwrap_or("no_url_set").replace('"', ""),
                 _ => "no_url_set".to_string(),
             },
-            commit_branch_name: head.shorthand().unwrap_or("no_branch_set").replace('"', ""),
+            commit_branch_name: branch.replace('"', ""),
             commit_hash: commit.id().to_string(),
             // Preserve original lines, escape pipes, then join with <br/>
             commit_msg: commit
@@ -279,7 +302,11 @@ impl CommitSaver {
     /// This is a private helper method called by [`append_entry_to_diary()`](Self::append_entry_to_diary).
     /// The commit message has already been formatted with escaped pipes and `<br/>` separators
     /// during struct initialization.
-    fn prepare_commit_entry_as_string(&mut self, path: &Path, time_format: &str) -> String {
+    pub(crate) fn prepare_commit_entry_as_string(
+        &mut self,
+        path: &Path,
+        time_format: &str,
+    ) -> String {
         format!(
             "| {:} | {:} | {:} | {:} | {:} | {:} |\n",
             path.display(),
@@ -504,12 +531,34 @@ impl CommitSaver {
         info!("[CommitSaver::append_entry_to_diary()]: Getting current directory.");
         let path = env::current_dir()?;
 
-        info!("[CommitSaver::append_entry_to_diary()]: Preparing the commit_entry_as_string.");
-        let new_commit_str = self.prepare_commit_entry_as_string(&path, time_format);
+        self.append_row_to_diary(wiki, &path, time_format)
+    }
 
-        debug!("[CommitSaver::append_entry_to_diary()]: Commit String: {new_commit_str:}");
+    /// Appends the commit as a table row, with the FOLDER column supplied by
+    /// the caller.
+    ///
+    /// [`append_entry_to_diary`](Self::append_entry_to_diary) reports the
+    /// process's current directory, which is the right answer for a hook that
+    /// runs inside the repo it is describing. The reconciler runs from wherever
+    /// its timer put it and describes repositories it merely points at, so it
+    /// supplies the repository's own working directory instead.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the diary file cannot be opened for appending or the
+    /// write fails.
+    pub fn append_row_to_diary(
+        &mut self,
+        wiki: &PathBuf,
+        folder: &Path,
+        time_format: &str,
+    ) -> Result<(), Box<dyn Error>> {
+        info!("[CommitSaver::append_row_to_diary()]: Preparing the commit_entry_as_string.");
+        let new_commit_str = self.prepare_commit_entry_as_string(folder, time_format);
+
+        debug!("[CommitSaver::append_row_to_diary()]: Commit String: {new_commit_str:}");
         debug!(
-            "[CommitSaver::append_entry_to_diary()]: Wiki:\n{:}",
+            "[CommitSaver::append_row_to_diary()]: Wiki:\n{:}",
             wiki.display()
         );
         let mut file_ref = OpenOptions::new().append(true).open(wiki)?;
