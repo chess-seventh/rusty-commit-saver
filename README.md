@@ -44,6 +44,8 @@ and appends it to a dated diary entry in your Wiki directory.
 - Automatic diary entry creation with YAML frontmatter and table header
 - Timestamped commit rows formatted for Obsidian
 - Customizable storage path under `📅 Diaries/0. Commits/YYYY/MM-MMMM/`
+- A **`git log` backstop** (`--reconcile`) that journals commits made on a
+  machine with no vault mounted, so a row is late rather than lost
 - Preconfigured hooks (via Nix + pre-commit) to ensure code quality
 
 ---
@@ -75,6 +77,22 @@ and appends it to a dated diary entry in your Wiki directory.
    cargo install --path .
    ```
 
+### Building and testing
+
+```bash
+devenv shell -- cargo test               # the whole suite
+devenv shell -- cargo clippy --all-targets
+devenv shell -- pre-check                # linters + tests + build
+```
+
+> The `devenv shell` above imports `$HOME/devenv_shared/`, which is a checkout
+> the machine has to provide; without it `devenv` cannot evaluate this project
+> at all. The repository's own flake needs nothing outside the repository, so
+> `nix develop --command cargo test` works on any machine with Nix. Note that
+> its `rustfmt` defaults to a different style edition — format with
+> `cargo fmt -- --style-edition=2024` there, or it will reflow files it should
+> leave alone.
+
 ---
 
 ## Usage 🛞
@@ -96,6 +114,52 @@ Your commit will be appended to, where Obsidian should be:
 ```text
 ~/Documents/Wiki/📅 Diaries/0. Commits/YYYY/MM-MMMM/YYYY-MM-DD.md
 ```
+
+### Catching up: the `git log` backstop
+
+The hook can only journal on a machine that mounts the vault. Everywhere else
+the row is lost, and once the config is present on those machines it is lost
+*silently* — a journal that quietly stops looks exactly like a quiet week.
+
+`--reconcile` is the other half: it reads a repository's history and appends
+whatever row the day note is missing. It needs no network and no broker, so it
+works on the machine where the vault actually lives, whenever you run it.
+
+```bash
+# every commit ever made in these repositories
+rusty-commit-saver --reconcile ~/src/one --reconcile ~/src/two
+
+# just the recent past, for a scheduled run
+rusty-commit-saver --reconcile ~/src/one --since 2026-08-01
+```
+
+Each repository gets one line on stdout, so a scheduled run that appended
+nothing still says so:
+
+```text
+rusty-commit-saver: one: 412 scanned, 3 appended, 409 already present
+rusty-commit-saver: claude-src: excluded
+```
+
+What it will and will not do:
+
+- **It only appends.** A row already in a note is never rewritten, reordered or
+  reformatted. Your day notes are yours.
+- **A row goes in the note for the commit's own date**, never today's — so a
+  first backfill spreads across the months it actually happened in.
+- **A row the hook already wrote is recognised**, by the commit hash in the
+  last column, and not written twice. Running the pass a second time appends
+  nothing and leaves every note byte-identical.
+- **The `[exclude]` list applies here too.** An excluded repository is not even
+  walked.
+- **A repository it cannot open is reported on stderr and skipped**, so one
+  broken clone does not stop the other repositories from catching up.
+- **It ignores the directory you started it in.** Unlike the hook, it journals
+  only the repositories you named.
+
+`--since` takes a date as `YYYY-MM-DD`. A value it cannot read stops the run and
+names both what it wanted and what it got, rather than quietly backfilling years
+of history from a typo in a timer unit.
 
 ---
 
