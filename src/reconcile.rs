@@ -107,11 +107,16 @@ fn last_table_column(line: &str) -> Option<&str> {
 /// a duplicate row, which is the one outcome that matters.
 ///
 /// There is a floor and **no ceiling**, on purpose. A ceiling of 40 reads as
-/// correct against SHA-1 and is a trap: a SHA-256 repository writes 64-character
-/// ids, every one of them would fail this check, and the pass would stop
-/// recognising its own rows and append duplicates for ever. The floor alone
-/// already excludes the table header and the `|---|` rule, which is all it was
-/// ever there to do.
+/// correct against SHA-1 and encodes an assumption this function has no reason
+/// to make: a SHA-256 repository writes 64-character ids, none of which would
+/// match. The floor alone already excludes the table header and the `|---|`
+/// rule, which is all a bound was ever there to do.
+///
+/// Measured rather than asserted, because the obvious reading overstates it:
+/// the git2 this crate builds against refuses to open a SHA-256 repository at
+/// all (`unknown object format 'sha256'`), so the duplicate-for-ever outcome is
+/// not reachable today. The ceiling protected nothing, so removing it costs
+/// nothing and stops the assumption outliving the reason for it.
 fn looks_like_object_id(value: &str) -> bool {
     value.len() >= 7 && value.chars().all(|character| character.is_ascii_hexdigit())
 }
@@ -411,10 +416,11 @@ mod reconcile_tests {
 
     #[test]
     fn hashes_in_note_recognises_a_sha256_length_id() {
-        // A ceiling of 40 reads as correct against SHA-1 and would make every
-        // pass over a SHA-256 repository fail to recognise its own rows, so it
-        // would append duplicates for ever - the one outcome the dedup rule
-        // exists to prevent.
+        // A ceiling of 40 encodes SHA-1 into a function that has no reason to
+        // know about it. Measured: the git2 this crate builds against will not
+        // open a SHA-256 repository at all, so nothing is broken today - what
+        // this pins is that the bound does not quietly become load-bearing the
+        // day that changes.
         let sha256 = "a".repeat(64);
         let note = format!("| /src/x | 09:00:00 | feat: a thing | u | main | {sha256} |\n");
 

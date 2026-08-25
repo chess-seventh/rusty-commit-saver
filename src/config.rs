@@ -1179,8 +1179,9 @@ pub struct UserInput {
     ///
     /// Repeatable. Each value is a path inside a git repository; the
     /// repository is discovered from it the same way the hook discovers its
-    /// own. Given at least once, the binary does not touch `HEAD` and does not
-    /// behave as a hook at all.
+    /// own, and the history walked is what that checkout's `HEAD` can reach.
+    /// Given at least once, the binary does not journal the repository it was
+    /// started in and does not behave as a hook at all.
     ///
     /// # CLI Usage
     ///
@@ -3223,7 +3224,7 @@ mod since_tests {
     #[test]
     fn surrounding_whitespace_is_tolerated() {
         // A timer unit's ExecStart is edited by hand; a stray space must not
-        // turn into a backfill of every commit ever made.
+        // turn into a backfill of everything HEAD can reach.
         assert_eq!(
             parse_since("  2026-08-01 ").expect("a real date"),
             parse_since("2026-08-01").expect("a real date")

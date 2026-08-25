@@ -122,18 +122,19 @@ The hook can only journal on a machine that mounts the vault. Everywhere else
 the row is lost, and once the config is present on those machines it is lost
 *silently* — a journal that quietly stops looks exactly like a quiet week.
 
-`--reconcile` is the other half: it reads a repository's history and appends
-whatever row the day note is missing. It needs no network and no broker, so it
-works on the machine where the vault actually lives, whenever you run it.
+`--reconcile` is the other half: it reads the history each checkout's `HEAD`
+can reach and appends whatever row the day note is missing. It needs no network
+and no broker, so it works on the machine where the vault actually lives,
+whenever you run it.
 
-> **It walks what `HEAD` can reach, and nothing else.** Commits sitting on a
-> branch that is not the checkout's current `HEAD` are not journalled, and if
-> that branch is later squash-merged they never become reachable at all. If you
-> work in git worktrees, point `--reconcile` at each worktree rather than only
-> at the main clone.
+> **`HEAD`-reachable is narrower than "the repository", and the difference
+> bites.** Commits sitting on a branch that is not the checkout's current
+> `HEAD` are not journalled, and if that branch is later squash-merged they
+> never become reachable at all. If you work in git worktrees, point
+> `--reconcile` at each worktree rather than only at the main clone.
 
 ```bash
-# every commit ever made in these repositories
+# everything each of these checkouts can reach from its own HEAD
 rusty-commit-saver --reconcile ~/src/one --reconcile ~/src/two
 
 # just the recent past, for a scheduled run

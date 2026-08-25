@@ -142,9 +142,10 @@ pub fn run_commit_saver(
 /// Reconciles each repository against its day notes and reports what it did.
 ///
 /// This is the `git log` backstop (D-98), the path that does not need a broker
-/// or a network: it reads history and appends whatever row a note is missing.
-/// Unlike [`run_commit_saver`] it never looks at the process's own repository,
-/// so it can run from a timer anywhere the vault is mounted.
+/// or a network: it reads the history each repository's `HEAD` can reach and
+/// appends whatever row a note is missing. Unlike [`run_commit_saver`] it never
+/// looks at the process's own repository, so it can run from a timer anywhere
+/// the vault is mounted.
 ///
 /// Each repository gets one line on stdout, because this runs unattended and a
 /// pass that appended nothing must be distinguishable from a pass that never
