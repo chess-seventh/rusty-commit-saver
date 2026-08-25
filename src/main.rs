@@ -4,10 +4,8 @@
 #![cfg_attr(coverage_nightly, feature(coverage_attribute))]
 
 use rusty_commit_saver::vim_commit::CommitSaver;
-use rusty_commit_saver::vim_commit::check_diary_path_exists;
-use rusty_commit_saver::vim_commit::create_diary_file;
-use rusty_commit_saver::vim_commit::create_directories_for_new_entry;
 use rusty_commit_saver::vim_commit::current_repo_canonical_name;
+use rusty_commit_saver::vim_commit::ensure_diary_file;
 use rusty_commit_saver::vim_commit::is_repo_excluded;
 
 use rusty_commit_saver::config::GlobalVars;
@@ -120,30 +118,14 @@ pub fn run_commit_saver(
     let mut commit_saver_struct = CommitSaver::new();
 
     info!("[run_commit_saver()]: Preparing the diary entry path to the new commit.");
-    let diary_entry_path = commit_saver_struct
-        .prepare_path_for_commit(obsidian_commit_path, template_commit_date_path);
-
-    let mut full_path = obsidian_root_path_dir;
-    for directory in diary_entry_path.split('/') {
-        full_path.push(directory);
-    }
-
-    let stringed_root_path_dir = full_path
-        .as_os_str()
-        .to_str()
-        .ok_or("Could not convert path to string")?;
+    let full_path = commit_saver_struct.diary_path_for(
+        &obsidian_root_path_dir,
+        obsidian_commit_path,
+        template_commit_date_path,
+    );
 
     info!("[run_commit_saver()]: Checking if Diary file and/or path exists.");
-    if check_diary_path_exists(&full_path).is_ok() {
-        info!("[run_commit_saver()]: Diary file and path exists: {stringed_root_path_dir:}");
-    } else {
-        info!("[run_commit_saver()]: Diary file and or path DO NOT exist.");
-        info!("[run_commit_saver()]: Creating the directories for the new entry.");
-        create_directories_for_new_entry(&full_path)?;
-
-        info!("[run_commit_saver()]: Creating the files for the new entry.");
-        create_diary_file(stringed_root_path_dir, &mut commit_saver_struct)?;
-    }
+    ensure_diary_file(&full_path, &mut commit_saver_struct)?;
 
     info!("[run_commit_saver()]: Writing the commit in the file.");
     commit_saver_struct.append_entry_to_diary(&full_path, template_commit_datetime)?;

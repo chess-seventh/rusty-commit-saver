@@ -441,6 +441,29 @@ impl CommitSaver {
         format!("/{commit_path:}/{paths_with_dates_and_file:}")
     }
 
+    /// Resolves the absolute path of the day note this commit belongs in.
+    ///
+    /// The note is chosen from the **commit's own** timestamp, never from the
+    /// clock: a hook writing seconds after the commit and a reconciler writing
+    /// a month later must land on the same file, or a backfill would collapse
+    /// a month of history into whatever today's note happens to be.
+    pub fn diary_path_for(
+        &mut self,
+        obsidian_root_path_dir: &Path,
+        obsidian_commit_path: &Path,
+        template_commit_date_path: &str,
+    ) -> PathBuf {
+        let relative =
+            self.prepare_path_for_commit(obsidian_commit_path, template_commit_date_path);
+
+        let mut full_path = obsidian_root_path_dir.to_path_buf();
+        for directory in relative.split('/') {
+            full_path.push(directory);
+        }
+
+        full_path
+    }
+
     /// Formats the commit timestamp using a Chrono date format string.
     ///
     /// Applies the given format template to the commit's datetime to generate
@@ -961,6 +984,38 @@ pub fn create_diary_file(
     fs::write(full_diary_file_path, template)?;
 
     Ok(())
+}
+
+/// Makes sure the day note exists, creating it from the template if it does not.
+///
+/// Reports whether it had to create the file. Both writers need this step and
+/// both need it to be a no-op on an existing note: the hook must not overwrite
+/// a note it already wrote to today, and the reconciler must not overwrite one
+/// holding a month of rows.
+///
+/// # Errors
+///
+/// Returns an error if the path is not valid UTF-8, if the parent directories
+/// cannot be created, or if the template cannot be written.
+pub fn ensure_diary_file(
+    full_diary_path: &Path,
+    commit_saver_struct: &mut CommitSaver,
+) -> Result<bool, Box<dyn Error>> {
+    let path_as_string = full_diary_path
+        .as_os_str()
+        .to_str()
+        .ok_or("Could not convert path to string")?;
+
+    if full_diary_path.exists() {
+        info!("[ensure_diary_file()]: Diary file and path exists: {path_as_string:}");
+        return Ok(false);
+    }
+
+    info!("[ensure_diary_file()]: Diary file and or path DO NOT exist.");
+    create_directories_for_new_entry(full_diary_path)?;
+    create_diary_file(path_as_string, commit_saver_struct)?;
+
+    Ok(true)
 }
 
 // CommitSaver tests
