@@ -1173,6 +1173,55 @@ pub struct UserInput {
     /// - `./local-config.ini`
     #[arg(short, long)]
     pub config_ini: Option<String>,
+
+    /// Reconcile these repositories against their day notes, instead of
+    /// journalling the commit that just happened.
+    ///
+    /// Repeatable. Each value is a path inside a git repository; the
+    /// repository is discovered from it the same way the hook discovers its
+    /// own, and the history walked is what that checkout's `HEAD` can reach.
+    /// Given at least once, the binary does not journal the repository it was
+    /// started in and does not behave as a hook at all.
+    ///
+    /// # CLI Usage
+    ///
+    /// ```text
+    /// rusty-commit-saver --reconcile ~/src/one --reconcile ~/src/two
+    /// ```
+    #[arg(long, value_name = "PATH")]
+    pub reconcile: Vec<PathBuf>,
+
+    /// Ignore commits older than this date when reconciling, as `YYYY-MM-DD`.
+    ///
+    /// Without it every commit reachable from `HEAD` is considered, which is
+    /// what a first backfill wants and what a nightly pass does not.
+    ///
+    /// # CLI Usage
+    ///
+    /// ```text
+    /// rusty-commit-saver --reconcile ~/src/one --since 2026-08-01
+    /// ```
+    #[arg(long, value_name = "DATE")]
+    pub since: Option<String>,
+}
+
+/// Parses a `--since` value into the instant commits are compared against.
+///
+/// A date rather than a timestamp, because the journal is organised by day and
+/// an operator writing this into a timer unit thinks in days. Midnight UTC is
+/// the floor, matching the UTC the rest of the tool records commits in.
+///
+/// # Errors
+///
+/// Returns a message naming the value and the expected shape when the date
+/// cannot be parsed.
+pub fn parse_since(value: &str) -> Result<chrono::DateTime<chrono::Utc>, String> {
+    let day = chrono::NaiveDate::parse_from_str(value.trim(), "%Y-%m-%d")
+        .map_err(|_| format!("--since expects a date as YYYY-MM-DD, not '{value}'"))?;
+
+    day.and_hms_opt(0, 0, 0)
+        .map(|naive| naive.and_utc())
+        .ok_or_else(|| format!("--since could not be read as an instant: '{value}'"))
 }
 
 /// Retrieves the configuration file path from CLI arguments or returns the default.
@@ -3157,5 +3206,41 @@ commit_datetime = %Y-%m-%d %H:%M:%S
         let global_vars = GlobalVars::new();
         global_vars.config.set(config).unwrap();
         let _ = global_vars.get_sections_from_config();
+    }
+}
+
+#[cfg(test)]
+#[cfg_attr(coverage_nightly, coverage(off))]
+mod since_tests {
+    use super::*;
+
+    #[test]
+    fn a_date_becomes_midnight_utc() {
+        let floor = parse_since("2026-08-01").expect("a real date");
+
+        assert_eq!(floor.to_rfc3339(), "2026-08-01T00:00:00+00:00");
+    }
+
+    #[test]
+    fn surrounding_whitespace_is_tolerated() {
+        // A timer unit's ExecStart is edited by hand; a stray space must not
+        // turn into a backfill of everything HEAD can reach.
+        assert_eq!(
+            parse_since("  2026-08-01 ").expect("a real date"),
+            parse_since("2026-08-01").expect("a real date")
+        );
+    }
+
+    #[test]
+    fn an_unreadable_value_names_itself_and_the_shape() {
+        let error = parse_since("yesterday").expect_err("not a date");
+
+        assert!(error.contains("YYYY-MM-DD"), "must name the shape: {error}");
+        assert!(error.contains("yesterday"), "must quote the value: {error}");
+    }
+
+    #[test]
+    fn a_date_that_does_not_exist_is_refused() {
+        assert!(parse_since("2026-02-30").is_err());
     }
 }
