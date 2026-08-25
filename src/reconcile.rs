@@ -5,10 +5,10 @@
 //! those boxes it started being lost *silently* — which is worse, because a
 //! journal that quietly stops looks exactly like a quiet week.
 //!
-//! This module is the other half of the ruling: a pass that reads a
-//! repository's history and appends whatever row the day note is missing. It
-//! needs no broker and no network, so it works on the day the wire is down and
-//! on the day the wire does not exist yet.
+//! This module is the other half of the ruling: a pass that reads the history
+//! reachable from a repository's `HEAD` and appends whatever row the day note
+//! is missing. It needs no broker and no network, so it works on the day the
+//! wire is down and on the day the wire does not exist yet.
 //!
 //! # What it will not do
 //!
@@ -16,6 +16,14 @@
 //! that is already in a note. The day notes are hand-readable files a human
 //! keeps, so a backfill that touched existing rows would be a far worse defect
 //! than a missing one.
+//!
+//! It sees **only what `HEAD` reaches**, which is narrower than "the
+//! repository's history" and is stated here because the difference bites in
+//! exactly the workflow this fleet uses: a commit on an unmerged lane branch is
+//! not journalled, and if that branch is squash-merged it never becomes
+//! reachable at all. Point a pass at each worktree, not only at the main clone.
+//! Widening it to every local branch is a decision about what belongs in the
+//! journal, not a bug fix, so it is not taken here.
 //!
 //! Identity is the **commit hash column**, which is why a row written by the
 //! hook and a row this pass would have written collapse to one: whichever
@@ -29,6 +37,7 @@ use git2::Sort;
 
 use std::collections::HashMap;
 use std::collections::HashSet;
+use std::collections::hash_map::Entry;
 use std::error::Error;
 use std::fs;
 use std::path::Path;
@@ -96,15 +105,23 @@ fn last_table_column(line: &str) -> Option<&str> {
 /// Deliberately permissive about length so an abbreviated hash still matches —
 /// this decides what is *already recorded*, and a false negative would append
 /// a duplicate row, which is the one outcome that matters.
+///
+/// There is a floor and **no ceiling**, on purpose. A ceiling of 40 reads as
+/// correct against SHA-1 and is a trap: a SHA-256 repository writes 64-character
+/// ids, every one of them would fail this check, and the pass would stop
+/// recognising its own rows and append duplicates for ever. The floor alone
+/// already excludes the table header and the `|---|` rule, which is all it was
+/// ever there to do.
 fn looks_like_object_id(value: &str) -> bool {
-    (7..=40).contains(&value.len()) && value.chars().all(|character| character.is_ascii_hexdigit())
+    value.len() >= 7 && value.chars().all(|character| character.is_ascii_hexdigit())
 }
 
-/// Appends every row a repository's day notes are missing.
+/// Appends every row a repository's day notes are missing, for the history
+/// `HEAD` can reach.
 ///
-/// Walks the history reachable from `HEAD`, oldest commit first, and for each
-/// one appends a row to the note for **that commit's own date** unless the note
-/// already carries its hash.
+/// Walks that history oldest commit first, and for each commit appends a row to
+/// the note for **that commit's own date** unless the note already carries its
+/// hash. A commit `HEAD` cannot reach is not seen at all — see the module doc.
 ///
 /// # Arguments
 ///
@@ -177,18 +194,17 @@ pub fn reconcile_repo(
             template_commit_date_path,
         );
 
-        if !known.contains_key(&note) {
-            let recorded = if note.exists() {
-                hashes_in_note(&fs::read_to_string(&note)?)
-            } else {
-                HashSet::new()
-            };
-            known.insert(note.clone(), recorded);
-        }
-
-        let recorded = known
-            .get_mut(&note)
-            .expect("the note's row set was just inserted");
+        let recorded = match known.entry(note.clone()) {
+            Entry::Occupied(already_read) => already_read.into_mut(),
+            Entry::Vacant(slot) => {
+                let seeded = if note.exists() {
+                    hashes_in_note(&fs::read_to_string(&note)?)
+                } else {
+                    HashSet::new()
+                };
+                slot.insert(seeded)
+            }
+        };
 
         if recorded.contains(&saver.commit_hash) {
             report.already_present += 1;
@@ -391,6 +407,18 @@ mod reconcile_tests {
 
         assert_eq!(hashes.len(), 1, "the escaped pipes must not confuse it");
         assert!(hashes.contains("deadbeef1234"));
+    }
+
+    #[test]
+    fn hashes_in_note_recognises_a_sha256_length_id() {
+        // A ceiling of 40 reads as correct against SHA-1 and would make every
+        // pass over a SHA-256 repository fail to recognise its own rows, so it
+        // would append duplicates for ever - the one outcome the dedup rule
+        // exists to prevent.
+        let sha256 = "a".repeat(64);
+        let note = format!("| /src/x | 09:00:00 | feat: a thing | u | main | {sha256} |\n");
+
+        assert!(hashes_in_note(&note).contains(&sha256));
     }
 
     #[test]

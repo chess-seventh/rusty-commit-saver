@@ -302,11 +302,7 @@ impl CommitSaver {
     /// This is a private helper method called by [`append_entry_to_diary()`](Self::append_entry_to_diary).
     /// The commit message has already been formatted with escaped pipes and `<br/>` separators
     /// during struct initialization.
-    pub(crate) fn prepare_commit_entry_as_string(
-        &mut self,
-        path: &Path,
-        time_format: &str,
-    ) -> String {
+    fn prepare_commit_entry_as_string(&mut self, path: &Path, time_format: &str) -> String {
         format!(
             "| {:} | {:} | {:} | {:} | {:} | {:} |\n",
             path.display(),

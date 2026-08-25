@@ -32,7 +32,7 @@
 //! let excluded_repos = global_vars.get_excluded_repos();
 //!
 //! // Save the commit (skips cleanly if this repo is excluded)
-//! run_commit_saver(obsidian_root, &commit_path, &date_template, &time_template, &excluded_repos).unwrap();
+//! run_commit_saver(&obsidian_root, &commit_path, &date_template, &time_template, &excluded_repos).unwrap();
 //! ```
 //!
 //! ## Configuration
@@ -61,7 +61,8 @@
 //! - [`vim_commit`] - Core commit processing and diary file operations
 //! - [`config`] - Configuration management and INI file parsing
 //! - [`reconcile`] - The `git log` backstop: appends the rows a day note is
-//!   missing, for commits made where no vault was mounted
+//!   missing, for commits made where no vault was mounted. Sees what `HEAD`
+//!   reaches and no more
 //!
 //! ## Features
 //!

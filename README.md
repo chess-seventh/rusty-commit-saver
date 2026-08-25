@@ -45,7 +45,8 @@ and appends it to a dated diary entry in your Wiki directory.
 - Timestamped commit rows formatted for Obsidian
 - Customizable storage path under `📅 Diaries/0. Commits/YYYY/MM-MMMM/`
 - A **`git log` backstop** (`--reconcile`) that journals commits made on a
-  machine with no vault mounted, so a row is late rather than lost
+  machine with no vault mounted, so a row is late rather than lost — for the
+  history `HEAD` reaches
 - Preconfigured hooks (via Nix + pre-commit) to ensure code quality
 
 ---
@@ -124,6 +125,12 @@ the row is lost, and once the config is present on those machines it is lost
 `--reconcile` is the other half: it reads a repository's history and appends
 whatever row the day note is missing. It needs no network and no broker, so it
 works on the machine where the vault actually lives, whenever you run it.
+
+> **It walks what `HEAD` can reach, and nothing else.** Commits sitting on a
+> branch that is not the checkout's current `HEAD` are not journalled, and if
+> that branch is later squash-merged they never become reachable at all. If you
+> work in git worktrees, point `--reconcile` at each worktree rather than only
+> at the main clone.
 
 ```bash
 # every commit ever made in these repositories
