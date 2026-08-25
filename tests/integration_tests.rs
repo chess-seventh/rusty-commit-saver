@@ -284,6 +284,168 @@ fn a_renderable_time_format_reaches_the_vault() {
     );
 }
 
+/// The lane's reason to exist, end to end: a commit made where no vault was
+/// mounted is journalled later, by a run that happens where the vault is.
+///
+/// The reconciling run is deliberately started from a directory that is not the
+/// repository — that is the whole difference from the hook, which can only ever
+/// describe the repository it is standing in.
+#[test]
+fn a_commit_made_where_no_vault_is_mounted_reaches_it_later() {
+    let dir = tempfile::tempdir().unwrap();
+    let elsewhere = tempfile::tempdir().unwrap();
+    let vault = dir.path().join("vault");
+    let repo = dir.path().join("some-repo");
+    fs::create_dir(&repo).unwrap();
+
+    let ini = dir.path().join("rusty-commit-saver.ini");
+    fs::write(
+        &ini,
+        format!(
+            "[obsidian]\nroot_path_dir={}\ncommit_path=Commits\n\
+             [templates]\ncommit_date_path=%Y-%m-%d.md\ncommit_datetime=%H:%M\n",
+            vault.display()
+        ),
+    )
+    .unwrap();
+    commit_once_in(&repo);
+
+    let output = std::process::Command::new(env!("CARGO_BIN_EXE_rusty-commit-saver"))
+        .env("RUSTY_COMMIT_SAVER_CONFIG", &ini)
+        .env_remove("RUST_LOG")
+        .current_dir(elsewhere.path())
+        .arg("--reconcile")
+        .arg(&repo)
+        .output()
+        .expect("the binary should run");
+
+    assert!(
+        output.status.success(),
+        "the reconcile run failed; stderr was: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+
+    let journalled = read_only_note_under(&vault);
+    assert!(
+        journalled.contains("Initial commit"),
+        "the commit must be journalled by the reconcile pass: {journalled}"
+    );
+}
+
+/// `--reconcile` is not the hook wearing a flag: it journals the repositories
+/// it was given and stays out of the one it happens to be standing in.
+#[test]
+fn reconciling_ignores_the_directory_it_was_started_in() {
+    let dir = tempfile::tempdir().unwrap();
+    let named = dir.path().join("named-repo");
+    let standing_in = dir.path().join("standing-in");
+    fs::create_dir(&named).unwrap();
+    fs::create_dir(&standing_in).unwrap();
+
+    let vault = dir.path().join("vault");
+    let ini = dir.path().join("rusty-commit-saver.ini");
+    fs::write(
+        &ini,
+        format!(
+            "[obsidian]\nroot_path_dir={}\ncommit_path=Commits\n\
+             [templates]\ncommit_date_path=%Y-%m-%d.md\ncommit_datetime=%H:%M\n",
+            vault.display()
+        ),
+    )
+    .unwrap();
+    commit_once_in(&named);
+    commit_with_message_in(&standing_in, "a commit nobody asked to reconcile");
+
+    let output = std::process::Command::new(env!("CARGO_BIN_EXE_rusty-commit-saver"))
+        .env("RUSTY_COMMIT_SAVER_CONFIG", &ini)
+        .env_remove("RUST_LOG")
+        .current_dir(&standing_in)
+        .arg("--reconcile")
+        .arg(&named)
+        .output()
+        .expect("the binary should run");
+
+    assert!(output.status.success());
+
+    let journalled = read_only_note_under(&vault);
+    assert!(journalled.contains("Initial commit"));
+    assert!(
+        !journalled.contains("a commit nobody asked to reconcile"),
+        "the cwd's repository must not be journalled: {journalled}"
+    );
+}
+
+/// A `--since` the tool cannot read stops the run and names what it wanted.
+/// Silently reconciling everything instead would backfill years of history from
+/// a typo in a timer unit.
+#[test]
+fn an_unreadable_since_names_the_format_it_expected() {
+    let dir = tempfile::tempdir().unwrap();
+    let vault = dir.path().join("vault");
+    let ini = dir.path().join("rusty-commit-saver.ini");
+    fs::write(
+        &ini,
+        format!(
+            "[obsidian]\nroot_path_dir={}\ncommit_path=Commits\n\
+             [templates]\ncommit_date_path=%Y-%m-%d.md\ncommit_datetime=%H:%M\n",
+            vault.display()
+        ),
+    )
+    .unwrap();
+    commit_once_in(dir.path());
+
+    let output = std::process::Command::new(env!("CARGO_BIN_EXE_rusty-commit-saver"))
+        .env("RUSTY_COMMIT_SAVER_CONFIG", &ini)
+        .env_remove("RUST_LOG")
+        .current_dir(dir.path())
+        .arg("--reconcile")
+        .arg(dir.path())
+        .arg("--since")
+        .arg("yesterday")
+        .output()
+        .expect("the binary should run");
+
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(!output.status.success(), "a bad --since must not succeed");
+    assert!(
+        stderr.contains("YYYY-MM-DD") && stderr.contains("yesterday"),
+        "the error must name the shape and the value: {stderr}"
+    );
+    assert!(
+        !vault.exists(),
+        "nothing may be journalled when --since could not be read"
+    );
+}
+
+/// Reads the single day note written under `vault`, whatever it was named.
+///
+/// The note's name comes from the commit's date, so a test that hardcoded one
+/// would start failing on the day the clock rolled past it.
+fn read_only_note_under(vault: &std::path::Path) -> String {
+    let commits = vault.join("Commits");
+    let mut notes: Vec<_> = fs::read_dir(&commits)
+        .unwrap_or_else(|error| panic!("no notes under {}: {error}", commits.display()))
+        .map(|entry| entry.unwrap().path())
+        .collect();
+    notes.sort();
+
+    assert_eq!(notes.len(), 1, "expected exactly one day note: {notes:?}");
+    fs::read_to_string(&notes[0]).unwrap()
+}
+
+/// Initialises a git repository at `path` with one commit carrying `message`.
+fn commit_with_message_in(path: &std::path::Path, message: &str) {
+    use git2::{Repository, Signature};
+
+    let repo = Repository::init(path).unwrap();
+    let sig = Signature::now("Test User", "test@example.com").unwrap();
+    let tree_id = repo.index().unwrap().write_tree().unwrap();
+    let tree = repo.find_tree(tree_id).unwrap();
+
+    repo.commit(Some("HEAD"), &sig, &sig, message, &tree, &[])
+        .unwrap();
+}
+
 /// Initialises a git repository at `path` with one commit, so a run started
 /// there gets past repository discovery.
 fn commit_once_in(path: &std::path::Path) {

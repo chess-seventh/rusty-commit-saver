@@ -9,7 +9,12 @@ use rusty_commit_saver::vim_commit::ensure_diary_file;
 use rusty_commit_saver::vim_commit::is_repo_excluded;
 
 use rusty_commit_saver::config::GlobalVars;
+use rusty_commit_saver::config::UserInput;
+use rusty_commit_saver::config::parse_since;
+use rusty_commit_saver::reconcile::ReconcileReport;
+use rusty_commit_saver::reconcile::reconcile_all;
 
+use clap::Parser;
 use log::error;
 use log::info;
 use std::error::Error;
@@ -134,6 +139,65 @@ pub fn run_commit_saver(
     Ok(())
 }
 
+/// Reconciles each repository against its day notes and reports what it did.
+///
+/// This is the `git log` backstop (D-98), the path that does not need a broker
+/// or a network: it reads history and appends whatever row a note is missing.
+/// Unlike [`run_commit_saver`] it never looks at the process's own repository,
+/// so it can run from a timer anywhere the vault is mounted.
+///
+/// Each repository gets one line on stdout, because this runs unattended and a
+/// pass that appended nothing must be distinguishable from a pass that never
+/// ran.
+///
+/// # Arguments
+///
+/// * `repo_paths` - paths inside the repositories to reconcile
+/// * `since` - optional `YYYY-MM-DD` floor; older commits are left alone
+///
+/// # Errors
+///
+/// Returns an error if `since` is not a date this tool can read. A repository
+/// that cannot be opened is reported and skipped, not fatal — a broken clone
+/// must not stop the journal from catching up on every other repository.
+pub fn run_reconcile(
+    repo_paths: &[PathBuf],
+    obsidian_root_path_dir: &Path,
+    obsidian_commit_path: &Path,
+    template_commit_date_path: &str,
+    template_commit_datetime: &str,
+    excluded_repos: &[String],
+    since: Option<&str>,
+) -> Result<Vec<ReconcileReport>, Box<dyn Error>> {
+    let floor = match since {
+        Some(value) => Some(parse_since(value)?),
+        None => None,
+    };
+
+    let reports = reconcile_all(
+        repo_paths,
+        obsidian_root_path_dir,
+        obsidian_commit_path,
+        template_commit_date_path,
+        template_commit_datetime,
+        excluded_repos,
+        floor,
+    )?;
+
+    for report in &reports {
+        if report.excluded {
+            println!("rusty-commit-saver: {}: excluded", report.repository);
+        } else {
+            println!(
+                "rusty-commit-saver: {}: {} scanned, {} appended, {} already present",
+                report.repository, report.scanned, report.appended, report.already_present
+            );
+        }
+    }
+
+    Ok(reports)
+}
+
 #[cfg_attr(coverage_nightly, coverage(off))]
 fn main() {
     // LCOV_EXCL_START
@@ -149,13 +213,33 @@ fn main() {
     let template_commit_datetime = global_vars.get_template_commit_datetime();
     let excluded_repos = global_vars.get_excluded_repos();
 
-    match run_commit_saver(
-        obsidian_root_path_dir,
-        &obsidian_commit_path,
-        &template_commit_date_path,
-        &template_commit_datetime,
-        &excluded_repos,
-    ) {
+    let user_input = UserInput::parse();
+
+    // --reconcile turns the binary into the backstop pass. Without it the
+    // behaviour is exactly what every installed post-commit hook already
+    // expects, which is why the flag opts IN rather than the hook opting out.
+    let outcome = if user_input.reconcile.is_empty() {
+        run_commit_saver(
+            obsidian_root_path_dir,
+            &obsidian_commit_path,
+            &template_commit_date_path,
+            &template_commit_datetime,
+            &excluded_repos,
+        )
+    } else {
+        run_reconcile(
+            &user_input.reconcile,
+            &obsidian_root_path_dir,
+            &obsidian_commit_path,
+            &template_commit_date_path,
+            &template_commit_datetime,
+            &excluded_repos,
+            user_input.since.as_deref(),
+        )
+        .map(|_| ())
+    };
+
+    match outcome {
         Ok(()) => (),
         Err(e) => {
             error!("[main]: {e:}");
