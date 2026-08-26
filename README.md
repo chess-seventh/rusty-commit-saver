@@ -86,11 +86,17 @@ devenv shell -- cargo clippy --all-targets
 devenv shell -- pre-check                # linters + tests + build
 ```
 
-> The `devenv shell` above imports `$HOME/devenv_shared/`, which is a checkout
-> the machine has to provide; without it `devenv` cannot evaluate this project
-> at all. The repository's own flake needs nothing outside the repository, so
-> `nix develop --command cargo test` works on any machine with Nix. Note that
-> its `rustfmt` defaults to a different style edition — format with
+> `devenv.nix` needs nothing outside the repository. It *enriches* the shell
+> with the shared modules from the `devenv_shared` checkout when the machine
+> has one — at `~/src/claude-src/repos/devenv_shared`, or at the older
+> `~/devenv_shared` — and evaluates fine without it, which is what a fresh box
+> and a CI runner get. Everything the commands above need (the Rust toolchain,
+> `cargo-nextest`/`cargo-shear`/`cargo-llvm-cov`, `treefmt` and its formatters)
+> is declared in `devenv.nix` itself, so this gate is reachable anywhere.
+>
+> The repository's own flake is self-contained too, so
+> `nix develop --command cargo test` also works on any machine with Nix. Note
+> that its `rustfmt` defaults to a different style edition — format with
 > `cargo fmt -- --style-edition=2024` there, or it will reflow files it should
 > leave alone.
 
