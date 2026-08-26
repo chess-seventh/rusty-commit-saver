@@ -12,8 +12,9 @@ env:
   CARGO_TERM_COLOR: always
 jobs:
   # Formatting gate. Runs the SAME treefmt.toml the pre-commit hook uses, via the
-  # flake's `formatter` output - self-contained, unlike devenv.nix, which imports
-  # from ~/devenv_shared and therefore cannot evaluate on a CI runner.
+  # flake's `formatter` output. devenv.nix would serve the same formatter set on a
+  # runner now that its shared-module imports are optional, but the flake stays the
+  # CI entrypoint: one nixpkgs, no devenv bootstrap. Keep the two lists in step.
   # `--ci` = --no-cache + --fail-on-change, so any unformatted tracked file is red.
   formatting:
     name: 🎨 Formatting (treefmt)
