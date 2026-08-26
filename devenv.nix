@@ -55,11 +55,15 @@ in
     cargo-shear
     cargo-llvm-cov
 
-    # treefmt + one binary per treefmt.toml formatter that matches a tracked
-    # file here - the SAME invariant, and the same list, as the flake's
-    # `formatter` output. treefmt.toml sets `allow-missing-formatter = true`, so
-    # a missing binary is skipped in silence and `pre-check` would report clean
-    # without ever formatting those files. Add a file type, add it in BOTH.
+    # treefmt + its formatters, kept as the SAME list the flake's `formatter`
+    # output carries, so `pre-check` and the CI formatting gate check the same
+    # files. treefmt.toml sets `allow-missing-formatter = true`, so a missing
+    # binary is skipped in silence and both gates report clean without ever
+    # formatting those files. Add a file type, add its formatter in BOTH.
+    #
+    # KNOWN GAP, inherited from the flake and not closed here: treefmt.toml's
+    # `prettier` matches *.json and four .json files are tracked, but neither
+    # list declares prettier - so no tracked JSON is formatted by either gate.
     treefmt
     nixfmt
     deadnix

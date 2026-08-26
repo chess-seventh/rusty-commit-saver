@@ -3,8 +3,8 @@
 # nWave / Claude Code: local logs, coverage output, transient DES session state
 .claude/*.log
 # Written by devenv's claude.code integration on every shell entry (symlinks
-# into the nix store). They only appear now that devenv.nix evaluates without a
-# devenv_shared checkout, and an untracked file here blocks a worktree reap.
+# into the nix store). They only appear now that devenv.nix evaluates at all,
+# and an untracked file here blocks a worktree reap.
 .claude/settings.json
 .mcp.json
 lcov.info
