@@ -4,15 +4,39 @@
   config,
   ...
 }:
+let
+  # The shared devenv modules live in the governed `devenv_shared` repository.
+  # persona-bootstrap clones it to ~/src/claude-src/repos/devenv_shared; an older
+  # maintainer layout kept a copy at ~/devenv_shared. NEITHER path exists on a
+  # fresh box or on a CI runner, and this file used to import ~/devenv_shared/*
+  # unconditionally - so `devenv shell` failed at EVALUATION and every gate
+  # command documented in README.md was unreachable, with no error saying why.
+  #
+  # So: take the first directory that is actually present, take none when there
+  # is none, and declare everything the gate needs below regardless. The shared
+  # modules stay an enrichment (extra scripts, the shared git hooks), never a
+  # precondition for the environment evaluating.
+  sharedDirs = builtins.filter builtins.pathExists [
+    "${builtins.getEnv "HOME"}/src/claude-src/repos/devenv_shared"
+    "${builtins.getEnv "HOME"}/devenv_shared"
+  ];
+  sharedModules =
+    if sharedDirs == [ ] then
+      [ ]
+    else
+      builtins.filter builtins.pathExists (
+        map (f: "${builtins.head sharedDirs}/${f}") [
+          "shared_pkgs.nix"
+          "shared_githooks.nix"
+          "rust_pkgs.nix"
+        ]
+      );
+in
 {
   dotenv.enable = true;
   difftastic.enable = true;
 
-  imports = [
-    "${builtins.getEnv "HOME"}/devenv_shared/shared_pkgs.nix"
-    "${builtins.getEnv "HOME"}/devenv_shared/shared_githooks.nix"
-    "${builtins.getEnv "HOME"}/devenv_shared/rust_pkgs.nix"
-  ];
+  imports = sharedModules;
 
   env.GREET = "Welcome to the Rusty CV Commit Saver";
 
@@ -21,11 +45,51 @@
     postgresql
     # Codecov CLI for local baseline comparison
     # codecov-cli-bin
+
+    # Self-sufficiency: without these the environment evaluates on a box with no
+    # devenv_shared checkout but every script below still fails on a missing
+    # binary, which is the same unreachable gate one step later.
+    #
+    # Test/lint tooling used by `pre-check` and `enterTest`.
+    cargo-nextest
+    cargo-shear
+    cargo-llvm-cov
+
+    # treefmt + one binary per treefmt.toml formatter that matches a tracked
+    # file here - the SAME invariant, and the same list, as the flake's
+    # `formatter` output. treefmt.toml sets `allow-missing-formatter = true`, so
+    # a missing binary is skipped in silence and `pre-check` would report clean
+    # without ever formatting those files. Add a file type, add it in BOTH.
+    treefmt
+    nixfmt
+    deadnix
+    toml-sort
+    yamlfmt
+    markdownlint-cli # *.md
+    shfmt # *.sh
   ];
 
   languages = {
     nix.enable = true;
     shell.enable = true;
+
+    # Kept byte-identical to devenv_shared/rust_pkgs.nix: when that module IS
+    # imported both definitions are equal, which the module system merges; a
+    # divergent channel or component list here would make the shared box fail
+    # with a conflicting-definition error instead.
+    rust = {
+      enable = true;
+      channel = "nightly";
+      components = [
+        "rustc"
+        "cargo"
+        "clippy"
+        "rustfmt"
+        "rust-analyzer"
+        "rust-std"
+        "llvm-tools-preview"
+      ];
+    };
   };
 
   claude.code = {
