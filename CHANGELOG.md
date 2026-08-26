@@ -1,3 +1,10 @@
+## [4.18.1](https://github.com/chess-seventh/rusty-commit-saver/compare/v4.18.0...v4.18.1) (2026-08-26)
+
+
+### Bug Fixes
+
+* **L230:** make the shared devenv imports optional and provisioned ([#78](https://github.com/chess-seventh/rusty-commit-saver/issues/78)) ([ea65fdc](https://github.com/chess-seventh/rusty-commit-saver/commit/ea65fdcf62cfc9af2fae7cdc4a7f95973b8a2de6))
+
 ## [4.18.0](https://github.com/chess-seventh/rusty-commit-saver/compare/v4.17.5...v4.18.0) (2026-08-25)
 
 
