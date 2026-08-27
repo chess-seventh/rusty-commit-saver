@@ -100,6 +100,26 @@ devenv shell -- pre-check                # linters + tests + build
 > `cargo fmt -- --style-edition=2024` there, or it will reflow files it should
 > leave alone.
 
+#### The `devenv` input is pinned on purpose — do not unpin it
+
+`devenv.yaml` pins the `devenv` module input to the tag the installed devenv CLI
+reports (`devenv version` — `v2.2.1` today). Left unpinned, that input follows
+`cachix/devenv`'s default branch, so `devenv update` locks modules **newer than
+the CLI**, and `dotenv.enable = true` — which this repository sets — then fails
+at evaluation with:
+
+```text
+The dotenv integration requires the C-Nix devenv CLI. It is not
+available through the flake integration or another standalone Nix evaluation.
+```
+
+The failure lands on the **next** `direnv` load rather than on the update, so it
+does not look like the update caused it. Recovery is `git restore devenv.lock`.
+
+Bump the pin only together with the fleet's devenv CLI, and **never above it**:
+a module older than the CLI only prints a "run `devenv update` to sync" notice,
+while a module newer than the CLI leaves the repository with no environment.
+
 ---
 
 ## Usage 🛞
