@@ -1,4 +1,12 @@
 inputs:
+  # Pinned to the tag the installed devenv CLI reports (`devenv version`).
+  # Left unpinned this input follows cachix/devenv's default branch, so
+  # `devenv update` can lock modules NEWER than the CLI -- and a module newer
+  # than the CLI breaks `dotenv.enable`, which this repo sets, on the NEXT
+  # direnv load. Bump this tag only together with the fleet's devenv CLI, and
+  # never above it.
+  devenv:
+    url: github:cachix/devenv?dir=src/modules&ref=v2.2.1
   git-hooks:
     url: github:cachix/git-hooks.nix
     inputs:
