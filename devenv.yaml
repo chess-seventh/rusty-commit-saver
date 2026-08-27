@@ -9,7 +9,7 @@ inputs:
   # tag v2.2.2 ships module 2.2.1, tag v2.2.1 ships module 2.2.0. Pin the tag
   # whose latest-version EQUALS the CLI, never the tag of the same name --
   # equal keeps the environment and silences the "run `devenv update` to sync"
-  # notice that invites the destructive update; behind only silences nothing.
+  # notice that invites the destructive update, while behind silences nothing.
   #
   #   CLI 2.2.1 (fleet today)  ->  ref=v2.2.2  ->  module 2.2.1
   devenv:
