@@ -1,3 +1,10 @@
+## [4.18.2](https://github.com/chess-seventh/rusty-commit-saver/compare/v4.18.1...v4.18.2) (2026-08-28)
+
+
+### Bug Fixes
+
+* **L236:** pin the devenv module input to the CLI's release ([#79](https://github.com/chess-seventh/rusty-commit-saver/issues/79)) ([2b32c59](https://github.com/chess-seventh/rusty-commit-saver/commit/2b32c59fd938499eda6869eb563159f3a2bab601))
+
 ## [4.18.1](https://github.com/chess-seventh/rusty-commit-saver/compare/v4.18.0...v4.18.1) (2026-08-26)
 
 
