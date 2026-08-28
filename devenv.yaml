@@ -1,4 +1,19 @@
 inputs:
+  # Left unpinned this input follows cachix/devenv's default branch, so
+  # `devenv update` can lock modules NEWER than the CLI -- and a module newer
+  # than the CLI breaks `dotenv.enable`, which this repo sets, on the NEXT
+  # direnv load.
+  #
+  # The tag NAME is not the module version. devenv compares `devenv version`
+  # against `src/modules/latest-version`, and the two are off by one release:
+  # tag v2.2.2 ships module 2.2.1, tag v2.2.1 ships module 2.2.0. Pin the tag
+  # whose latest-version EQUALS the CLI, never the tag of the same name --
+  # equal keeps the environment and silences the "run `devenv update` to sync"
+  # notice that invites the destructive update, while behind silences nothing.
+  #
+  #   CLI 2.2.1 (fleet today)  ->  ref=v2.2.2  ->  module 2.2.1
+  devenv:
+    url: github:cachix/devenv?dir=src/modules&ref=v2.2.2
   git-hooks:
     url: github:cachix/git-hooks.nix
     inputs:

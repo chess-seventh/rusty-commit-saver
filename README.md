@@ -100,6 +100,38 @@ devenv shell -- pre-check                # linters + tests + build
 > `cargo fmt -- --style-edition=2024` there, or it will reflow files it should
 > leave alone.
 
+#### The `devenv` input is pinned on purpose — do not unpin it
+
+`devenv.yaml` pins the `devenv` module input to the release whose module version
+equals the installed devenv CLI. Left unpinned, that input follows
+`cachix/devenv`'s default branch, so `devenv update` locks modules **newer than
+the CLI**, and `dotenv.enable = true` — which this repository sets — then fails
+at evaluation with:
+
+```text
+The dotenv integration requires the C-Nix devenv CLI. It is not
+available through the flake integration or another standalone Nix evaluation.
+```
+
+The failure lands on the **next** `direnv` load rather than on the update, so it
+does not look like the update caused it. Recovery is `git restore devenv.lock`.
+
+**The tag name is not the module version.** devenv compares `devenv version`
+against the pinned module's `src/modules/latest-version`, and cachix's tags run
+one release ahead of it — tag `v2.2.2` ships module `2.2.1`, tag `v2.2.1` ships
+module `2.2.0`. So pin the tag whose `latest-version` **equals** the CLI, not
+the tag of the same name:
+
+| installed CLI | pin | module it locks |
+| --- | --- | --- |
+| `2.2.1` (the fleet today) | `ref=v2.2.2` | `2.2.1` |
+
+Bump the pin only together with the fleet's devenv CLI, and **never above it**.
+Equal is the only value that both keeps the environment and silences the notice.
+A module *behind* the CLI still evaluates, but devenv keeps printing "run
+`devenv update` to sync" — which is the prompt that caused this defect. A module
+*ahead* of the CLI leaves the repository with no environment at all.
+
 ---
 
 ## Usage 🛞
