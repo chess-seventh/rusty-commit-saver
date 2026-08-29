@@ -1,3 +1,10 @@
+## [4.19.0](https://github.com/chess-seventh/rusty-commit-saver/compare/v4.18.2...v4.19.0) (2026-08-29)
+
+
+### Features
+
+* **L235:** declare the fleet gate as this repo's own hooks ([#80](https://github.com/chess-seventh/rusty-commit-saver/issues/80)) ([aea969e](https://github.com/chess-seventh/rusty-commit-saver/commit/aea969e2a56e24b307db113e994fd20148a53e73))
+
 ## [4.18.2](https://github.com/chess-seventh/rusty-commit-saver/compare/v4.18.1...v4.18.2) (2026-08-28)
 
 
