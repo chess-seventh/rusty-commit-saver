@@ -1,0 +1,202 @@
+#!/bin/sh
+# ⚠ A COPY, and the reason is recorded rather than left to be discovered. The
+# source of truth is `pkgs/fleet-gate-hook/fleet-gate-hook` in
+# flake-nixos-dotfiles-config, where it is packaged and tested. This repository
+# cannot take that flake as a devenv input: it is private, so an input would put
+# a deploy-key wall in front of entering this devenv on every box, CI included
+# (D-96).
+#
+# L235 gave this copy to EVERY governed repository, and states NO COUNT on
+# purpose. A number duplicated across every copy went stale twice while the
+# roster grew, and nothing in any gate catches it. The roster lives in one
+# place: `docs/feature/l235-hooks-path-removed/deliver/roadmap.json` in the
+# flake. These copies must not drift from the source above, and nothing here
+# can check that from inside one repository - the guard is batoned to Archon
+# as its own lane.
+#
+# L173 - runs the global fleet gate as one of THIS repository's own hooks, so a
+# hook installed once fires everywhere (D-115).
+#
+# WHY A REPOSITORY NEEDS IT. A repository that owns its gate sets a LOCAL
+# `core.hooksPath` and git prefers it, so the global gate is simply not reached
+# there. `claude-src` (the mailbox) and the flake repo both do exactly that,
+# which meant a fleet-wide hook fired in neither of the two that matter most.
+#
+# ⛔ WHY IT IS A HOOK ENTRY AND NOT A MECHANISM. Four shapes were built for this
+# lane and three were killed by verification, all for the same reason: they
+# fought a provisioning manager that re-installs on entry.
+#
+#   - a TRACKED hooks directory made the gate branch CONTENT, so checking out an
+#     older branch disarmed a worktree that was gated a moment ago.
+#   - moving `core.hooksPath` put it in the slot the pre-L173 devenv task also
+#     writes: worktree-scoped it was inherited by `git worktree add` and a stale
+#     lane's `prek install` overwrote the gate repo-wide; shared-local, any
+#     older checkout wiped it in silence.
+#   - WRAPPING prek's installed shim lost to prek's own migration mode: with no
+#     `--overwrite`, `prek install` renames a foreign hook to `<stage>.legacy`
+#     and then runs it, so the wrap ran under a name it did not recognise and
+#     reported "no fleet gate" while the fleet gate was running.
+#
+# Being one of prek's OWN hooks is the shape that stops fighting it. There is
+# nothing to migrate, nothing to wrap, no `core.hooksPath` to move, no ordering
+# race between two tasks, and `prek uninstall` keeps working.
+#
+# WHAT IT COSTS, AND IT IS THE RIGHT COST. Only the stages the repository's own
+# config declares are covered - pre-commit, commit-msg, pre-push, post-commit.
+# The wrap covered ten, and verification showed the extra six were the problem
+# rather than the benefit: it treated post-checkout, post-merge and post-rewrite
+# as GATING, so a fleet hook failing there silently skipped the repo's own half.
+#
+# THE FRESH-WORKTREE HOLE IS NOT CLOSED HERE and never was by this file: a
+# worktree nobody has entered devenv in has no hooks at all. That is L234.
+set -u
+
+stage=${1:?usage: fleet-gate-hook <stage> [hook args...]}
+shift
+
+# ── how this speaks ──────────────────────────────────────────────────────────
+# prek shows a hook's output only when the hook FAILS, and everything below
+# that reports absence deliberately exits 0 - so plain stderr would be swallowed
+# exactly in the case that must not be quiet. The terminal is not prek's to
+# capture, so a warning goes there when there is one, and falls back to stderr
+# when there is not (CI, a hook run by a tool), where nobody is reading anyway.
+# ⚠ BOTH, and neither alone is enough. stderr is what a test and a CI log can
+# see, and prek swallows it for a hook that passes - which every warning here
+# does, deliberately. The terminal is what a human sees, and it is not prek's to
+# capture. So: stderr always, plus the terminal when there is one.
+#
+# `[ -w /dev/tty ]` is NOT the test for "is there one": it is true in a nix
+# sandbox and in any process with no controlling terminal, where the write then
+# fails with "No such device or address" - and a bare redirection failure inside
+# a hook is a failed commit. The write is attempted in a subshell so that its
+# own error message is suppressed too.
+say() {
+  echo "$*" >&2
+  ( echo "$*" > /dev/tty ) 2>/dev/null || true
+}
+
+# ⛔ THERE IS NO RECURSION GUARD, AND THAT IS THE FIX. An earlier version kept an
+# environment marker bound to the stage, and verification showed the documented
+# value was a working kill switch: `FLEET_GATE_HOOK_RUNNING=fleet-gate-hook:pre-commit
+# git commit` disarmed the gate and prek reported the hook as "Passed". A guard
+# that can be spelled out in a comment is a switch.
+#
+# It is not needed either. This hook execs the fleet gate, which runs prek
+# against the GLOBAL registry - a different config, which cannot contain this
+# entry, because this entry lives in a repository's own devenv config. There is
+# no path back here to guard against. If a future fleet hook ever did re-enter,
+# the loop would be loud and immediate rather than silent, which is the failure
+# mode to prefer.
+
+# Ask git for the GLOBAL value first. It USED to be the whole story - the same
+# lookup git itself would do in a repository with no local hooks path. L235
+# removed the value that made that true, so this is now the first of two
+# resolutions rather than the only one; the directory below is the second, and
+# the reason both exist is written there. Kept ahead of it because a box
+# mid-deploy has both, and it is the one an operator can override by hand.
+global_dir=$(git config --global --get core.hooksPath 2>/dev/null || true)
+
+# git expands a leading ~ in that value; a shell reading it raw does not, and
+# treating `~/.config/git/hooks` as unusable would drop the fleet gate on any
+# box that writes it that way.
+tilde='~'
+case "$global_dir" in
+  "$tilde") global_dir=$HOME ;;
+  "$tilde"/*) global_dir="$HOME/${global_dir#"$tilde"/}" ;;
+esac
+
+case "$global_dir" in
+  "" | /*) ;;
+  *)
+    say "fleet gate: global core.hooksPath is relative ($global_dir), ignoring it"
+    global_dir=""
+    ;;
+esac
+
+# ── L235: git offers no value, so resolve the directory itself ───────────────
+# `hooks_everywhere.nix` used to set the global `core.hooksPath` that the lookup
+# above reads. It does not any more, and the reason is the whole of this lane:
+# prek REFUSES to install a repository's own hooks while a global value points
+# outside the repository - it says so and names the fix - so eight repositories
+# under repos/ installed no hooks at all on any box carrying that module. Their
+# `devenv:git-hooks:install` failed, `enterShell` failed with it and
+# `devenv test` returned 1, while `devenv shell -- cmd` still returned 0: loud
+# in the gate and silent interactively. That is why L173 merged and changed
+# nothing anywhere.
+#
+# The VALUE is what breaks prek. The DIRECTORY is what carries the gate, and
+# `xdg.configFile` still installs the hook scripts into it. So look there.
+#
+# ⛔ ONLY WHEN IT EXISTS, and that is not a detail. Taking the path
+# unconditionally would turn "this box has no fleet gate" into the silent
+# `[ -e "$hook" ] || exit 0` below, and a gate that stops running without
+# saying so is the failure class this fleet refuses - on 2026-08-26 a hook
+# re-armed itself through direnv after its file had been deleted and corrupted
+# two live credentials. A box with no gate must keep saying so on every commit.
+#
+# The global value still WINS where one exists: a box mid-deploy has both, and
+# resolving each in turn would run every fleet hook twice.
+#
+# Written as a nested `if` rather than `[ -d … ] && global_dir=…`: the packaging
+# may run this under `set -e`, where an AND-list whose test fails takes the exit
+# status of the whole `if` with it - and the test failing is the NORMAL case on
+# a box with no gate.
+if [ -z "$global_dir" ]; then
+  fallback="${XDG_CONFIG_HOME:-$HOME/.config}/git/hooks"
+  if [ -d "$fallback" ]; then
+    global_dir=$fallback
+  fi
+fi
+
+# ── absence is LOUD, and never blocks ────────────────────────────────────────
+# A gate that stops running without saying so is the failure class this fleet
+# refuses: on 2026-08-26 a text-fixing hook re-armed itself through direnv after
+# its file had been deleted, and corrupted two live credentials.
+#
+# But it must not block either. A box that has not been deployed cannot be fixed
+# by whoever is committing, and refusing every commit in the repository that
+# holds the mailbox would wedge the fleet over an activation.
+if [ -z "$global_dir" ]; then
+  # ONE line, deliberately. Three were truncated mid-sentence by prek's own
+  # progress repaint - measured - and the half that survived was the half with
+  # no instruction in it. The detail lives in the README; the terminal gets the
+  # fact.
+  say "fleet gate: NOT INSTALLED on this box - $stage ran this repo's hooks only"
+  exit 0
+fi
+
+hook="$global_dir/$stage"
+
+# A fleet gate that carries no hook for this stage is NORMAL and silent - it
+# simply does not gate that stage. Not the same thing as having no gate at all,
+# which is the case above, and conflating the two is what made an earlier shape
+# print false alarms on every commit.
+[ -e "$hook" ] || exit 0
+
+if [ ! -x "$hook" ]; then
+  say "fleet gate: $hook is not executable - it did NOT run for $stage"
+  exit 0
+fi
+
+# ── a repository's opt-out from one fleet hook ───────────────────────────────
+# prek reads SKIP. Without this the only recourse for a fleet hook a repository
+# genuinely must not run is `--no-verify`, which turns the whole gate off - and
+# there is a real case: a generated lock file with no trailing newline would be
+# wedged forever by the fleet's end-of-file fixer, refusing and regenerating.
+#
+# Set for THIS invocation only. Exported, it would also reach the repository's
+# own hooks, and the ids worth skipping are the ones both registries carry - so
+# skipping the fleet's gitleaks would silently disable the repo's own as well.
+#
+# ⚠ IT IS NOT ANNOUNCED FROM HERE, and that is measured rather than chosen. prek
+# shows a passing hook's output nowhere and repaints over a /dev/tty write, so an
+# announcement on this path is invisible on every commit - which would make a
+# silently-disabled secret scan exactly the shape this lane refuses. The devenv
+# shell entry announces it instead, where it is seen once per session and cannot
+# be repainted away, and `git config --get hooks.fleetGate.skip` answers at any
+# time.
+skip=$(git config --get hooks.fleetGate.skip 2>/dev/null || true)
+
+# `exec`, so the fleet gate's exit status IS this hook's status. There is no
+# `|| true` anywhere above on a path that can reach here.
+SKIP=$skip exec "$hook" "$@"

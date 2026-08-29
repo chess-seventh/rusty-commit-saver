@@ -5,6 +5,54 @@
   ...
 }:
 let
+  # L235 - THE FLEET GATE, as four hooks of this repository's own (D-115).
+  #
+  # WHY A REPOSITORY WITH SIXTEEN HOOKS STILL NEEDS THESE. Two reasons, and the
+  # second is the one that decided it:
+  #
+  #   1. `shared_githooks.nix` declares no `gitleaks`. This repository reaches
+  #      the fleet's TODAY only because it sets no local `core.hooksPath`, so
+  #      git resolves the fleet's GLOBAL one and runs the whole fleet gate here.
+  #      L235 removes that value. Without these entries the repository keeps its
+  #      sixteen hooks and quietly loses the one scanner that fires on a
+  #      credential this machine has never seen.
+  #   2. ⛔ THOSE SIXTEEN HOOKS ARE CONDITIONAL ON AN IMPURE PATH THAT DROPS IN
+  #      SILENCE. `sharedModules` above is built from
+  #      `builtins.getEnv "HOME"` filtered by `builtins.pathExists`: on a box
+  #      where `~/src/claude-src/repos/devenv_shared` is not checked out - a
+  #      fresh machine, a CI runner - the list is EMPTY and this repository
+  #      declares no hooks at all, with no error. `rusty_cv_creator` records
+  #      that this has already happened. These four entries are declared HERE,
+  #      in this file, so the gate does not depend on that lookup succeeding.
+  #
+  # ⚠ AN EARLIER READ OF THIS FILE WAS WRONG AND THE CORRECTION IS WORTH
+  # KEEPING. L235 first reported this repository as importing
+  # `devenv_shared/git_hooks.nix`, which is commented out in full and evaluates
+  # to `{}` - and concluded it was ungated. It imports `shared_githooks.nix`,
+  # which carries the real block. `rusty_cv_creator` is the one that takes the
+  # empty file. Two importers, two different lists, and only one of them is
+  # real: that asymmetry is itself routed to Archon.
+  #
+  # ⚠ SEPARATE, AND NOT FIXED BY THIS FILE: the SHARED `.git/hooks` here holds
+  # four prek shims whose `--config` points at a reaped worktree. They are
+  # invisible while a global `core.hooksPath` means git never looks there; once
+  # it does, prek exits 1 and every commit is refused. That is box-local state
+  # no commit can reach - it comes out with `prek uninstall`, which rides L235's
+  # activation as a non-optional step. This repository supplies the fleet's
+  # commit diary, so it is the worst place for that to bite.
+  #
+  # Built through writeShellApplication so the script is shellchecked at build
+  # time and the entries name a store path rather than a working-tree file.
+  fleetGateHook = "${
+    pkgs.writeShellApplication {
+      name = "fleet-gate-hook";
+      runtimeInputs = [
+        pkgs.coreutils
+        pkgs.git
+      ];
+      text = builtins.readFile ./hooks/fleet-gate-hook;
+    }
+  }/bin/fleet-gate-hook";
   # The shared devenv modules live in the governed `devenv_shared` repository.
   # persona-bootstrap clones it to ~/src/claude-src/repos/devenv_shared; an older
   # maintainer layout kept a copy at ~/devenv_shared. NEITHER path exists on a
@@ -37,6 +85,58 @@ in
   difftastic.enable = true;
 
   imports = sharedModules;
+
+  git-hooks.hooks = {
+    # L235 - the fleet gate, reached as four of this repo's own hooks. The
+    # rationale is in the `let` block at the top of this file; what matters here
+    # is that these four are ordinary entries with nothing special about them.
+    fleet-gate = {
+      enable = true;
+      name = "fleet gate";
+      stages = [ "pre-commit" ];
+      entry = "${fleetGateHook} pre-commit";
+      language = "system";
+      pass_filenames = false;
+      always_run = true;
+    };
+
+    # pass_filenames, because git hands commit-msg the message file and the
+    # fleet gate's gitlint and commitizen read it. Getting this wrong lints the
+    # wrong thing while still exiting 0.
+    fleet-gate-commit-msg = {
+      enable = true;
+      name = "fleet gate (message)";
+      stages = [ "commit-msg" ];
+      entry = "${fleetGateHook} commit-msg";
+      language = "system";
+      pass_filenames = true;
+      always_run = true;
+    };
+
+    fleet-gate-pre-push = {
+      enable = true;
+      name = "fleet gate (push)";
+      stages = [ "pre-push" ];
+      entry = "${fleetGateHook} pre-push";
+      language = "system";
+      pass_filenames = false;
+      always_run = true;
+    };
+
+    # The commit diary is hooks_everywhere.nix's post-commit hook - NOT
+    # pkgs/git-commit-gate, which ships pre-commit and commit-msg only. On a box
+    # with no fleet gate there is no diary, and the entry says so per commit.
+    fleet-gate-post-commit = {
+      enable = true;
+      name = "fleet gate (diary)";
+      stages = [ "post-commit" ];
+      entry = "${fleetGateHook} post-commit";
+      language = "system";
+      pass_filenames = false;
+      always_run = true;
+    };
+
+  };
 
   env.GREET = "Welcome to the Rusty CV Commit Saver";
 
