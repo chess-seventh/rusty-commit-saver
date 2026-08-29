@@ -6,10 +6,13 @@
 # a deploy-key wall in front of entering this devenv on every box, CI included
 # (D-96).
 #
-# L235 gave TEN repositories this copy. With `claude-src`'s (L173) that is
-# eleven copies, and with the flake's own packaged source, TWELVE repositories
-# declare the fleet gate. They must not drift, and nothing here can check that
-# from inside one repository - the guard is batoned to Archon as its own lane.
+# L235 gave this copy to EVERY governed repository, and states NO COUNT on
+# purpose. A number duplicated across every copy went stale twice while the
+# roster grew, and nothing in any gate catches it. The roster lives in one
+# place: `docs/feature/l235-hooks-path-removed/deliver/roadmap.json` in the
+# flake. These copies must not drift from the source above, and nothing here
+# can check that from inside one repository - the guard is batoned to Archon
+# as its own lane.
 #
 # L173 - runs the global fleet gate as one of THIS repository's own hooks, so a
 # hook installed once fires everywhere (D-115).
